@@ -39,6 +39,8 @@ public class UserResource {
     @Timed
     public User getUser(@PathParam("id") String id) {
         User user = userCollection.findOneById(id);
+        //don't return user id
+        user.setUserId(null);
         return user;
     }
 
