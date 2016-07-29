@@ -76,6 +76,8 @@ public class RequestResource {
 
     }
 
+    //TODO get requests by geolocation
+
 
 
 }
