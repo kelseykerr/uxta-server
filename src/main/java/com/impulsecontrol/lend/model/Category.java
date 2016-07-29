@@ -3,12 +3,13 @@ package com.impulsecontrol.lend.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Created by kerrk on 7/21/16.
  */
-public class Category {
+public class Category implements Serializable {
 
     private String id;
 

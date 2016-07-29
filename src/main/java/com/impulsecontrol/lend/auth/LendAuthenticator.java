@@ -47,7 +47,7 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
             try {
                 URIBuilder builder = new URIBuilder("https://graph.facebook.com/debug_token")
                         .addParameter("input_token", credentials.getToken())
-                        .addParameter("access_token", "{figure out how to store this}");
+                        .addParameter("access_token", "1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4");
 
                 HttpGet httpGet = new HttpGet(builder.toString());
                 HttpResponse httpResp = client.execute(httpGet);
@@ -86,7 +86,7 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
 
     private User createNewUser(String userId) throws IOException, URISyntaxException {
         URIBuilder builder = new URIBuilder("https://graph.facebook.com/" + userId)
-                .addParameter("access_token", "{figure out how to store this}");
+                .addParameter("access_token", "1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4");
         HttpGet httpGet = new HttpGet(builder.toString());
         HttpResponse httpResp = client.execute(httpGet);
         BufferedReader rd = new BufferedReader(new InputStreamReader(httpResp.getEntity().getContent()));

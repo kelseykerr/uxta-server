@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 
 /**
  * Created by kerrk on 7/5/16.
  */
-public class User {
+public class User implements Serializable{
 
 
     private String id;

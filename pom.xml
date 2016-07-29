@@ -37,6 +37,13 @@
             <artifactId>mongojack</artifactId>
             <version>2.5.1</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/de.grundid.opendatalab/geojson-jackson -->
+        <dependency>
+            <groupId>de.grundid.opendatalab</groupId>
+            <artifactId>geojson-jackson</artifactId>
+            <version>1.6</version>
+        </dependency>
+
 
     </dependencies>
 

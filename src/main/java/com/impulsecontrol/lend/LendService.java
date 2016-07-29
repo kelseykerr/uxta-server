@@ -3,6 +3,10 @@ package com.impulsecontrol.lend;
 import com.impulsecontrol.lend.auth.LendAuthenticator;
 import com.impulsecontrol.lend.auth.SecurityProvider;
 import com.impulsecontrol.lend.model.Category;
+import com.impulsecontrol.lend.model.Request;
+import com.impulsecontrol.lend.resources.RequestResource;
+import com.impulsecontrol.lend.resources.RequestsResource;
+import com.impulsecontrol.lend.service.RequestService;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
 import com.yammer.dropwizard.Service;
@@ -35,10 +39,16 @@ public class LendService extends Service<LendConfiguration> {
         JacksonDBCollection<Category, String> categoryCollection =
                 JacksonDBCollection.wrap(db.getCollection("category"), Category.class, String.class);
 
+        JacksonDBCollection<Request, String> requestCollection =
+                JacksonDBCollection.wrap(db.getCollection("request"), Request.class, String.class);
+
 
         environment.addHealthCheck(new MongoHealthCheck(mongo));
 
         environment.addResource(new UserResource(userCollection));
+        RequestService requestService = new RequestService();
+        environment.addResource(new RequestResource(requestCollection, requestService));
+        environment.addResource(new RequestsResource(requestCollection));
         environment.addProvider(new SecurityProvider<User>(new LendAuthenticator(userCollection)));
 
     }
