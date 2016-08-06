@@ -1,20 +1,29 @@
 package com.impulsecontrol.lend.model;
 
-import java.lang.annotation.Annotation;
+import javax.ws.rs.QueryParam;
 
 /**
  * Created by kerrk on 7/27/16.
  */
-public class SearchParams implements CustomParams {
+public class SearchParams {
 
-    public Double latitude;
+    @QueryParam("latitude")
+    private Double latitude;
 
-    public Double longitude;
+    @QueryParam("longitude")
+    private Double longitude;
 
-    public Double radius;
+    @QueryParam("radius")
+    private Double radius;
 
     public SearchParams() {
 
+    }
+
+    public SearchParams(Double latitude, Double longitude, Double radius) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.radius = radius;
     }
 
     public Double getLatitude() {
@@ -40,9 +49,4 @@ public class SearchParams implements CustomParams {
     public void setRadius(Double radius) {
         this.radius = radius;
     }
-
-    public Class<? extends Annotation> annotationType() {
-        return null;
-    }
-
 }

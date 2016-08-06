@@ -1,8 +1,6 @@
 package com.impulsecontrol.lend.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.geojson.GeoJsonObject;
-import org.geojson.Point;
 import org.mongojack.ObjectId;
 
 import javax.validation.constraints.NotNull;

@@ -4,16 +4,16 @@ import com.impulsecontrol.lend.auth.LendAuthenticator;
 import com.impulsecontrol.lend.auth.SecurityProvider;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.Request;
-import com.impulsecontrol.lend.resources.RequestResource;
+import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.resources.RequestsResource;
+import com.impulsecontrol.lend.resources.UserResource;
 import com.impulsecontrol.lend.service.RequestService;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
 import com.yammer.dropwizard.Service;
 import com.yammer.dropwizard.config.Bootstrap;
 import com.yammer.dropwizard.config.Environment;
-import com.impulsecontrol.lend.resources.UserResource;
-import com.impulsecontrol.lend.model.User;
 import org.mongojack.JacksonDBCollection;
 
 public class LendService extends Service<LendConfiguration> {
@@ -30,6 +30,7 @@ public class LendService extends Service<LendConfiguration> {
     @Override
     public void run(LendConfiguration configuration, Environment environment) throws Exception {
         Mongo mongo = new Mongo(configuration.mongohost, configuration.mongoport);
+
         MongoManaged mongoManaged = new MongoManaged(mongo);
         environment.manage(mongoManaged);
         DB db = mongo.getDB(configuration.mongodb);
@@ -42,13 +43,12 @@ public class LendService extends Service<LendConfiguration> {
         JacksonDBCollection<Request, String> requestCollection =
                 JacksonDBCollection.wrap(db.getCollection("request"), Request.class, String.class);
 
-
+        requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.addHealthCheck(new MongoHealthCheck(mongo));
 
-        environment.addResource(new UserResource(userCollection));
+        environment.addResource(new UserResource(userCollection, requestCollection));
         RequestService requestService = new RequestService();
-        environment.addResource(new RequestResource(requestCollection, requestService));
-        environment.addResource(new RequestsResource(requestCollection));
+        environment.addResource(new RequestsResource(requestCollection, requestService));
         environment.addProvider(new SecurityProvider<User>(new LendAuthenticator(userCollection)));
 
     }

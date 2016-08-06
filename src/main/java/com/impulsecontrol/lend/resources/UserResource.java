@@ -1,8 +1,12 @@
 package com.impulsecontrol.lend.resources;
 
+import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import com.yammer.dropwizard.auth.Auth;
 import com.yammer.metrics.annotation.Timed;
+import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
 
@@ -15,15 +19,20 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.List;
 
 
 @Path("/user")
 public class UserResource {
 
     private JacksonDBCollection<User, String> userCollection;
+    private JacksonDBCollection<Request, String> requestCollection;
 
-    public UserResource(JacksonDBCollection<User, String> userCollection) {
+
+    public UserResource(JacksonDBCollection<User, String> userCollection,
+                        JacksonDBCollection<Request, String> requestCollection) {
         this.userCollection = userCollection;
+        this.requestCollection = requestCollection;
     }
 
     @GET
@@ -47,7 +56,6 @@ public class UserResource {
     @POST
     @Timed
     public Response createUser(@Valid User user) {
-        //TODO: check result for error
         WriteResult<User, String> result = userCollection.insert(user);
         URI uriOfCreatedResource = URI.create("/user");
         return Response.created(uriOfCreatedResource).build();
@@ -59,4 +67,14 @@ public class UserResource {
     public Response deleteUser(@PathParam("id") String id) {
 
     }*/
+
+    @GET
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Path("/requests")
+    @Timed
+    public List<Request> getAllUserRequests(@Auth User principal) {
+        DBObject searchByUser = new BasicDBObject("user", principal);
+        DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
+        return userRequests.toArray();
+    }
 }
