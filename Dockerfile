@@ -1,5 +1,9 @@
 FROM java:8-jre
-COPY lend.yml /opt/dropwizard/
+FROM maven:3-jdk-8
+COPY pom.xml /opt/dropwizard/
+WORKDIR /opt/dropwizard
+RUN mvn clean install
+COPY lend-prod.yml /opt/dropwizard/
 COPY target/lend-1.0-SNAPSHOT.jar /opt/dropwizard/
 EXPOSE 8080
 WORKDIR /opt/dropwizard
