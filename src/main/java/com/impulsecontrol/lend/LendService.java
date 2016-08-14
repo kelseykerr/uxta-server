@@ -19,7 +19,7 @@ import org.mongojack.JacksonDBCollection;
 public class LendService extends Service<LendConfiguration> {
 
     public static void main(String[] args) throws Exception {
-        new LendService().run(new String[] { "server" });
+        new LendService().run(args);
     }
 
     @Override

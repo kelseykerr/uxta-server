@@ -11,15 +11,19 @@ public class LendConfiguration extends Configuration {
 
     @JsonProperty
     @NotEmpty
-    public String mongohost = "localhost";
+    public String mongohost;
 
     @JsonProperty
     @Min(1)
     @Max(65535)
-    public int mongoport = 27017;
+    public int mongoport;
 
     @JsonProperty
     @NotEmpty
-    public String mongodb = "mydb";
+    public String mongodb;
+
+    @JsonProperty
+    @NotEmpty
+    public String fbAccessToken;
 
 }
