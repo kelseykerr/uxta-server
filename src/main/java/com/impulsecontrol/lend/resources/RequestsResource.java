@@ -2,12 +2,12 @@ package com.impulsecontrol.lend.resources;
 
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
+import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.service.RequestService;
 import com.mongodb.BasicDBObject;
-import com.sun.jersey.api.NotFoundException;
 import com.yammer.dropwizard.auth.Auth;
 import com.yammer.metrics.annotation.Timed;
 import org.mongojack.DBCursor;
@@ -93,6 +93,9 @@ public class RequestsResource {
     @Timed
     public RequestDto getRequestById(@Auth User principal, @PathParam("requestId") String id) {
         Request request = requestCollection.findOneById(id);
+        if (request == null) {
+            throw new NotFoundException("Request [" + id + "] was not found.");
+        }
         return new RequestDto(request);
     }
 
