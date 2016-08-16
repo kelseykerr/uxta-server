@@ -9,8 +9,10 @@ import com.yammer.dropwizard.auth.Authenticator;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.json.JSONObject;
 import org.mongojack.JacksonDBCollection;
@@ -32,11 +34,14 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
 
     private JacksonDBCollection<User, String> userCollection;
 
-    private HttpClient client = HttpClients.createDefault();
+    private CloseableHttpClient client = HttpClients.createDefault();
+
+    private String fbAuthToken;
 
 
-    public LendAuthenticator(JacksonDBCollection<User, String> userCollection) {
+    public LendAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken) {
         this.userCollection = userCollection;
+        this.fbAuthToken = fbAuthToken;
     }
 
     public Optional<User> authenticate(Credentials credentials) throws AuthenticationException {
@@ -47,10 +52,10 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
             try {
                 URIBuilder builder = new URIBuilder("https://graph.facebook.com/debug_token")
                         .addParameter("input_token", credentials.getToken())
-                        .addParameter("access_token", "1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4");
+                        .addParameter("access_token", fbAuthToken);
 
                 HttpGet httpGet = new HttpGet(builder.toString());
-                HttpResponse httpResp = client.execute(httpGet);
+                CloseableHttpResponse httpResp = client.execute(httpGet);
 
                 String userId = extractUserId(httpResp);
                 DBObject searchById = new BasicDBObject("userId", userId);
@@ -68,7 +73,7 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         }
     }
 
-    private String extractUserId(HttpResponse httpResp) throws AuthenticationException, IOException {
+    private String extractUserId(CloseableHttpResponse httpResp) throws AuthenticationException, IOException {
         int code = httpResp.getStatusLine().getStatusCode();
         if (code != HttpStatus.SC_OK) {
             throw new AuthenticationException("Invalid credentials: " + httpResp.getStatusLine());
@@ -81,12 +86,13 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         }
         JSONObject dataObject = new JSONObject(result.toString());
         JSONObject userObj = (JSONObject) dataObject.get("data");
+        httpResp.close();
         return (String) userObj.get("user_id");
     }
 
     private User createNewUser(String userId) throws IOException, URISyntaxException {
         URIBuilder builder = new URIBuilder("https://graph.facebook.com/" + userId)
-                .addParameter("access_token", "1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4");
+                .addParameter("access_token", fbAuthToken);
         HttpGet httpGet = new HttpGet(builder.toString());
         HttpResponse httpResp = client.execute(httpGet);
         BufferedReader rd = new BufferedReader(new InputStreamReader(httpResp.getEntity().getContent()));

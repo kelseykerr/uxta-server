@@ -69,7 +69,9 @@ public class RequestsResource {
         locationQuery.append("location", location);
 
         DBCursor userRequests = requestCollection.find(locationQuery).sort(new BasicDBObject("postDate", -1));
-        return userRequests.toArray();
+        List<Request> requests =  userRequests.toArray();
+        userRequests.close();
+        return requests;
     }
 
     public Double milesToDegrees(Double radiusInMiles) {

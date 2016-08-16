@@ -49,7 +49,8 @@ public class LendService extends Service<LendConfiguration> {
         environment.addResource(new UserResource(userCollection, requestCollection));
         RequestService requestService = new RequestService();
         environment.addResource(new RequestsResource(requestCollection, requestService));
-        environment.addProvider(new SecurityProvider<User>(new LendAuthenticator(userCollection)));
+        environment.addProvider(new SecurityProvider<User>(new LendAuthenticator(userCollection,
+                configuration.fbAccessToken)));
 
     }
 }

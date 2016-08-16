@@ -75,6 +75,8 @@ public class UserResource {
     public List<Request> getAllUserRequests(@Auth User principal) {
         DBObject searchByUser = new BasicDBObject("user", principal);
         DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
-        return userRequests.toArray();
+        List<Request> requests = userRequests.toArray();
+        userRequests.close();
+        return requests;
     }
 }
