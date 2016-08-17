@@ -8,3 +8,5 @@ server:
 
 swagger:
   resourcePackage: com.impulsecontrol.lend.resources
+  swaggerViewConfiguration:
+    showAuth: false

@@ -11,7 +11,10 @@ import com.impulsecontrol.lend.service.RequestService;
 import com.mongodb.BasicDBObject;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
@@ -54,7 +57,11 @@ public class RequestsResource {
             value = "Search for requests",
             notes = "Return requests that match query params (longitude, latitude, & radius)"
     )
-    public List<Request> getRequests(@Auth User principal,
+    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public List<Request> getRequests(@Auth @ApiParam(hidden=true) User principal,
                                      @QueryParam("longitude") Double longitude,
                                      @QueryParam("latitude") Double latitude,
                                      @QueryParam("radius") Double radius) {
@@ -91,7 +98,11 @@ public class RequestsResource {
     @POST
     @Consumes(value = MediaType.APPLICATION_JSON)
     @Timed
-    public Response createRequest(@Auth User principal, @Valid RequestDto dto) {
+    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public Response createRequest(@Auth @ApiParam(hidden=true) User principal, @Valid RequestDto dto) {
         Request request = service.transformRequestDto(dto, principal);
         WriteResult<Request, String> newRequest = requestCollection.insert(request);
         URI uriOfCreatedResource = URI.create("/requests");
@@ -102,7 +113,11 @@ public class RequestsResource {
     @Produces(value = MediaType.APPLICATION_JSON)
     @Path("/{requestId}")
     @Timed
-    public RequestDto getRequestById(@Auth User principal, @PathParam("requestId") String id) {
+    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public RequestDto getRequestById(@Auth @ApiParam(hidden=true) User principal, @PathParam("requestId") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
             throw new NotFoundException("Request [" + id + "] was not found.");
@@ -114,7 +129,11 @@ public class RequestsResource {
     @Consumes(value = MediaType.APPLICATION_JSON)
     @Path("/{requestId}")
     @Timed
-    public void updateRequest(@Auth User principal, @PathParam("requestId") String id, @Valid RequestDto dto) {
+    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public void updateRequest(@Auth @ApiParam(hidden=true) User principal, @PathParam("requestId") String id, @Valid RequestDto dto) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
             throw new NotFoundException("Could not find request [" + id + "]");
@@ -130,7 +149,11 @@ public class RequestsResource {
     @DELETE
     @Timed
     @Path("/{id}")
-    public Response deleteRequest(@Auth User principal, @PathParam("id") String id) {
+    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public Response deleteRequest(@Auth @ApiParam(hidden=true) User principal, @PathParam("id") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
             throw new NotFoundException("unable to find request [" + id + "]");
