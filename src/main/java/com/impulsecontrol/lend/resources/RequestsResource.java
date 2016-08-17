@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.resources;
 
+import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.NotFoundException;
@@ -8,13 +9,15 @@ import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.service.RequestService;
 import com.mongodb.BasicDBObject;
-import com.yammer.dropwizard.auth.Auth;
-import com.yammer.metrics.annotation.Timed;
+import io.dropwizard.auth.Auth;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
 
 import javax.validation.Valid;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -32,6 +35,7 @@ import java.util.List;
  * Created by kerrk on 7/26/16.
  */
 @Path("/requests")
+@Api("/requests")
 public class RequestsResource {
 
     private JacksonDBCollection<Request, String> requestCollection;
@@ -46,6 +50,10 @@ public class RequestsResource {
     @GET
     @Produces(value = MediaType.APPLICATION_JSON)
     @Timed
+    @ApiOperation(
+            value = "Search for requests",
+            notes = "Return requests that match query params (longitude, latitude, & radius)"
+    )
     public List<Request> getRequests(@Auth User principal,
                                      @QueryParam("longitude") Double longitude,
                                      @QueryParam("latitude") Double latitude,
@@ -81,6 +89,7 @@ public class RequestsResource {
 
 
     @POST
+    @Consumes(value = MediaType.APPLICATION_JSON)
     @Timed
     public Response createRequest(@Auth User principal, @Valid RequestDto dto) {
         Request request = service.transformRequestDto(dto, principal);
@@ -102,6 +111,7 @@ public class RequestsResource {
     }
 
     @PUT
+    @Consumes(value = MediaType.APPLICATION_JSON)
     @Path("/{requestId}")
     @Timed
     public void updateRequest(@Auth User principal, @PathParam("requestId") String id, @Valid RequestDto dto) {

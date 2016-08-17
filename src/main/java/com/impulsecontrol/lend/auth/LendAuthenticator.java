@@ -1,14 +1,13 @@
 package com.impulsecontrol.lend.auth;
 
-import com.google.common.base.Optional;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.yammer.dropwizard.auth.AuthenticationException;
-import com.yammer.dropwizard.auth.Authenticator;
+import io.dropwizard.auth.AuthenticationException;
+import io.dropwizard.auth.Authenticator;
+import io.dropwizard.auth.basic.BasicCredentials;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -24,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.util.Optional;
 
 /**
  * Created by kerrk on 7/8/16.
@@ -44,6 +44,10 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         this.fbAuthToken = fbAuthToken;
     }
 
+    public LendAuthenticator() {
+
+    }
+
     public Optional<User> authenticate(Credentials credentials) throws AuthenticationException {
         if (credentials.getToken().isEmpty()) {
             throw new AuthenticationException("Invalid credentials");
@@ -62,9 +66,9 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
                 User user = userCollection.findOne(searchById);
                 if (user == null) {
                     User newUser = createNewUser(userId);
-                    return Optional.fromNullable(newUser);
+                    return Optional.of(newUser);
                 }
-                return Optional.fromNullable(user);
+                return Optional.of(user);
             } catch (IOException e) {
                 throw new AuthenticationException("could not authenticate: " + e.getMessage());
             } catch (URISyntaxException e) {
@@ -113,5 +117,21 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
         newUser = insertedUser.getSavedObject();
         return newUser;
+    }
+
+    public JacksonDBCollection<User, String> getUserCollection() {
+        return userCollection;
+    }
+
+    public void setUserCollection(JacksonDBCollection<User, String> userCollection) {
+        this.userCollection = userCollection;
+    }
+
+    public String getFbAuthToken() {
+        return fbAuthToken;
+    }
+
+    public void setFbAuthToken(String fbAuthToken) {
+        this.fbAuthToken = fbAuthToken;
     }
 }

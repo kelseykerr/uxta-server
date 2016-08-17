@@ -2,3 +2,9 @@ mongohost: 10.0.2.239
 mongoport: 27017
 mongodb: lend
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
+
+server:
+  rootPath: /api/*
+
+swagger:
+  resourcePackage: com.impulsecontrol.lend.resources

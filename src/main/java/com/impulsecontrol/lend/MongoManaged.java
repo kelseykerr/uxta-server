@@ -1,7 +1,7 @@
 package com.impulsecontrol.lend;
 
 import com.mongodb.Mongo;
-import com.yammer.dropwizard.lifecycle.Managed;
+import io.dropwizard.lifecycle.Managed;
 
 
 public class MongoManaged implements Managed {

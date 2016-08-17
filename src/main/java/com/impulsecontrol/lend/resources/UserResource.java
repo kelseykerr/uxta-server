@@ -1,11 +1,13 @@
 package com.impulsecontrol.lend.resources;
 
+import com.codahale.metrics.annotation.Timed;
+import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.yammer.dropwizard.auth.Auth;
-import com.yammer.metrics.annotation.Timed;
+import io.dropwizard.auth.Auth;
+import io.swagger.annotations.Api;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
@@ -23,6 +25,7 @@ import java.util.List;
 
 
 @Path("/user")
+@Api("/user")
 public class UserResource {
 
     private JacksonDBCollection<User, String> userCollection;
@@ -46,11 +49,11 @@ public class UserResource {
     @Produces(value = MediaType.APPLICATION_JSON)
     @Path("/{id}")
     @Timed
-    public User getUser(@PathParam("id") String id) {
+    public UserDto getUser(@PathParam("id") String id) {
         User user = userCollection.findOneById(id);
         //don't return user id
         user.setUserId(null);
-        return user;
+        return new UserDto(user);
     }
 
     @POST

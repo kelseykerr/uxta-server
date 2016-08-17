@@ -5,11 +5,12 @@ import org.mongojack.ObjectId;
 
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.security.Principal;
 
 /**
  * Created by kerrk on 7/5/16.
  */
-public class User implements Serializable{
+public class User implements Serializable, Principal {
 
 
     private String id;
@@ -66,5 +67,9 @@ public class User implements Serializable{
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getName() {
+        return this.firstName + " " + this.getLastName();
     }
 }

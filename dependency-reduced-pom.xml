@@ -31,7 +31,7 @@
           <transformers>
             <transformer />
             <transformer>
-              <mainClass>com.impulsecontrol.lend.LendService</mainClass>
+              <mainClass>com.impulsecontrol.lend.LendApplication</mainClass>
             </transformer>
           </transformers>
         </configuration>
