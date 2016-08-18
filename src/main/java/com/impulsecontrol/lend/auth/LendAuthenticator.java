@@ -109,8 +109,8 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         String userName = (String) userInfo.get("name");
         String[] names = userName.split(" ");
         User newUser = new User();
+        newUser.setName(userName);
         newUser.setFirstName(names[0]);
-
         newUser.setLastName(names[names.length - 1]);
         newUser.setUserId(userId);
         //TODO: check for error

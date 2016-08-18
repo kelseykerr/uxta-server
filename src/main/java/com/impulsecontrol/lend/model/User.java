@@ -24,6 +24,8 @@ public class User implements Serializable, Principal {
     @NotNull
     private String userId;
 
+    private String name;
+
     public User() {
 
     }
@@ -31,6 +33,7 @@ public class User implements Serializable, Principal {
     public User(String firstName, String lastName, String userId) {
         this.firstName = firstName;
         this.lastName = lastName;
+        this.name = this.firstName + " " + this.lastName;
     }
 
     @ObjectId
@@ -70,6 +73,10 @@ public class User implements Serializable, Principal {
     }
 
     public String getName() {
-        return this.firstName + " " + this.getLastName();
+        return this.name != null ? this.name : this.firstName + " " + this.lastName;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
