@@ -9,6 +9,7 @@ import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.resources.RequestsResource;
 import com.impulsecontrol.lend.resources.UserResource;
 import com.impulsecontrol.lend.service.RequestService;
+import com.impulsecontrol.lend.service.UserService;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
@@ -58,7 +59,8 @@ public class LendApplication extends Application<LendConfiguration> {
 
         requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
-        environment.jersey().register(new UserResource(userCollection, requestCollection));
+        UserService userService = new UserService();
+        environment.jersey().register(new UserResource(userCollection, requestCollection, userService));
         RequestService requestService = new RequestService();
         environment.jersey().register(new RequestsResource(requestCollection, requestService));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
