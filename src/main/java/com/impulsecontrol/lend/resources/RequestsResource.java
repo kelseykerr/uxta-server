@@ -161,9 +161,7 @@ public class RequestsResource {
         if (!request.getUser().getUserId().equals(principal.getUserId())) {
             throw new UnauthorizedException("You are not authorized to delete this request");
         }
-        BasicDBObject document = new BasicDBObject();
-        document.put("id", id);
-        requestCollection.remove(document);
+        requestCollection.removeById(id);
         return Response.noContent().build();
 
     }
