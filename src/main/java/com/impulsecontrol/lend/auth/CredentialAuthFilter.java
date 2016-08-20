@@ -1,8 +1,6 @@
 package com.impulsecontrol.lend.auth;
 
-import com.google.common.io.BaseEncoding;
 import io.dropwizard.auth.AuthFilter;
-import io.dropwizard.auth.basic.BasicCredentials;
 
 import javax.annotation.Nullable;
 import javax.annotation.Priority;

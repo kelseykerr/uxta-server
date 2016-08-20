@@ -135,7 +135,6 @@ public class UserResource {
     @Path("/{id}")
     @Timed
     public Response deleteUser(@PathParam("id") String id) {
-
     }*/
 
     @GET

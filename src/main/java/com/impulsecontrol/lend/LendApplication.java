@@ -6,6 +6,7 @@ import com.impulsecontrol.lend.auth.LendAuthorizer;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
+import com.impulsecontrol.lend.resources.CategoriesResource;
 import com.impulsecontrol.lend.resources.RequestsResource;
 import com.impulsecontrol.lend.resources.UserResource;
 import com.impulsecontrol.lend.service.RequestService;
@@ -69,6 +70,7 @@ public class LendApplication extends Application<LendConfiguration> {
                 .setAuthorizer(new LendAuthorizer())
                 .setRealm("SUPER SECRET STUFF")
                 .buildAuthFilter()));
+        environment.jersey().register(new CategoriesResource(categoryCollection));
         environment.jersey().register(RolesAllowedDynamicFeature.class);
         environment.jersey().register(new AuthValueFactoryProvider.Binder(User.class));
 
