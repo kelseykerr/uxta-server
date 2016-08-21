@@ -91,7 +91,7 @@ public class RequestsResource {
 
     public Double milesToDegrees(Double radiusInMiles) {
         Double km = radiusInMiles * 0.621371;
-        return (1 / 110.54) * km;
+        return (1 / 11.054) * km;
     }
 
 

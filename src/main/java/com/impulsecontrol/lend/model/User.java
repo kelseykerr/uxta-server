@@ -14,7 +14,8 @@ import java.security.Principal;
  */
 public class User implements Serializable, Principal {
 
-
+    @ObjectId
+    @JsonProperty("_id")
     private String id;
 
     @NotNull
