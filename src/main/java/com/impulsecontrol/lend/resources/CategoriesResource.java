@@ -1,10 +1,8 @@
 package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.model.Category;
-import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
