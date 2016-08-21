@@ -61,7 +61,7 @@ public class RequestsResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header") })
-    public List<Request> getRequests(@Auth @ApiParam(hidden=true) User principal,
+    public List<RequestDto> getRequests(@Auth @ApiParam(hidden=true) User principal,
                                      @QueryParam("longitude") Double longitude,
                                      @QueryParam("latitude") Double latitude,
                                      @QueryParam("radius") Double radius) {
@@ -86,7 +86,7 @@ public class RequestsResource {
         DBCursor userRequests = requestCollection.find(locationQuery).sort(new BasicDBObject("postDate", -1));
         List<Request> requests =  userRequests.toArray();
         userRequests.close();
-        return requests;
+        return RequestDto.transform(requests);
     }
 
     public Double milesToMeters(Double radiusInMiles) {

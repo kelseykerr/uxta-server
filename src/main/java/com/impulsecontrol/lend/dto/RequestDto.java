@@ -1,11 +1,15 @@
 package com.impulsecontrol.lend.dto;
 
 import com.impulsecontrol.lend.model.Category;
+import com.impulsecontrol.lend.model.GeoJsonPoint;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by kerrk on 7/27/16.
@@ -51,5 +55,11 @@ public class RequestDto {
         this.category = request.getCategory();
         this.rental = request.getRental();
         this.description = request.getDescription();
+    }
+
+    public static List<RequestDto> transform(List<Request> requests) {
+        List<RequestDto> dtos = new ArrayList<RequestDto>();
+        return requests.stream()
+                .map(r -> new RequestDto(r)).collect(Collectors.toList());
     }
 }
