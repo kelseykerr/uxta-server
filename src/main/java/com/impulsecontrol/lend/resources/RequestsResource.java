@@ -75,7 +75,7 @@ public class RequestsResource {
 
         BasicDBObject near = new BasicDBObject();
         near.append("$geometry", geometry);
-        near.append("$maxDistance",  Math.toRadians(milesToDegrees(radius)));
+        near.append("$maxDistance", milesToMeters(radius));
 
         BasicDBObject location = new BasicDBObject();
         location.append("$near", near);
@@ -89,9 +89,8 @@ public class RequestsResource {
         return requests;
     }
 
-    public Double milesToDegrees(Double radiusInMiles) {
-        Double km = radiusInMiles * 0.621371;
-        return (1 / 11.054) * km;
+    public Double milesToMeters(Double radiusInMiles) {
+        return radiusInMiles * 1609.344;
     }
 
 
