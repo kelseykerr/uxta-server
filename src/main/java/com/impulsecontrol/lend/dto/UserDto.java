@@ -15,7 +15,6 @@ public class UserDto {
 
     public String id;
 
-    @NotNull
     public String userId;
 
     public String firstName;
