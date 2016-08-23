@@ -14,6 +14,7 @@ public class Request implements Serializable {
 
     private String id;
 
+    @NotNull
     private User user;
 
     @NotNull

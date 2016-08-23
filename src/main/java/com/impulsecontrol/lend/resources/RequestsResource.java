@@ -8,7 +8,9 @@ import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.service.RequestService;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -32,6 +34,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -57,14 +60,16 @@ public class RequestsResource {
             value = "Search for requests",
             notes = "Return requests that match query params (longitude, latitude, & radius)"
     )
-    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
-    public List<RequestDto> getRequests(@Auth @ApiParam(hidden=true) User principal,
-                                     @QueryParam("longitude") Double longitude,
-                                     @QueryParam("latitude") Double latitude,
-                                     @QueryParam("radius") Double radius) {
+            paramType = "header")})
+    public List<RequestDto> getRequests(@Auth @ApiParam(hidden = true) User principal,
+                                        @QueryParam("longitude") Double longitude,
+                                        @QueryParam("latitude") Double latitude,
+                                        @QueryParam("radius") Double radius,
+                                        @QueryParam("expired") Boolean expired,
+                                        @QueryParam("includeMine") Boolean includeMine) {
         if (longitude == null || latitude == null || radius == null) {
             throw new BadRequestException("query parameters [radius], [longitude] and [latitude] are required.");
         }
@@ -80,11 +85,40 @@ public class RequestsResource {
         BasicDBObject location = new BasicDBObject();
         location.append("$near", near);
 
-        BasicDBObject locationQuery = new BasicDBObject();
-        locationQuery.append("location", location);
+        BasicDBObject query = new BasicDBObject();
+        query.append("location", location);
 
-        DBCursor userRequests = requestCollection.find(locationQuery).sort(new BasicDBObject("postDate", -1));
-        List<Request> requests =  userRequests.toArray();
+        if (expired != null && expired) {
+            BasicDBObject expiredQuery = new BasicDBObject();
+            expiredQuery.append("$lte", new Date());
+            query.put("expireDate", expiredQuery);
+        } else if (expired != null && !expired) {
+            // expire date is after current date
+            BasicDBObject notExpiredQuery = new BasicDBObject();
+            notExpiredQuery.append("$gt", new Date());
+            BasicDBObject query1 = new BasicDBObject();
+            query1.append("expireDate", notExpiredQuery);
+
+            // expire date is not set
+            BasicDBObject notSetQuery = new BasicDBObject();
+            notSetQuery.append("$exists", false);
+            BasicDBObject query2 = new BasicDBObject();
+            query2.append("expireDate", notSetQuery);
+
+            BasicDBList or = new BasicDBList();
+            or.add(query1);
+            or.add(query2);
+            query.put("$or", or);
+        }
+
+        if (includeMine != null && !includeMine) {
+            BasicDBObject notMineQuery = new BasicDBObject();
+            notMineQuery.append("$ne", principal.getUserId());
+            query.put("user.userId", notMineQuery);
+        }
+
+        DBCursor userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+        List<Request> requests = userRequests.toArray();
         userRequests.close();
         return RequestDto.transform(requests);
     }
@@ -97,11 +131,11 @@ public class RequestsResource {
     @POST
     @Consumes(value = MediaType.APPLICATION_JSON)
     @Timed
-    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
-    public Response createRequest(@Auth @ApiParam(hidden=true) User principal, @Valid RequestDto dto) {
+            paramType = "header")})
+    public Response createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
         Request request = service.transformRequestDto(dto, principal);
         WriteResult<Request, String> newRequest = requestCollection.insert(request);
         URI uriOfCreatedResource = URI.create("/requests");
@@ -112,11 +146,11 @@ public class RequestsResource {
     @Produces(value = MediaType.APPLICATION_JSON)
     @Path("/{requestId}")
     @Timed
-    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
-    public RequestDto getRequestById(@Auth @ApiParam(hidden=true) User principal, @PathParam("requestId") String id) {
+            paramType = "header")})
+    public RequestDto getRequestById(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
             throw new NotFoundException("Request [" + id + "] was not found.");
@@ -128,11 +162,12 @@ public class RequestsResource {
     @Consumes(value = MediaType.APPLICATION_JSON)
     @Path("/{requestId}")
     @Timed
-    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
-    public void updateRequest(@Auth @ApiParam(hidden=true) User principal, @PathParam("requestId") String id, @Valid RequestDto dto) {
+            paramType = "header")})
+    public void updateRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id,
+                              @Valid RequestDto dto) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
             throw new NotFoundException("Could not find request [" + id + "]");
@@ -148,11 +183,11 @@ public class RequestsResource {
     @DELETE
     @Timed
     @Path("/{id}")
-    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
-    public Response deleteRequest(@Auth @ApiParam(hidden=true) User principal, @PathParam("id") String id) {
+            paramType = "header")})
+    public Response deleteRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("id") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
             throw new NotFoundException("unable to find request [" + id + "]");
@@ -164,7 +199,6 @@ public class RequestsResource {
         return Response.noContent().build();
 
     }
-
 
 
 }

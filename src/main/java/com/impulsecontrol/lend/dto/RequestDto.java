@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.GeoJsonPoint;
 import com.impulsecontrol.lend.model.Request;
@@ -14,11 +15,12 @@ import java.util.stream.Collectors;
 /**
  * Created by kerrk on 7/27/16.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RequestDto {
 
     public String id;
 
-    public User user;
+    public UserDto user;
 
     @NotNull
     public String itemName;
@@ -46,7 +48,10 @@ public class RequestDto {
 
     public RequestDto(Request request) {
         this.id = request.getId();
-        this.user = request.getUser();
+        if (request.getUser() != null) {
+            UserDto dto = new UserDto(request.getUser());
+            this.user = dto;
+        }
         this.itemName = request.getItemName();
         this.longitude = request.getLocation().getCoordinates()[0];
         this.latitude = request.getLocation().getCoordinates()[1];
