@@ -1,6 +1,7 @@
 package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
@@ -151,7 +152,7 @@ public class UserResource {
             dataType = "string",
             paramType = "header")
     })
-    public List<Request> getAllUserRequests(@Auth @ApiParam(hidden=true) User principal, @PathParam("id")
+    public List<RequestDto> getAllUserRequests(@Auth @ApiParam(hidden=true) User principal, @PathParam("id")
     @ApiParam( value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
     String id) {
         if (!principal.getUserId().equals(id) && !id.equals("me")) {
@@ -164,6 +165,6 @@ public class UserResource {
         DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
         List<Request> requests = userRequests.toArray();
         userRequests.close();
-        return requests;
+        return RequestDto.transform(requests);
     }
 }

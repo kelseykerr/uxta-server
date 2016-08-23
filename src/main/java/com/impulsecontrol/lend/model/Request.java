@@ -33,6 +33,10 @@ public class Request implements Serializable {
 
     private String description;
 
+    private Boolean fulfilled = false;
+
+    private Type type;
+
     public Request() {
 
     }
@@ -111,5 +115,17 @@ public class Request implements Serializable {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Boolean getFulfilled() {
+        return fulfilled;
+    }
+
+    public void setFulfilled(Boolean fulfilled) {
+        this.fulfilled = fulfilled;
+    }
+
+    public static enum Type {
+        item, service
     }
 }
