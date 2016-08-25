@@ -38,4 +38,12 @@ public class Category implements Serializable {
     public void setName(String name) {
         this.name = name;
     }
+
+    public List<String> getExamples() {
+        return examples;
+    }
+
+    public void setExamples(List<String> examples) {
+        this.examples = examples;
+    }
 }

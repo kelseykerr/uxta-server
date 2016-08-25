@@ -1,6 +1,7 @@
 package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.impulsecontrol.lend.dto.CategoryDto;
 import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.User;
@@ -45,11 +46,11 @@ public class CategoriesResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header") })
-    public List<Category> getCategories(@Auth @ApiParam(hidden=true) User principal) {
+    public List<CategoryDto> getCategories(@Auth @ApiParam(hidden=true) User principal) {
         DBCursor categoriesRequests = categoriesCollection.find();
         List<Category> categories =  categoriesRequests.toArray();
         categoriesRequests.close();
-        return categories;
+        return CategoryDto.transform(categories);
     }
 
     @GET
@@ -60,12 +61,12 @@ public class CategoriesResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header") })
-    public Category getCategory(@Auth @ApiParam(hidden=true) User principal, @PathParam("id") String id) {
+    public CategoryDto getCategory(@Auth @ApiParam(hidden=true) User principal, @PathParam("id") String id) {
         Category category = categoriesCollection.findOneById(id);
         if (category == null) {
             throw new NotFoundException("Request [" + id + "] was not found.");
         }
-        return category;
+        return new CategoryDto(category);
     }
 
     /**
@@ -81,8 +82,11 @@ public class CategoriesResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header") })
-    public Response createCategory(@Auth @ApiParam(hidden=true) User principal, @Valid Category category) {
-        WriteResult<Category, String> newCategory = categoriesCollection.insert(category);
+    public Response createCategory(@Auth @ApiParam(hidden=true) User principal, @Valid CategoryDto category) {
+        Category cat = new Category();
+        cat.setName(category.name);
+        cat.setExamples(category.examples);
+        WriteResult<Category, String> newCategory = categoriesCollection.insert(cat);
         URI uriOfCreatedResource = URI.create("/categories");
         return Response.created(uriOfCreatedResource).build();
     }

@@ -35,7 +35,7 @@ public class RequestDto {
 
     public Date expireDate;
 
-    public Category category;
+    public CategoryDto category;
 
     @NotNull
     public Boolean rental;
@@ -57,7 +57,7 @@ public class RequestDto {
         this.latitude = request.getLocation().getCoordinates()[1];
         this.postDate = request.getPostDate();
         this.expireDate = request.getExpireDate();
-        this.category = request.getCategory();
+        this.category = new CategoryDto(request.getCategory());
         this.rental = request.getRental();
         this.description = request.getDescription();
     }
