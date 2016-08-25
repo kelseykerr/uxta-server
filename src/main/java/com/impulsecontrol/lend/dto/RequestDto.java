@@ -59,10 +59,14 @@ public class RequestDto {
         this.latitude = request.getLocation().getCoordinates()[1];
         this.postDate = request.getPostDate();
         this.expireDate = request.getExpireDate();
-        this.category = new CategoryDto(request.getCategory());
+        if (request.getCategory() != null) {
+            this.category = new CategoryDto(request.getCategory());
+        }
         this.rental = request.getRental();
         this.description = request.getDescription();
-        this.type = request.getType().toString();
+        if (request.getType() != null) {
+            this.type = request.getType().toString();
+        }
     }
 
     public static List<RequestDto> transform(List<Request> requests) {

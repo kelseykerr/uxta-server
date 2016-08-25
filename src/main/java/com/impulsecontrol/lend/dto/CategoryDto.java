@@ -23,7 +23,7 @@ public class CategoryDto {
     }
 
     public CategoryDto(Category category) {
-        this.id = category.getId();
+        this.id = category.getId() != null ? category.getId() : null;
         this.name = category.getName();
         this.examples = category.getExamples();
     }
