@@ -42,6 +42,8 @@ public class RequestDto {
 
     public String description;
 
+    public String type;
+
     public RequestDto() {
 
     }
@@ -60,6 +62,7 @@ public class RequestDto {
         this.category = new CategoryDto(request.getCategory());
         this.rental = request.getRental();
         this.description = request.getDescription();
+        this.type = request.getType().toString();
     }
 
     public static List<RequestDto> transform(List<Request> requests) {

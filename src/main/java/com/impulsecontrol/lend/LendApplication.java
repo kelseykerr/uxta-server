@@ -62,7 +62,7 @@ public class LendApplication extends Application<LendConfiguration> {
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
         UserService userService = new UserService();
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService));
-        RequestService requestService = new RequestService();
+        RequestService requestService = new RequestService(categoryCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
