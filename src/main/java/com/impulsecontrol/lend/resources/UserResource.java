@@ -128,6 +128,17 @@ public class UserResource {
         }
         principal = userService.updateUser(principal, userDto);
         userCollection.save(principal);
+
+        // update all of the requests that the user made
+        DBObject searchByUser = new BasicDBObject("user.userId", principal.getUserId());
+        DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
+        List<Request> requests = userRequests.toArray();
+        final User updatedUser = principal;
+        requests.forEach(r -> {
+            r.setUser(updatedUser);
+            requestCollection.save(r);
+        });
+        userRequests.close();
         URI uriOfCreatedResource = URI.create("/user/" + id);
         return Response.created(uriOfCreatedResource).build();
     }
@@ -161,7 +172,7 @@ public class UserResource {
             LOGGER.error(msg);
             throw new UnauthorizedException(msg);
         }
-        DBObject searchByUser = new BasicDBObject("user", principal);
+        DBObject searchByUser = new BasicDBObject("user.userId", principal.getUserId());
         DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
         List<Request> requests = userRequests.toArray();
         userRequests.close();
