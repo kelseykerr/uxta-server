@@ -68,6 +68,35 @@
             <version>1.0.0-1</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.igniterealtime.smack/smack-core -->
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-core</artifactId>
+            <version>4.1.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-tcp</artifactId>
+            <version>4.1.8</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.json/json -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20160212</version>
+        </dependency>
+
+        <!-- TODO: is there a non-experimental way to do this? -->
+        <!-- https://mvnrepository.com/artifact/org.igniterealtime.smack/smack-experimental -->
+        <dependency>
+            <groupId>org.igniterealtime.smack</groupId>
+            <artifactId>smack-experimental</artifactId>
+            <version>4.1.8</version>
+        </dependency>
+
+
+
 
 
     </dependencies>

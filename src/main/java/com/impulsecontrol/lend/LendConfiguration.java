@@ -29,4 +29,12 @@ public class LendConfiguration extends Configuration {
 
     @JsonProperty("swagger")
     public SwaggerBundleConfiguration swaggerBundleConfiguration;
+
+    @JsonProperty
+    @NotEmpty
+    public String gcmServer;
+
+    @JsonProperty
+    @NotEmpty
+    public int gcmPort;
 }
