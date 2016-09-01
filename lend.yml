@@ -2,6 +2,10 @@ mongohost: localhost
 mongoport: 27017
 mongodb: lendtest
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
+gcmServer: gcm.googleapis.com
+gcmPort: 5236
+gcmApiKey: AIzaSyA8M02uaEuOQtEEMK4ZeFb5GcekqKHnyj0
+gcmSenderId: 491459641376
 
 server:
   rootPath: /api/*

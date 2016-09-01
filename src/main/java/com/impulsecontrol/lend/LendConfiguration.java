@@ -35,6 +35,15 @@ public class LendConfiguration extends Configuration {
     public String gcmServer;
 
     @JsonProperty
-    @NotEmpty
+    @Min(5235)
+    @Max(5236)
     public int gcmPort;
+
+    @JsonProperty
+    @NotEmpty
+    public String gcmApiKey;
+
+    @JsonProperty
+    @NotEmpty
+    public String gcmSenderId;
 }

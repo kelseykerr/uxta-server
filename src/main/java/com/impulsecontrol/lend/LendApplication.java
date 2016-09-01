@@ -3,6 +3,7 @@ package com.impulsecontrol.lend;
 import com.impulsecontrol.lend.auth.CredentialAuthFilter;
 import com.impulsecontrol.lend.auth.LendAuthenticator;
 import com.impulsecontrol.lend.auth.LendAuthorizer;
+import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
@@ -73,6 +74,11 @@ public class LendApplication extends Application<LendConfiguration> {
         environment.jersey().register(new CategoriesResource(categoryCollection));
         environment.jersey().register(RolesAllowedDynamicFeature.class);
         environment.jersey().register(new AuthValueFactoryProvider.Binder(User.class));
+
+        // cloud connection server
+        CcsServer ccsServer = new CcsServer(configuration.gcmServer, configuration.gcmPort, "not sure",
+                configuration.gcmApiKey, configuration.gcmSenderId);
+        ccsServer.connect();
 
     }
 

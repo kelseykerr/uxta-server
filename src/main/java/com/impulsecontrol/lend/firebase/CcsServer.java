@@ -27,20 +27,30 @@ import org.jivesoftware.smack.roster.Roster;
 /**
  * Created by kerrk on 8/31/16.
  */
+//cloud connection server
 public class CcsServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CcsServer.class);
 
-    //TODO: these should probs be constants
     private String gcmServer;
 
     private int gcmPort;
 
     private XMPPTCPConnection connection;
 
+    // project number from google developers console
     private String projectNumber;
 
-    private String category;
+    // package name of client app
+    private static final String CATEGORY = "com.superstartupteam.nearby";
+
+    // GCM (FCM) registration id for test phone
+    private String regId;
+
+    // API key for google cloud messaging (GCM)/ firebase cloud messaging (FCM)
+    private String apiKey;
+
+    private String senderId;
 
     /**
      * Indicates whether the connection is in draining state, which means that it
@@ -52,11 +62,12 @@ public class CcsServer {
 
     }
 
-    public CcsServer(String server, int port, String projectNum, String cat) {
+    public CcsServer(String server, int port, String projectNum, String key, String sender) {
         gcmServer = server;
         gcmPort = port;
         projectNumber = projectNum;
-        category = cat;
+        apiKey = key;
+        senderId = sender;
     }
 
     /**
@@ -158,16 +169,13 @@ public class CcsServer {
 
     /**
      * Connects to GCM Cloud Connection Server using the supplied credentials.
-     *
-     * @param senderId Your GCM project number
-     * @param apiKey   API Key of your project
      */
-    public void connect(String senderId, String apiKey)
+    public void connect()
             throws XMPPException, IOException, SmackException, InterruptedException {
 
         XMPPTCPConnectionConfiguration config =
                 XMPPTCPConnectionConfiguration.builder()
-                        //.setXmppDomain(gcmServer)
+                        .setServiceName("localhost:8080")
                         .setHost(gcmServer)
                         .setPort(gcmPort)
                         .setCompressionEnabled(false)
