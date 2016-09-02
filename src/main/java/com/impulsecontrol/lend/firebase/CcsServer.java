@@ -42,7 +42,7 @@ public class CcsServer {
     private String projectNumber;
 
     // package name of client app
-    private static final String CATEGORY = "com.superstartupteam.nearby";
+    private static final String CATEGORY = "superstartupteam.nearby";
 
     // GCM (FCM) registration id for test phone
     private String regId;
@@ -71,7 +71,7 @@ public class CcsServer {
     }
 
     /**
-     * Sends a downstream message to GCM.
+     * Sends a downstream message to FCM.
      *
      * @return true if the message has been successfully sent.
      */
