@@ -5,6 +5,7 @@ import com.impulsecontrol.lend.auth.LendAuthenticator;
 import com.impulsecontrol.lend.auth.LendAuthorizer;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.Request;
+import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.resources.CategoriesResource;
 import com.impulsecontrol.lend.resources.RequestsResource;
@@ -58,12 +59,15 @@ public class LendApplication extends Application<LendConfiguration> {
         JacksonDBCollection<Request, String> requestCollection =
                 JacksonDBCollection.wrap(db.getCollection("request"), Request.class, String.class);
 
+        JacksonDBCollection<Response, String> responseCollection =
+                JacksonDBCollection.wrap(db.getCollection("response"), Response.class, String.class);
+
         requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
         UserService userService = new UserService();
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService));
         RequestService requestService = new RequestService(categoryCollection);
-        environment.jersey().register(new RequestsResource(requestCollection, requestService));
+        environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)

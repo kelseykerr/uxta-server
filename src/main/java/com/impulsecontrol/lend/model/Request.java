@@ -34,9 +34,11 @@ public class Request implements Serializable {
 
     private String description;
 
-    private Boolean fulfilled = false;
-
     private Type type;
+
+    private Status status;
+
+    private String fulfilledByUserId;
 
     public Request() {
 
@@ -118,12 +120,12 @@ public class Request implements Serializable {
         this.description = description;
     }
 
-    public Boolean getFulfilled() {
-        return fulfilled;
+    public Status getStatus() {
+        return status;
     }
 
-    public void setFulfilled(Boolean fulfilled) {
-        this.fulfilled = fulfilled;
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public Type getType() {
@@ -134,7 +136,26 @@ public class Request implements Serializable {
         this.type = type;
     }
 
+    public String getFulfilledByUserId() {
+        return fulfilledByUserId;
+    }
+
+    public void setFulfilledByUserId(String fulfilledByUserId) {
+        this.fulfilledByUserId = fulfilledByUserId;
+    }
+
     public static enum Type {
         item, service
     }
+
+
+    /**
+     * OPEN: the request is still open, the buyer has not accepted any offers
+     * CLOSED: the request is closed either because the request expired, or the user withdrew the request
+     * FULFILLED: the user accepted an offer from someone
+     */
+    public static enum Status {
+        OPEN, CLOSED, FULFILLED
+    }
+
 }
