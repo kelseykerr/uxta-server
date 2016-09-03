@@ -69,7 +69,7 @@ public class RequestDto {
         if (request.getType() != null) {
             this.type = request.getType().toString();
         }
-        this.status = request.getStatus().toString();
+        this.status = request.getStatus() != null ? request.getStatus().toString() : null;
     }
 
     public static List<RequestDto> transform(List<Request> requests) {

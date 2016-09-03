@@ -11,6 +11,7 @@ import com.impulsecontrol.lend.resources.CategoriesResource;
 import com.impulsecontrol.lend.resources.RequestsResource;
 import com.impulsecontrol.lend.resources.UserResource;
 import com.impulsecontrol.lend.service.RequestService;
+import com.impulsecontrol.lend.service.ResponseService;
 import com.impulsecontrol.lend.service.UserService;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -67,7 +68,8 @@ public class LendApplication extends Application<LendConfiguration> {
         UserService userService = new UserService();
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService));
         RequestService requestService = new RequestService(categoryCollection);
-        environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection));
+        ResponseService responseService = new ResponseService(requestCollection, responseCollection);
+        environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)
