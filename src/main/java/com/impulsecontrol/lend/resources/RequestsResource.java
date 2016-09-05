@@ -2,15 +2,17 @@ package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.RequestDto;
+import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
+import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.service.RequestService;
+import com.impulsecontrol.lend.service.ResponseService;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -20,6 +22,8 @@ import io.swagger.annotations.ApiParam;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -32,7 +36,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Date;
 import java.util.List;
@@ -44,12 +47,21 @@ import java.util.List;
 @Api("/requests")
 public class RequestsResource {
 
-    private JacksonDBCollection<Request, String> requestCollection;
-    private RequestService service;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestsResource.class);
 
-    public RequestsResource(JacksonDBCollection<Request, String> requestCollection, RequestService requestService) {
+    private JacksonDBCollection<Request, String> requestCollection;
+    private JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection;
+    private RequestService requestService;
+    private ResponseService responseService;
+
+    public RequestsResource(JacksonDBCollection<Request, String> requestCollection,
+                            RequestService requestService,
+                            JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
+                            ResponseService responseService) {
         this.requestCollection = requestCollection;
-        this.service = requestService;
+        this.requestService = requestService;
+        this.responseCollection = responseCollection;
+        this.responseService = responseService;
     }
 
 
@@ -71,7 +83,9 @@ public class RequestsResource {
                                         @QueryParam("expired") Boolean expired,
                                         @QueryParam("includeMine") Boolean includeMine) {
         if (longitude == null || latitude == null || radius == null) {
-            throw new BadRequestException("query parameters [radius], [longitude] and [latitude] are required.");
+            String msg = "query parameters [radius], [longitude] and [latitude] are required.";
+            LOGGER.error(msg);
+            throw new BadRequestException(msg);
         }
         BasicDBObject geometry = new BasicDBObject();
         geometry.append("type", "Point");
@@ -135,11 +149,11 @@ public class RequestsResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    public Response createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
-        Request request = service.transformRequestDto(dto, principal);
+    public javax.ws.rs.core.Response createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
+        Request request = requestService.transformRequestDto(dto, principal);
         WriteResult<Request, String> newRequest = requestCollection.insert(request);
         URI uriOfCreatedResource = URI.create("/requests");
-        return Response.created(uriOfCreatedResource).build();
+        return javax.ws.rs.core.Response.created(uriOfCreatedResource).build();
     }
 
     @GET
@@ -153,7 +167,9 @@ public class RequestsResource {
     public RequestDto getRequestById(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
-            throw new NotFoundException("Request [" + id + "] was not found.");
+            String msg = "Request [" + id + "] was not found.";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
         }
         return new RequestDto(request);
     }
@@ -170,35 +186,41 @@ public class RequestsResource {
                               @Valid RequestDto dto) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
-            throw new NotFoundException("Could not find request [" + id + "]");
+            String msg = "Request [" + id + "] was not found.";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
         }
         if (!request.getUser().getUserId().equals(principal.getUserId())) {
-            throw new UnauthorizedException("You do not have access to update this request.");
+            String msg = "You do not have access to update this request.";
+            LOGGER.error(msg);
+            throw new UnauthorizedException(msg);
         }
-        service.populateRequest(request, dto);
+        requestService.populateRequest(request, dto);
         requestCollection.save(request);
     }
 
 
     @DELETE
     @Timed
-    @Path("/{id}")
+    @Path("/{requestId}")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    public Response deleteRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("id") String id) {
+    public javax.ws.rs.core.Response deleteRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
-            throw new NotFoundException("unable to find request [" + id + "]");
+            String msg = "Request [" + id + "] was not found.";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
         }
         if (!request.getUser().getUserId().equals(principal.getUserId())) {
-            throw new UnauthorizedException("You are not authorized to delete this request");
+            String msg = "You are not authorized to delete this request";
+            LOGGER.error(msg);
+            throw new UnauthorizedException(msg);
         }
         requestCollection.removeById(id);
-        return Response.noContent().build();
+        return javax.ws.rs.core.Response.noContent().build();
 
     }
-
-
 }

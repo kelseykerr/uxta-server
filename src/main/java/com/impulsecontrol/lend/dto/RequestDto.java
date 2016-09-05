@@ -44,6 +44,8 @@ public class RequestDto {
 
     public String type;
 
+    public String status;
+
     public RequestDto() {
 
     }
@@ -67,10 +69,10 @@ public class RequestDto {
         if (request.getType() != null) {
             this.type = request.getType().toString();
         }
+        this.status = request.getStatus() != null ? request.getStatus().toString() : null;
     }
 
     public static List<RequestDto> transform(List<Request> requests) {
-        List<RequestDto> dtos = new ArrayList<RequestDto>();
         return requests.stream()
                 .map(r -> new RequestDto(r)).collect(Collectors.toList());
     }
