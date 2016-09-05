@@ -29,4 +29,21 @@ public class LendConfiguration extends Configuration {
 
     @JsonProperty("swagger")
     public SwaggerBundleConfiguration swaggerBundleConfiguration;
+
+    @JsonProperty
+    @NotEmpty
+    public String fcmServer;
+
+    @JsonProperty
+    @Min(5235)
+    @Max(5236)
+    public int fcmPort;
+
+    @JsonProperty
+    @NotEmpty
+    public String fcmApiKey;
+
+    @JsonProperty
+    @NotEmpty
+    public String fcmSenderId;
 }

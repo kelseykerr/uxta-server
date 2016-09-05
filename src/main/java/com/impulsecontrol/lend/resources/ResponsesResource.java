@@ -52,7 +52,6 @@ public class ResponsesResource {
 
     @GET
     @Timed
-    @Path("/{requestId}/responses")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
@@ -92,7 +91,6 @@ public class ResponsesResource {
 
     @POST
     @Timed
-    @Path("/{requestId}/responses")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
@@ -107,14 +105,14 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotFoundException(msg);
         }
-        responseService.transformResponseDto(dto, request, principal.getId());
+        responseService.transformResponseDto(dto, request, principal);
         URI uriOfCreatedResource = URI.create("/requests/" + id + "/responses");
         return javax.ws.rs.core.Response.created(uriOfCreatedResource).build();
     }
 
     @GET
     @Timed
-    @Path("/{requestId}/responses/{responseId}")
+    @Path("/{responseId}")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
@@ -147,7 +145,7 @@ public class ResponsesResource {
 
     @PUT
     @Timed
-    @Path("/{requestId}/responses/{responseId}")
+    @Path("/{responseId}")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",

@@ -27,6 +27,8 @@ public class User implements Serializable, Principal {
     @NotNull
     private String userId; //this is the facebook user id
 
+    private String fcmRegistrationId;
+
     private String name;
 
 
@@ -156,5 +158,13 @@ public class User implements Serializable, Principal {
 
     public void setZip(String zip) {
         this.zip = zip;
+    }
+
+    public String getFcmRegistrationId() {
+        return fcmRegistrationId;
+    }
+
+    public void setFcmRegistrationId(String fcmRegistrationId) {
+        this.fcmRegistrationId = fcmRegistrationId;
     }
 }

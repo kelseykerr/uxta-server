@@ -30,6 +30,7 @@ public class RequestService {
         request.setUser(user);
         request.setPostDate(dto.postDate != null ? dto.postDate : new Date());
         populateRequest(request, dto);
+        request.setStatus(Request.Status.OPEN);
         return request;
     }
 
