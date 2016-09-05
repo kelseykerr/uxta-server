@@ -65,12 +65,17 @@ public class LendApplication extends Application<LendConfiguration> {
         JacksonDBCollection<Response, String> responseCollection =
                 JacksonDBCollection.wrap(db.getCollection("response"), Response.class, String.class);
 
+        // cloud connection server
+        CcsServer ccsServer = new CcsServer(configuration.fcmServer, configuration.fcmPort, "not sure",
+                configuration.fcmApiKey, configuration.fcmSenderId);
+        ccsServer.connect();
+
         requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
         UserService userService = new UserService();
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService));
         RequestService requestService = new RequestService(categoryCollection);
-        ResponseService responseService = new ResponseService(requestCollection, responseCollection);
+        ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection, ccsServer);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
@@ -82,12 +87,6 @@ public class LendApplication extends Application<LendConfiguration> {
         environment.jersey().register(new CategoriesResource(categoryCollection));
         environment.jersey().register(RolesAllowedDynamicFeature.class);
         environment.jersey().register(new AuthValueFactoryProvider.Binder(User.class));
-
-        // cloud connection server
-        CcsServer ccsServer = new CcsServer(configuration.gcmServer, configuration.gcmPort, "not sure",
-                configuration.gcmApiKey, configuration.gcmSenderId);
-        ccsServer.connect();
-
     }
 
 }

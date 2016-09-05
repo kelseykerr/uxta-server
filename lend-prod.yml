@@ -2,10 +2,10 @@ mongohost: 10.0.1.143
 mongoport: 27017
 mongodb: nearby
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
-gcmServer: gcm.googleapis.com
-gcmPort: 5235
-gcmApiKey: AIzaSyA8M02uaEuOQtEEMK4ZeFb5GcekqKHnyj0
-gcmSenderId: 491459641376
+fcmServer: gcm.googleapis.com
+fcmPort: 5235
+fcmApiKey: AIzaSyA8M02uaEuOQtEEMK4ZeFb5GcekqKHnyj0
+fcmSenderId: 491459641376
 
 server:
   rootPath: /api/*

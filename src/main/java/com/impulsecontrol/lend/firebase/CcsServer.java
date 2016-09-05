@@ -26,15 +26,15 @@ import org.jivesoftware.smack.roster.Roster;
 
 /**
  * Created by kerrk on 8/31/16.
+ * CCS = cloud connection server
  */
-//cloud connection server
 public class CcsServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CcsServer.class);
 
-    private String gcmServer;
+    private String fcmServer;
 
-    private int gcmPort;
+    private int fcmPort;
 
     private XMPPTCPConnection connection;
 
@@ -63,8 +63,8 @@ public class CcsServer {
     }
 
     public CcsServer(String server, int port, String projectNum, String key, String sender) {
-        gcmServer = server;
-        gcmPort = port;
+        fcmServer = server;
+        fcmPort = port;
         projectNumber = projectNum;
         apiKey = key;
         senderId = sender;
@@ -168,7 +168,7 @@ public class CcsServer {
     }
 
     /**
-     * Connects to GCM Cloud Connection Server using the supplied credentials.
+     * Connects to FCM Cloud Connection Server using the supplied credentials.
      */
     public void connect()
             throws XMPPException, IOException, SmackException, InterruptedException {
@@ -176,8 +176,8 @@ public class CcsServer {
         XMPPTCPConnectionConfiguration config =
                 XMPPTCPConnectionConfiguration.builder()
                         .setServiceName("localhost:8080")
-                        .setHost(gcmServer)
-                        .setPort(gcmPort)
+                        .setHost(fcmServer)
+                        .setPort(fcmPort)
                         .setCompressionEnabled(false)
                         .setConnectTimeout(30000)
                         .setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible)
@@ -310,7 +310,7 @@ public class CcsServer {
     };
 
     /**
-     * Creates a JSON encoded GCM message.
+     * Creates a JSON encoded FCM message.
      *
      * @param to             RegistrationId of the target device (Required).
      * @param messageId      Unique messageId for which CCS sends an

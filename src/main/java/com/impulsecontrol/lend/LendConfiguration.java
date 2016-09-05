@@ -32,18 +32,18 @@ public class LendConfiguration extends Configuration {
 
     @JsonProperty
     @NotEmpty
-    public String gcmServer;
+    public String fcmServer;
 
     @JsonProperty
     @Min(5235)
     @Max(5236)
-    public int gcmPort;
+    public int fcmPort;
 
     @JsonProperty
     @NotEmpty
-    public String gcmApiKey;
+    public String fcmApiKey;
 
     @JsonProperty
     @NotEmpty
-    public String gcmSenderId;
+    public String fcmSenderId;
 }
