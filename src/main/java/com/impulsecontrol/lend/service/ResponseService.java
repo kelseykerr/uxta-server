@@ -102,35 +102,48 @@ public class ResponseService {
         }
         populateResponse(response, dto);
         if (request.getUser().getId().equals(userId)) {
-            if (response.getBuyerStatus().toString().toLowerCase() != dto.buyerStatus.toLowerCase()) {
-                String buyerStatus = dto.buyerStatus.toLowerCase();
-                if (buyerStatus == Response.BuyerStatus.ACCEPTED.toString().toLowerCase()) {
-                    response.setBuyerStatus(Response.BuyerStatus.ACCEPTED);
-                    //TODO: send notification to seller
-                } else if (buyerStatus == Response.BuyerStatus.DECLINED.toString().toLowerCase()) {
-                    response.setBuyerStatus(Response.BuyerStatus.DECLINED);
-                    response.setResponseStatus(Response.Status.CLOSED);
-                    //TODO: send notification to seller
-                }
-            }
+            updateBuyerStatus(response, dto);
         } else {
-            if (response.getSellerStatus().toString().toLowerCase() != dto.sellerStatus.toLowerCase()) {
-                String sellerStatus = dto.sellerStatus.toLowerCase();
-                if (sellerStatus == Response.SellerStatus.ACCEPTED.toString().toLowerCase()) {
-                    response.setSellerStatus(Response.SellerStatus.ACCEPTED);
-                    response.setResponseStatus(Response.Status.ACCEPTED);
-                    request.setStatus(Request.Status.FULFILLED);
-                    BasicDBObject query = new BasicDBObject();
-                    query.append("requestId", request.getId());
-                    DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
-                    List<Response> responses = requestResponses.toArray();
-                    requestResponses.close();
-                    /**
-                     * TODO: for each response that is not the current one, set the buyer status to closed,
-                     * the response status to closed, and send notifications to the sellers
-                     */
-                }
+            updateSellerStatus(response, dto, request);
+        }
+    }
+
+    private void updateBuyerStatus(Response response, ResponseDto dto) {
+        if (response.getBuyerStatus().toString().toLowerCase() != dto.buyerStatus.toLowerCase()) {
+            String buyerStatus = dto.buyerStatus.toLowerCase();
+            if (buyerStatus == Response.BuyerStatus.ACCEPTED.toString().toLowerCase()) {
+                response.setBuyerStatus(Response.BuyerStatus.ACCEPTED);
+                //TODO: send notification to seller
+            } else if (buyerStatus == Response.BuyerStatus.DECLINED.toString().toLowerCase()) {
+                response.setBuyerStatus(Response.BuyerStatus.DECLINED);
+                response.setResponseStatus(Response.Status.CLOSED);
+                //TODO: send notification to seller
             }
         }
+    }
+
+    private void updateSellerStatus(Response response, ResponseDto dto, Request request) {
+        if (response.getSellerStatus().toString().toLowerCase() != dto.sellerStatus.toLowerCase()) {
+            String sellerStatus = dto.sellerStatus.toLowerCase();
+            if (sellerStatus == Response.SellerStatus.ACCEPTED.toString().toLowerCase()) {
+                response.setSellerStatus(Response.SellerStatus.ACCEPTED);
+                response.setResponseStatus(Response.Status.ACCEPTED);
+                request.setStatus(Request.Status.FULFILLED);
+                BasicDBObject query = new BasicDBObject();
+                query.append("requestId", request.getId());
+                DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
+                List<Response> responses = requestResponses.toArray();
+                requestResponses.close();
+                responses.forEach(r -> {
+                    if (r.getId() != response.getId()) {
+                        r.setBuyerStatus(Response.BuyerStatus.CLOSED);
+                        r.setResponseStatus(Response.Status.CLOSED);
+                        responseCollection.save(r);
+                        //TODO: send notification to sellers that the request is closed
+                    }
+                });
+            }
+        }
+
     }
 }

@@ -187,7 +187,7 @@ public class Response implements Serializable {
 
     /**
      * OPEN: the request is still open, the buyer has not accepted any offers
-     * CLOSED: the request is closed either because the user accepted an offer from someone else, or withdrew the reqeust
+     * CLOSED: the request is closed either because the user accepted an offer from someone else, or withdrew the request
      * ACCEPTED: the user accepted the offer from this seller
      * DECLINED: the user declined the offer from this seller
      */
