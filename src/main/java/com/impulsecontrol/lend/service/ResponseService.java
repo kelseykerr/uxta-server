@@ -2,6 +2,7 @@ package com.impulsecontrol.lend.service;
 
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
+import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.Message;
@@ -65,34 +66,48 @@ public class ResponseService {
         response.setRequestId(request.getId());
         response.setSellerId(seller.getId());
         populateResponse(response, dto);
-        if (dto.messages != null && dto.messages.size() > 0 && dto.messages.get(0).getContent() != null) {
+        if (hasMessage(dto)) {
             Message message = new Message();
             message.setTimeSent(new Date());
             message.setSenderId(seller.getId());
             message.setContent(dto.messages.get(0).getContent());
             response.addMessage(message);
-            // send message
-            User recipient = userCollection.findOneById(request.getUser().getId());
-            sendFcmMessage(recipient, seller, dto.messages.get(0).getContent());
-
         }
         responseCollection.insert(response);
+        String title = "New Offer";
+        String body = seller.getFirstName() + " offered their " + request.getItemName() + " for $" + dto.offerPrice;
+        if (dto.priceType.toLowerCase() != Response.PriceType.FLAT.toString().toLowerCase()) {
+            body += (dto.priceType.toLowerCase().equals(Response.PriceType.PER_DAY.toString().toLowerCase())) ?
+                    " per day" : " per hour";
+        }
+        JSONObject notification = new JSONObject();
+        notification.put("title", title);
+        notification.put("body", body);
+                // send message
+        User recipient = userCollection.findOneById(request.getUser().getId());
+        sendFcmMessage(recipient, dto, notification);
         return response;
     }
 
-    private void sendFcmMessage(User recipient, User sender, String message) {
+    private boolean hasMessage(ResponseDto dto) {
+        return dto.messages != null && dto.messages.size() > 0 && dto.messages.get(0).getContent() != null;
+    }
+
+    private void sendFcmMessage(User recipient, ResponseDto dto, JSONObject notification) {
         if (recipient.getFcmRegistrationId() == null) {
-            String msg = "could not send message to [" + recipient.getFirstName() + "] " +
+            String msg = "could not send notification/message to [" + recipient.getFirstName() + "] " +
                     "because they have not allowed message.";
             LOGGER.error(msg);
-            //TODO: make this general internal server exception
-            throw new BadRequestException(msg);
+            throw new InternalServerException(msg);
         }
         String messageId = CcsServer.nextMessageId();
         JSONObject payload = new JSONObject();
-        payload.put("message", message);
+        if (hasMessage(dto)) {
+            payload.put("message", dto.messages.get(0).getContent());
+        }
+
         String jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, payload,
-                null, null, null);
+                notification, null, null, null);
         try {
             Boolean sent = ccsServer.sendDownstreamMessage(jsonMessage);
             if (sent) {
@@ -103,8 +118,7 @@ public class ResponseService {
         } catch (Exception e) {
             String msg = "could not send message, got error: " + e.getMessage();
             LOGGER.error(msg);
-            //TODO: make this general internal server exception
-            throw new BadRequestException(msg);
+            throw new InternalServerException(msg);
         }
     }
 

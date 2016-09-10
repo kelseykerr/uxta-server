@@ -25,7 +25,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.List;
 
@@ -52,6 +54,7 @@ public class ResponsesResource {
 
     @GET
     @Timed
+    @Produces(MediaType.APPLICATION_JSON)
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
@@ -91,6 +94,7 @@ public class ResponsesResource {
 
     @POST
     @Timed
+    @Produces(MediaType.APPLICATION_JSON)
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
@@ -112,6 +116,7 @@ public class ResponsesResource {
 
     @GET
     @Timed
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{responseId}")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
@@ -145,6 +150,7 @@ public class ResponsesResource {
 
     @PUT
     @Timed
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{responseId}")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",

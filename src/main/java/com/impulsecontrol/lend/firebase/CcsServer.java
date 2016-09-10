@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.firebase;
 
+import com.mongodb.util.JSON;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.ReconnectionManager;
@@ -119,7 +120,7 @@ public class CcsServer {
         payload.put("ECHO", "Application: " + category);
 
         // Send an ECHO response back
-        String echo = createJsonMessage(from, nextMessageId(), payload,
+        String echo = createJsonMessage(from, nextMessageId(), payload, null,
                 "echo:CollapseKey", null, false);
 
         try {
@@ -316,14 +317,15 @@ public class CcsServer {
      * @param messageId      Unique messageId for which CCS sends an
      *                       "ack/nack" (Required).
      * @param payload        Message content intended for the application. (Optional).
+     * @param notification   Push notification. (Optional).
      * @param collapseKey    GCM collapse_key parameter (Optional).
      * @param timeToLive     GCM time_to_live parameter (Optional).
      * @param delayWhileIdle GCM delay_while_idle parameter (Optional).
      * @return JSON encoded GCM message.
      */
     public static String createJsonMessage(String to, String messageId,
-                                           JSONObject payload, String collapseKey, Long timeToLive,
-                                           Boolean delayWhileIdle) {
+                                           JSONObject payload, JSONObject notification, String collapseKey,
+                                           Long timeToLive, Boolean delayWhileIdle) {
 
         JSONObject message = new JSONObject();
 
@@ -339,6 +341,9 @@ public class CcsServer {
         }
         message.put("message_id", messageId);
         message.put("data", payload);
+        if (notification != null) {
+            message.put("notification", notification);
+        }
 
         return message.toString();
     }

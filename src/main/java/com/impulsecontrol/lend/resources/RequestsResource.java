@@ -144,6 +144,7 @@ public class RequestsResource {
 
     @POST
     @Consumes(value = MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     @Timed
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
@@ -178,6 +179,7 @@ public class RequestsResource {
     @Consumes(value = MediaType.APPLICATION_JSON)
     @Path("/{requestId}")
     @Timed
+    @Produces(MediaType.APPLICATION_JSON)
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
@@ -203,6 +205,7 @@ public class RequestsResource {
     @DELETE
     @Timed
     @Path("/{requestId}")
+    @Produces(MediaType.APPLICATION_JSON)
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
