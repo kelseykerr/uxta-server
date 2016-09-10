@@ -1,11 +1,9 @@
 package com.impulsecontrol.lend.dto;
 
 import com.impulsecontrol.lend.model.Message;
-import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -84,9 +82,9 @@ public class ResponseDto {
         this.priceType = r.getPriceType().toString();
         this.exchangeTime = r.getExchangeTime();
         this.returnTime = r.getReturnTime();
-        this.buyerStatus = r.getBuyerStatus().toString();
-        this.sellerStatus = r.getSellerStatus().toString();
-        this.responseStatus = r.getResponseStatus().toString();
+        this.buyerStatus = r.getBuyerStatus() != null ? r.getBuyerStatus().toString() : null;
+        this.sellerStatus = r.getSellerStatus() != null ? r.getSellerStatus().toString() : null;
+        this.responseStatus = r.getResponseStatus() != null ? r.getResponseStatus().toString() : null;
         this.messages = r.getMessages();
     }
 

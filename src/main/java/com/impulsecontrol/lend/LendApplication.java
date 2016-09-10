@@ -73,9 +73,9 @@ public class LendApplication extends Application<LendConfiguration> {
         requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
         UserService userService = new UserService();
-        environment.jersey().register(new UserResource(userCollection, requestCollection, userService));
-        RequestService requestService = new RequestService(categoryCollection);
         ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection, ccsServer);
+        environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
+        RequestService requestService = new RequestService(categoryCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);

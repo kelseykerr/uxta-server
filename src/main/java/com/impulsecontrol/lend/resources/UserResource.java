@@ -1,11 +1,13 @@
 package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.impulsecontrol.lend.dto.HistoryDto;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
+import com.impulsecontrol.lend.service.ResponseService;
 import com.impulsecontrol.lend.service.UserService;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -42,13 +44,16 @@ public class UserResource {
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<Request, String> requestCollection;
     private UserService userService;
+    private ResponseService responseService;
 
 
     public UserResource(JacksonDBCollection<User, String> userCollection,
-                        JacksonDBCollection<Request, String> requestCollection, UserService userService) {
+                        JacksonDBCollection<Request, String> requestCollection, UserService userService,
+                        ResponseService responseService) {
         this.userCollection = userCollection;
         this.requestCollection = requestCollection;
         this.userService = userService;
+        this.responseService = responseService;
     }
 
     @GET
@@ -177,6 +182,33 @@ public class UserResource {
         List<Request> requests = userRequests.toArray();
         userRequests.close();
         return RequestDto.transform(requests);
+    }
+
+    @GET
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Path("/{id}/history")
+    @Timed
+    @ApiOperation(
+            value = "get a user's requests & responses to requests",
+            notes = "this will return the request object along with the responses. If the user made the request, all " +
+                    "the responses will be returned to them. If the user made an offer, the original request with only " +
+                    "their response will be returned. The client should display only their response object on the history screen."
+    )
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header")
+    })
+    public List<HistoryDto> getUserHistory(@Auth @ApiParam(hidden=true) User principal, @PathParam("id")
+    @ApiParam( value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
+    String id) {
+        if (!principal.getUserId().equals(id) && !id.equals("me")) {
+            String msg = "User [" + principal.getUserId() +
+                    "] is not authorized to get user [" + id + "]'s history.";
+            LOGGER.error(msg);
+            throw new UnauthorizedException(msg);
+        }
+        return responseService.getHistory(principal);
     }
 
     @PUT

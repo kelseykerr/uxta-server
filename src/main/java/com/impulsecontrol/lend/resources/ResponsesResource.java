@@ -35,7 +35,7 @@ import java.util.List;
  * Created by kerrk on 9/5/16.
  */
 @Path("/requests/{requestId}/responses")
-@Api("/requests/{requestId}/responses")
+@Api("/responses")
 public class ResponsesResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestsResource.class);
@@ -79,7 +79,7 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new UnauthorizedException(msg);
         }
-        seller = seller.equals("me") ? principal.getId() : seller;
+        seller = seller != null && seller.equals("me") ? principal.getId() : seller;
         BasicDBObject query = new BasicDBObject();
         query.append("requestId", id);
         if (seller != null) {

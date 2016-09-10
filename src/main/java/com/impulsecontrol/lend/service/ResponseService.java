@@ -1,15 +1,20 @@
 package com.impulsecontrol.lend.service;
 
+import com.impulsecontrol.lend.dto.HistoryDto;
+import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.InternalServerException;
+import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
+import com.impulsecontrol.lend.model.HistoryComparator;
 import com.impulsecontrol.lend.model.Message;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
@@ -17,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.IllegalArgumentException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -200,5 +207,48 @@ public class ResponseService {
             }
         }
 
+    }
+
+    public List<HistoryDto> getHistory(User user) {
+        DBObject searchByUser = new BasicDBObject("user.id", user.getId());
+        DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
+        List<Request> requests = userRequests.toArray();
+        userRequests.close();
+        List<HistoryDto> historyDtos = new ArrayList<>();
+        requests.forEach(r -> {
+            BasicDBObject query = new BasicDBObject("requestId", r.getId());
+            DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
+            List<Response> responses = requestResponses.toArray();
+            requestResponses.close();
+            HistoryDto dto = new HistoryDto();
+            dto.request = new RequestDto(r);
+            dto.responses = ResponseDto.transform(responses);
+            historyDtos.add(dto);
+        });
+        List<HistoryDto> userOffers = getOffers(user.getId());
+        historyDtos.addAll(userOffers);
+        Collections.sort(historyDtos, new HistoryComparator(user.getId()));
+        return historyDtos;
+    }
+
+    public List<HistoryDto> getOffers(String userId) {
+        BasicDBObject query = new BasicDBObject("sellerId", userId);
+        DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
+        List<Response> responses = requestResponses.toArray();
+        requestResponses.close();
+        List<HistoryDto> historyDtos = new ArrayList<>();
+        // for each offer, get the corresponding request
+        responses.forEach(r -> {
+            Request request = requestCollection.findOneById(r.getRequestId());
+            if (request == null) {
+                //TODO: log an error here, but probably don't need to throw an exception...this really shouldn't happen
+            } else {
+                HistoryDto dto = new HistoryDto();
+                dto.request = new RequestDto(request);
+                dto.responses = Collections.singletonList(new ResponseDto(r));
+                historyDtos.add(dto);
+            }
+        });
+        return historyDtos;
     }
 }
