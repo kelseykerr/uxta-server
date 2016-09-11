@@ -210,7 +210,7 @@ public class ResponseService {
     }
 
     public List<HistoryDto> getHistory(User user) {
-        DBObject searchByUser = new BasicDBObject("user.id", user.getId());
+        DBObject searchByUser = new BasicDBObject("user._id", user.getId());
         DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
         List<Request> requests = userRequests.toArray();
         userRequests.close();
