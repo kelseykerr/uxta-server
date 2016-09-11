@@ -5,7 +5,6 @@ import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.InternalServerException;
-import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.HistoryComparator;
@@ -15,6 +14,7 @@ import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
@@ -210,7 +210,7 @@ public class ResponseService {
     }
 
     public List<HistoryDto> getHistory(User user) {
-        DBObject searchByUser = new BasicDBObject("user._id", user.getId());
+        DBObject searchByUser = new BasicDBObject("user._id", new ObjectId(user.getId()));
         DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
         List<Request> requests = userRequests.toArray();
         userRequests.close();
