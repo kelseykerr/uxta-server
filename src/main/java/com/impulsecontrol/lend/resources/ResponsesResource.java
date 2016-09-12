@@ -13,6 +13,7 @@ import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -55,6 +57,7 @@ public class ResponsesResource {
     @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
@@ -95,11 +98,12 @@ public class ResponsesResource {
     @POST
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    public javax.ws.rs.core.Response addResponse(@Auth @ApiParam(hidden = true) User principal,
+    public ResponseDto addResponse(@Auth @ApiParam(hidden = true) User principal,
                                                  @PathParam("requestId") String id,
                                                  @Valid ResponseDto dto) {
         Request request = requestCollection.findOneById(id);
@@ -109,9 +113,8 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotFoundException(msg);
         }
-        responseService.transformResponseDto(dto, request, principal);
-        URI uriOfCreatedResource = URI.create("/requests/" + id + "/responses");
-        return javax.ws.rs.core.Response.created(uriOfCreatedResource).build();
+        Response response = responseService.transformResponseDto(dto, request, principal);
+        return new ResponseDto(response);
     }
 
     @GET
@@ -151,12 +154,17 @@ public class ResponsesResource {
     @PUT
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
     @Path("/{responseId}")
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    public void updateResponse(@Auth @ApiParam(hidden = true) User principal,
+    @ApiOperation(
+            value = "Update a response - in progress!!",
+            notes = "this method has not been fully implemented!!"
+    )
+    public ResponseDto updateResponse(@Auth @ApiParam(hidden = true) User principal,
                                @PathParam("requestId") String requestId,
                                @PathParam("responseId") String responseId,
                                @Valid ResponseDto dto) {
@@ -177,5 +185,7 @@ public class ResponsesResource {
                     response.getId() + "].");
             throw new UnauthorizedException("you do not have access to this response");
         }
+        //TODO: finish this!
+        return null;
     }
 }

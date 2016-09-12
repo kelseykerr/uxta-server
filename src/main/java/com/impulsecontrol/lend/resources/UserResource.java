@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -92,8 +93,10 @@ public class UserResource {
                     dataType = "string",
                     paramType = "header")
     })
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
     @Timed
-    public Response createUser(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto) {
+    public UserDto createUser(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto) {
         if (userDto.userId != null && !userDto.userId.equals(principal.getUserId())) {
             String msg = "userId did not match the userId of the currently authenticated user";
             LOGGER.error(msg);
@@ -105,8 +108,7 @@ public class UserResource {
         }
         principal = userService.updateUser(principal, userDto);
         userCollection.save(principal);
-        URI uriOfCreatedResource = URI.create("/user");
-        return Response.created(uriOfCreatedResource).build();
+        return new UserDto(principal);
     }
 
     @PUT
@@ -122,8 +124,10 @@ public class UserResource {
                     dataType = "string",
                     paramType = "header")
     })
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
     @Timed
-    public Response updateUser(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto,
+    public UserDto updateUser(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto,
                                @PathParam("id") @ApiParam(value = "id of the user to update, which must the" +
                                        " currently authenticated user's id or \"me\"") String id) {
         if (!id.equals("me") && !userDto.id.equals(principal.getId())) {
@@ -144,8 +148,7 @@ public class UserResource {
             requestCollection.save(r);
         });
         userRequests.close();
-        URI uriOfCreatedResource = URI.create("/user/" + id);
-        return Response.created(uriOfCreatedResource).build();
+        return new UserDto(updatedUser);
     }
 
     /*@DELETE

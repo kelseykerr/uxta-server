@@ -77,18 +77,19 @@ public class CategoriesResource {
      */
     @POST
     @Consumes(value = MediaType.APPLICATION_JSON)
+    @Produces(value = MediaType.APPLICATION_JSON)
     @Timed
     @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header") })
-    public Response createCategory(@Auth @ApiParam(hidden=true) User principal, @Valid CategoryDto category) {
+    public CategoryDto createCategory(@Auth @ApiParam(hidden=true) User principal, @Valid CategoryDto category) {
         Category cat = new Category();
         cat.setName(category.name);
         cat.setExamples(category.examples);
         WriteResult<Category, String> newCategory = categoriesCollection.insert(cat);
-        URI uriOfCreatedResource = URI.create("/categories");
-        return Response.created(uriOfCreatedResource).build();
+        cat = newCategory.getSavedObject();
+        return new CategoryDto(cat);
     }
 
 

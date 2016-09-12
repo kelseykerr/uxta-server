@@ -150,11 +150,11 @@ public class RequestsResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    public javax.ws.rs.core.Response createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
+    public RequestDto createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
         Request request = requestService.transformRequestDto(dto, principal);
         WriteResult<Request, String> newRequest = requestCollection.insert(request);
-        URI uriOfCreatedResource = URI.create("/requests");
-        return javax.ws.rs.core.Response.created(uriOfCreatedResource).build();
+        request = newRequest.getSavedObject();
+        return new RequestDto(request);
     }
 
     @GET
@@ -184,7 +184,7 @@ public class RequestsResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    public void updateRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id,
+    public RequestDto updateRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id,
                               @Valid RequestDto dto) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
@@ -199,6 +199,7 @@ public class RequestsResource {
         }
         requestService.populateRequest(request, dto);
         requestCollection.save(request);
+        return new RequestDto(request);
     }
 
 
