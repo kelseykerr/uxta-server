@@ -2,6 +2,7 @@ package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.ResponseDto;
+import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
@@ -30,7 +31,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import java.net.URI;
 import java.util.List;
 
 /**
@@ -44,14 +44,16 @@ public class ResponsesResource {
 
     private JacksonDBCollection<Request, String> requestCollection;
     private JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection;
+    private JacksonDBCollection<User, String> userCollection;
     private ResponseService responseService;
 
     public ResponsesResource(JacksonDBCollection<Request, String> requestCollection,
                             JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
-                            ResponseService responseService) {
+                            ResponseService responseService, JacksonDBCollection<User, String> userCollection) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.responseService = responseService;
+        this.userCollection = userCollection;
     }
 
     @GET
@@ -92,7 +94,17 @@ public class ResponsesResource {
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
         List<Response> responses = requestResponses.toArray();
         requestResponses.close();
-        return ResponseDto.transform(responses);
+        List<ResponseDto> responsesDto = ResponseDto.transform(responses);
+        responsesDto.forEach(r -> {
+            User u = userCollection.findOneById(r.sellerId);
+            UserDto userDto = new UserDto();
+            userDto.userId = u.getId();
+            userDto.lastName = u.getLastName();
+            userDto.firstName = u.getFirstName();
+            userDto.fullName = u.getName();
+            r.seller = userDto;
+        });
+        return responsesDto;
     }
 
     @POST
@@ -148,7 +160,15 @@ public class ResponsesResource {
                 throw new UnauthorizedException("you do not have access to this response");
             }
         }
-        return new ResponseDto(response);
+        ResponseDto responseDto = new ResponseDto(response);
+        User seller = userCollection.findOneById(response.getSellerId());
+        UserDto userDto = new UserDto();
+        userDto.userId = seller.getId();
+        userDto.lastName = seller.getLastName();
+        userDto.firstName = seller.getFirstName();
+        userDto.fullName = seller.getName();
+        responseDto.seller = userDto;
+        return responseDto;
     }
 
     @PUT

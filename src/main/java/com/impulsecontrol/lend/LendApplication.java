@@ -77,7 +77,7 @@ public class LendApplication extends Application<LendConfiguration> {
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
         RequestService requestService = new RequestService(categoryCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
-        environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService));
+        environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)

@@ -3,6 +3,7 @@ package com.impulsecontrol.lend.service;
 import com.impulsecontrol.lend.dto.HistoryDto;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
+import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
@@ -222,7 +223,17 @@ public class ResponseService {
             requestResponses.close();
             HistoryDto dto = new HistoryDto();
             dto.request = new RequestDto(r);
-            dto.responses = ResponseDto.transform(responses);
+            List<ResponseDto> dtos = ResponseDto.transform(responses);
+            dtos.forEach(d -> {
+                User seller = userCollection.findOneById(d.sellerId);
+                UserDto userDto = new UserDto();
+                userDto.userId = seller.getId();
+                userDto.lastName = seller.getLastName();
+                userDto.firstName = seller.getFirstName();
+                userDto.fullName = seller.getName();
+                d.seller = userDto;
+            });
+            dto.responses = dtos;
             historyDtos.add(dto);
         });
         List<HistoryDto> userOffers = getOffers(user.getId());
