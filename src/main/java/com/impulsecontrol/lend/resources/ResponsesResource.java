@@ -205,7 +205,7 @@ public class ResponsesResource {
                     response.getId() + "].");
             throw new UnauthorizedException("you do not have access to this response");
         }
-        //TODO: finish this!
-        return null;
+        responseService.updateResponse(dto, response, request, principal.getUserId());
+        return new ResponseDto(response);
     }
 }

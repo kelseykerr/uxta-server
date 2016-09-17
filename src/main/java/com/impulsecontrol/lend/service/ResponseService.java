@@ -91,7 +91,6 @@ public class ResponseService {
         JSONObject notification = new JSONObject();
         notification.put("title", title);
         notification.put("body", body);
-                // send message
         User recipient = userCollection.findOneById(request.getUser().getId());
         sendFcmMessage(recipient, dto, notification);
         return response;
@@ -110,6 +109,8 @@ public class ResponseService {
         }
         String messageId = CcsServer.nextMessageId();
         JSONObject payload = new JSONObject();
+
+        //TODO: rethink this, should we send messages separately?
         if (hasMessage(dto)) {
             payload.put("message", dto.messages.get(0).getContent());
         }
@@ -130,7 +131,8 @@ public class ResponseService {
         }
     }
 
-    public void populateResponse(Response response, ResponseDto dto) {
+    public boolean populateResponse(Response response, ResponseDto dto) {
+        boolean changed = getResponseUpdated(response, dto);
         response.setOfferPrice(dto.offerPrice);
         response.setExchangeLocation(dto.exchangeLocation);
         response.setExchangeTime(dto.exchangeTime);
@@ -144,9 +146,17 @@ public class ResponseService {
             LOGGER.error(msg);
             throw new com.impulsecontrol.lend.exception.IllegalArgumentException(msg);
         }
+        return changed;
     }
 
-    public void updateResponse(ResponseDto dto, Response response, Request request, String userId) {
+    private boolean getResponseUpdated(Response response, ResponseDto dto) {
+        return response.getOfferPrice() != dto.offerPrice || response.getExchangeLocation() != dto.exchangeLocation
+                || response.getExchangeTime() != dto.exchangeTime || response.getReturnLocation() != dto.returnLocation ||
+                response.getReturnTime() != dto.returnTime || response.getPriceType().toString().toLowerCase() != dto.priceType.toLowerCase() ||
+                response.getOfferPrice() != dto.offerPrice;
+    }
+
+    public Response updateResponse(ResponseDto dto, Response response, Request request, String userId) {
         if (!(request.getStatus() == Request.Status.OPEN) &&
                 !(request.getStatus() == Request.Status.FULFILLED && request.getFulfilledByUserId().equals(userId))) {
             String msg = "unable to update this response because the request is not longer open";
@@ -163,24 +173,38 @@ public class ResponseService {
             LOGGER.info(msg);
             throw new BadRequestException(msg);
         }
-        populateResponse(response, dto);
+        boolean updated = populateResponse(response, dto);
         if (request.getUser().getId().equals(userId)) {
-            updateBuyerStatus(response, dto);
+            if (updated) {
+                response.setSellerStatus(Response.SellerStatus.OFFERED);
+            }
+            updateBuyerStatus(response, dto, request);
         } else {
+            if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED)) {
+                response.setBuyerStatus(Response.BuyerStatus.OPEN);
+            }
             updateSellerStatus(response, dto, request);
         }
+        return response;
     }
 
-    private void updateBuyerStatus(Response response, ResponseDto dto) {
+    private void updateBuyerStatus(Response response, ResponseDto dto, Request request) {
         if (response.getBuyerStatus().toString().toLowerCase() != dto.buyerStatus.toLowerCase()) {
             String buyerStatus = dto.buyerStatus.toLowerCase();
             if (buyerStatus == Response.BuyerStatus.ACCEPTED.toString().toLowerCase()) {
                 response.setBuyerStatus(Response.BuyerStatus.ACCEPTED);
-                //TODO: send notification to seller
-            } else if (buyerStatus == Response.BuyerStatus.DECLINED.toString().toLowerCase()) {
+                //if both users have accepted, send notifications and close other responses
+                if (response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED)) {
+                    acceptResponse(response, request);
+                } else { //send update to seller that the offer has been updated
+                    sendUpdateToSeller(request, response);
+                }
+            } else if (buyerStatus.equals(Response.BuyerStatus.DECLINED.toString().toLowerCase())) {
                 response.setBuyerStatus(Response.BuyerStatus.DECLINED);
                 response.setResponseStatus(Response.Status.CLOSED);
-                //TODO: send notification to seller
+                //TODO: should we send a notification here??
+            } else {
+                //THIS SHOULD NOT HAPPEN
             }
         }
     }
@@ -190,24 +214,89 @@ public class ResponseService {
             String sellerStatus = dto.sellerStatus.toLowerCase();
             if (sellerStatus == Response.SellerStatus.ACCEPTED.toString().toLowerCase()) {
                 response.setSellerStatus(Response.SellerStatus.ACCEPTED);
-                response.setResponseStatus(Response.Status.ACCEPTED);
-                request.setStatus(Request.Status.FULFILLED);
-                BasicDBObject query = new BasicDBObject();
-                query.append("requestId", request.getId());
-                DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
-                List<Response> responses = requestResponses.toArray();
-                requestResponses.close();
-                responses.forEach(r -> {
-                    if (r.getId() != response.getId()) {
-                        r.setBuyerStatus(Response.BuyerStatus.CLOSED);
-                        r.setResponseStatus(Response.Status.CLOSED);
-                        responseCollection.save(r);
-                        //TODO: send notification to sellers that the request is closed
-                    }
-                });
+                if (response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED)) {
+                    acceptResponse(response, request);
+                } else {
+                    // send notification to buyer that the offer has been updated
+                    sendUpdateToBuyer(request, response);
+                }
+            } else if (sellerStatus == Response.SellerStatus.OFFERED.toString().toLowerCase()) {
+                //Not sure what scenario this would be
+                response.setSellerStatus(Response.SellerStatus.OFFERED);
+                // send notification to buyer that the offer has been updated
+                sendUpdateToBuyer(request, response);
+            } else if (sellerStatus == Response.SellerStatus.WITHDRAWN.toString().toLowerCase()) {
+                response.setSellerStatus(Response.SellerStatus.WITHDRAWN);
+                response.setResponseStatus(Response.Status.CLOSED);
+                //TODO: should we send a notification here?
+            } else {
+                String msg = "Unable to update status to [" + sellerStatus + "]. Options are WITHDRAWN, OFFERED, and ACCEPTED";
+                LOGGER.error(msg);
+                throw new com.impulsecontrol.lend.exception.IllegalArgumentException(msg);
             }
         }
 
+    }
+
+    public void sendUpdateToBuyer(Request request, Response response) {
+        JSONObject notification = new JSONObject();
+        User seller = userCollection.findOneById(response.getSellerId());
+        notification.put("title", seller.getFirstName() + " updated their offer");
+        notification.put("body", seller.getFirstName() + " updated their offer for a " + request.getItemName());
+        sendFcmMessage(request.getUser(), null, notification);
+    }
+
+    public void sendUpdateToSeller(Request request, Response response) {
+        JSONObject notification = new JSONObject();
+        User seller = userCollection.findOneById(response.getSellerId());
+        notification.put("title", request.getUser().getFirstName() + " made updates to the offer");
+        notification.put("body", request.getUser().getFirstName() + " edited your offer for a " + request.getItemName());
+        User recipient = userCollection.findOneById(response.getSellerId());
+        sendFcmMessage(recipient, null, notification);
+    }
+
+    private void acceptResponse(Response response, Request request) {
+        response.setResponseStatus(Response.Status.ACCEPTED);
+        request.setStatus(Request.Status.FULFILLED);
+        BasicDBObject query = new BasicDBObject();
+        query.append("requestId", request.getId());
+        DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
+        List<Response> responses = requestResponses.toArray();
+        requestResponses.close();
+        String title = "Offer Closed";
+        String body = "Your offer to " + request.getUser().getFirstName() + " for a " + request.getItemName() +
+                " has been closed because the user accepted another offer or closed the request. Thanks for your offer!";
+        //TODO: think about doing this asynchronously
+        responses.forEach(r -> {
+            if (r.getId() != response.getId()) {
+                r.setBuyerStatus(Response.BuyerStatus.CLOSED);
+                r.setResponseStatus(Response.Status.CLOSED);
+                responseCollection.save(r);
+                JSONObject notification = new JSONObject();
+                notification.put("title", title);
+                notification.put("body", body);
+                // send message
+                User recipient = userCollection.findOneById(r.getSellerId());
+                sendFcmMessage(recipient, null, notification);
+            }
+        });
+        //let seller know the response has been accepted
+        JSONObject notification = new JSONObject();
+        notification.put("title", request.getUser().getFirstName() + " accepted your offer!");
+        String priceType = response.getPriceType().equals(Response.PriceType.FLAT) ? "" :
+                response.getPriceType().equals(Response.PriceType.PER_DAY) ? " per day " : " per hour ";
+        notification.put("body", "Your offer for a " + request.getItemName() + " for $" + response.getOfferPrice() +
+                priceType + " was accepted!");
+        User recipient = userCollection.findOneById(response.getSellerId());
+        sendFcmMessage(recipient, null, notification);
+
+        //let buyer know they accepted the offer and other responses have been closed
+        notification = new JSONObject();
+        notification.put("title", "You accepted " + recipient.getFirstName() + "'s offer!");
+        notification.put("body", "Your accepted " + recipient.getFirstName() + "'s offer for $" + response.getOfferPrice() +
+                priceType + ". If you received any other offers for this item, they have now been closed.");
+        recipient = request.getUser();
+        sendFcmMessage(recipient, null, notification);
     }
 
     public List<HistoryDto> getHistory(User user) {
@@ -236,13 +325,13 @@ public class ResponseService {
             dto.responses = dtos;
             historyDtos.add(dto);
         });
-        List<HistoryDto> userOffers = getOffers(user.getId());
+        List<HistoryDto> userOffers = getMyOfferHistory(user.getId());
         historyDtos.addAll(userOffers);
         Collections.sort(historyDtos, new HistoryComparator(user.getId()));
         return historyDtos;
     }
 
-    public List<HistoryDto> getOffers(String userId) {
+    public List<HistoryDto> getMyOfferHistory(String userId) {
         BasicDBObject query = new BasicDBObject("sellerId", userId);
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
         List<Response> responses = requestResponses.toArray();
