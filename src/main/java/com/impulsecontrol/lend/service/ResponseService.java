@@ -98,7 +98,7 @@ public class ResponseService {
     }
 
     private boolean hasMessage(ResponseDto dto) {
-        return dto.messages != null && dto.messages.size() > 0 && dto.messages.get(0).getContent() != null;
+        return dto != null && dto.messages != null && dto.messages.size() > 0 && dto.messages.get(0).getContent() != null;
     }
 
     private void sendFcmMessage(User recipient, ResponseDto dto, JSONObject notification) {
@@ -116,6 +116,8 @@ public class ResponseService {
             payload.put("message", dto.messages.get(0).getContent());
         }
 
+        LOGGER.info("attempting to send message/notification to user [" + recipient.getName() + "] with fcm token [" +
+                recipient.getFcmRegistrationId() + "].");
         String jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, payload,
                 notification, null, null, null);
         try {
@@ -182,7 +184,7 @@ public class ResponseService {
             if (updated) {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
-            updateBuyerStatus(response, dto, request);
+            updateBuyerStatus(response, dto, request, updated);
         } else {
             if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED)) {
                 response.setBuyerStatus(Response.BuyerStatus.OPEN);
@@ -193,7 +195,8 @@ public class ResponseService {
         return response;
     }
 
-    private void updateBuyerStatus(Response response, ResponseDto dto, Request request) {
+    private void updateBuyerStatus(Response response, ResponseDto dto, Request request, Boolean updated) {
+        boolean sentUpdate = false;
         if (response.getBuyerStatus().toString().toLowerCase() != dto.buyerStatus.toLowerCase()) {
             String buyerStatus = dto.buyerStatus.toLowerCase();
             if (buyerStatus == Response.BuyerStatus.ACCEPTED.toString().toLowerCase()) {
@@ -201,23 +204,26 @@ public class ResponseService {
                 //if both users have accepted, send notifications and close other responses
                 if (response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED)) {
                     acceptResponse(response, request);
-                } else { //send update to seller that the offer has been updated
-                    sendUpdateToSeller(request, response);
+                    sentUpdate = true;
                 }
             } else if (buyerStatus.equals(Response.BuyerStatus.DECLINED.toString().toLowerCase())) {
                 response.setBuyerStatus(Response.BuyerStatus.DECLINED);
                 response.setResponseStatus(Response.Status.CLOSED);
                 //TODO: should we send a notification here??
+                sentUpdate = true;
             } else {
                 //THIS SHOULD NOT HAPPEN
             }
+        }
+        if (!sentUpdate && updated) {
+            sendUpdateToSeller(request, response);
         }
     }
 
     private void updateSellerStatus(Response response, ResponseDto dto, Request request) {
         if (response.getSellerStatus().toString().toLowerCase() != dto.sellerStatus.toLowerCase()) {
             String sellerStatus = dto.sellerStatus.toLowerCase();
-            if (sellerStatus == Response.SellerStatus.ACCEPTED.toString().toLowerCase()) {
+            if (sellerStatus.equals(Response.SellerStatus.ACCEPTED.toString().toLowerCase())) {
                 response.setSellerStatus(Response.SellerStatus.ACCEPTED);
                 if (response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED)) {
                     acceptResponse(response, request);
@@ -225,12 +231,12 @@ public class ResponseService {
                     // send notification to buyer that the offer has been updated
                     sendUpdateToBuyer(request, response);
                 }
-            } else if (sellerStatus == Response.SellerStatus.OFFERED.toString().toLowerCase()) {
+            } else if (sellerStatus.equals(Response.SellerStatus.OFFERED.toString().toLowerCase())) {
                 //Not sure what scenario this would be
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
                 // send notification to buyer that the offer has been updated
                 sendUpdateToBuyer(request, response);
-            } else if (sellerStatus == Response.SellerStatus.WITHDRAWN.toString().toLowerCase()) {
+            } else if (sellerStatus.equals(Response.SellerStatus.WITHDRAWN.toString().toLowerCase())) {
                 response.setSellerStatus(Response.SellerStatus.WITHDRAWN);
                 response.setResponseStatus(Response.Status.CLOSED);
                 //TODO: should we send a notification here?
@@ -253,7 +259,6 @@ public class ResponseService {
 
     public void sendUpdateToSeller(Request request, Response response) {
         JSONObject notification = new JSONObject();
-        User seller = userCollection.findOneById(response.getSellerId());
         notification.put("title", request.getUser().getFirstName() + " made updates to the offer");
         notification.put("body", request.getUser().getFirstName() + " edited your offer for a " + request.getItemName());
         User recipient = userCollection.findOneById(response.getSellerId());
