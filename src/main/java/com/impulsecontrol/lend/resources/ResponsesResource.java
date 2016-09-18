@@ -3,6 +3,7 @@ package com.impulsecontrol.lend.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.UserDto;
+import com.impulsecontrol.lend.exception.NotAllowedException;
 import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
@@ -125,6 +126,25 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotFoundException(msg);
         }
+        if (principal.getId().equals(request.getUser().getId())) {
+            String msg = "You cannot create an offer for your own request";
+            LOGGER.error(msg);
+            throw new NotAllowedException(msg);
+        }
+        BasicDBObject query = new BasicDBObject();
+        query.append("requestId", id);
+        query.append("sellerId", principal.getId());
+        DBCursor myResponses = responseCollection.find(query);
+        List<Response> responses = myResponses.toArray();
+        myResponses.close();
+
+        // users can only make 1 offer/request
+        if (responses != null && responses.size() > 0) {
+            String msg = "You already made an offer for this request.";
+            LOGGER.error(msg);
+            throw new NotAllowedException(msg);
+        }
+
         Response response = responseService.transformResponseDto(dto, request, principal);
         return new ResponseDto(response);
     }

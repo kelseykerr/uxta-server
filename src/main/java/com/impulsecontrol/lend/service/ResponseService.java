@@ -104,7 +104,7 @@ public class ResponseService {
     private void sendFcmMessage(User recipient, ResponseDto dto, JSONObject notification) {
         if (recipient.getFcmRegistrationId() == null) {
             String msg = "could not send notification/message to [" + recipient.getFirstName() + "] " +
-                    "because they have not allowed message.";
+                    "because they have not allowed messages.";
             LOGGER.error(msg);
             throw new InternalServerException(msg);
         }
@@ -254,7 +254,8 @@ public class ResponseService {
         User seller = userCollection.findOneById(response.getSellerId());
         notification.put("title", seller.getFirstName() + " updated their offer");
         notification.put("body", seller.getFirstName() + " updated their offer for a " + request.getItemName());
-        sendFcmMessage(request.getUser(), null, notification);
+        User recipient = userCollection.findOneById(request.getUser().getId());
+        sendFcmMessage(recipient, null, notification);
     }
 
     public void sendUpdateToSeller(Request request, Response response) {
@@ -305,7 +306,7 @@ public class ResponseService {
         notification.put("title", "You accepted " + recipient.getFirstName() + "'s offer!");
         notification.put("body", "Your accepted " + recipient.getFirstName() + "'s offer for $" + response.getOfferPrice() +
                 priceType + ". If you received any other offers for this item, they have now been closed.");
-        recipient = request.getUser();
+        recipient = userCollection.findOneById(request.getUser().getId());
         sendFcmMessage(recipient, null, notification);
     }
 
