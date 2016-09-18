@@ -37,6 +37,9 @@ public class RequestService {
     public void populateRequest(Request request, RequestDto dto) {
         request.setItemName(dto.itemName);
         request.setExpireDate(dto.expireDate);
+        if (dto.expireDate != null && dto.expireDate.before(new Date())) {
+            request.setStatus(Request.Status.CLOSED);
+        }
         if (dto.category != null) {
             Category category = categoriesCollection.findOneById(dto.category.id);
             if (category == null) {

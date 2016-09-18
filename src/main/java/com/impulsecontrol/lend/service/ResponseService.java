@@ -73,6 +73,7 @@ public class ResponseService {
         response.setResponseStatus(Response.Status.PENDING);
         response.setRequestId(request.getId());
         response.setSellerId(seller.getId());
+        response.setBuyerStatus(Response.BuyerStatus.OPEN);
         populateResponse(response, dto);
         if (hasMessage(dto)) {
             Message message = new Message();
@@ -173,6 +174,9 @@ public class ResponseService {
             LOGGER.info(msg);
             throw new BadRequestException(msg);
         }
+        if (response.getBuyerStatus() == null) {
+            response.setBuyerStatus(Response.BuyerStatus.OPEN);
+        }
         boolean updated = populateResponse(response, dto);
         if (request.getUser().getId().equals(userId)) {
             if (updated) {
@@ -185,6 +189,7 @@ public class ResponseService {
             }
             updateSellerStatus(response, dto, request);
         }
+        responseCollection.save(response);
         return response;
     }
 
