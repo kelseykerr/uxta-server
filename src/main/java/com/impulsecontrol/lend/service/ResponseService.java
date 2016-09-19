@@ -136,6 +136,7 @@ public class ResponseService {
 
     public boolean populateResponse(Response response, ResponseDto dto) {
         boolean changed = getResponseUpdated(response, dto);
+        LOGGER.info("[" + response.getId() + "] has been updated: " + changed);
         response.setOfferPrice(dto.offerPrice);
         response.setExchangeLocation(dto.exchangeLocation);
         response.setExchangeTime(dto.exchangeTime);
@@ -153,10 +154,10 @@ public class ResponseService {
     }
 
     private boolean getResponseUpdated(Response response, ResponseDto dto) {
-        return response.getOfferPrice() != dto.offerPrice || response.getExchangeLocation() != dto.exchangeLocation
-                || response.getExchangeTime() != dto.exchangeTime || response.getReturnLocation() != dto.returnLocation ||
-                response.getReturnTime() != dto.returnTime || response.getPriceType().toString().toLowerCase() != dto.priceType.toLowerCase() ||
-                response.getOfferPrice() != dto.offerPrice;
+        return !response.getExchangeLocation().equals(dto.exchangeLocation)
+                || response.getExchangeTime().compareTo(dto.exchangeTime) != 0 || !response.getReturnLocation().equals(dto.returnLocation) ||
+                response.getReturnTime().compareTo(dto.returnTime) != 0 || !response.getPriceType().toString().toLowerCase().equals(dto.priceType.toLowerCase()) ||
+                response.getOfferPrice().compareTo(dto.offerPrice) != 0;
     }
 
     public Response updateResponse(ResponseDto dto, Response response, Request request, String userId) {
