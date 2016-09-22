@@ -154,10 +154,20 @@ public class ResponseService {
     }
 
     private boolean getResponseUpdated(Response response, ResponseDto dto) {
-        return !response.getExchangeLocation().equals(dto.exchangeLocation)
-                || response.getExchangeTime().compareTo(dto.exchangeTime) != 0 || !response.getReturnLocation().equals(dto.returnLocation) ||
-                response.getReturnTime().compareTo(dto.returnTime) != 0 || !response.getPriceType().toString().toLowerCase().equals(dto.priceType.toLowerCase()) ||
-                response.getOfferPrice().compareTo(dto.offerPrice) != 0;
+        boolean exchangeLocation = response.getExchangeLocation() != null ?
+                !response.getExchangeLocation().equals(dto.exchangeLocation) : dto.exchangeLocation != null;
+        boolean exchangeTime = response.getExchangeTime() != null ?
+                response.getExchangeTime().compareTo(dto.exchangeTime) != 0 : dto.exchangeTime != null;
+        boolean returnLocation = response.getReturnLocation() != null ?
+                !response.getReturnLocation().equals(dto.returnLocation) : dto.returnLocation != null;
+        boolean returnTime = response.getReturnTime() != null ?
+                response.getReturnTime().compareTo(dto.returnTime) != 0 : dto.returnTime != null;
+        boolean priceType = response.getPriceType() != null ?
+                !response.getPriceType().toString().toLowerCase().equals(dto.priceType.toLowerCase()) : dto.priceType != null;
+        boolean offerPrice = response.getOfferPrice() != null ?
+                response.getOfferPrice().compareTo(dto.offerPrice) != 0 : dto.priceType != null;
+
+        return exchangeLocation || exchangeTime || returnLocation || returnTime || priceType || offerPrice;
     }
 
     public Response updateResponse(ResponseDto dto, Response response, Request request, String userId) {
@@ -185,6 +195,7 @@ public class ResponseService {
             if (updated) {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
+            LOGGER.info("updating buyer status");
             updateBuyerStatus(response, dto, request, updated);
         } else {
             if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED)) {
@@ -198,9 +209,11 @@ public class ResponseService {
 
     private void updateBuyerStatus(Response response, ResponseDto dto, Request request, Boolean updated) {
         boolean sentUpdate = false;
-        if (response.getBuyerStatus().toString().toLowerCase() != dto.buyerStatus.toLowerCase()) {
+        LOGGER.info(response.getBuyerStatus().toString().toLowerCase() + "**old buyer status");
+        LOGGER.info(dto.buyerStatus.toLowerCase() + "**updated buyer status");
+        if (!response.getBuyerStatus().toString().toLowerCase().equals(dto.buyerStatus.toLowerCase())) {
             String buyerStatus = dto.buyerStatus.toLowerCase();
-            if (buyerStatus == Response.BuyerStatus.ACCEPTED.toString().toLowerCase()) {
+            if (buyerStatus.equals(Response.BuyerStatus.ACCEPTED.toString().toLowerCase())) {
                 response.setBuyerStatus(Response.BuyerStatus.ACCEPTED);
                 //if both users have accepted, send notifications and close other responses
                 if (response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED)) {
@@ -222,7 +235,7 @@ public class ResponseService {
     }
 
     private void updateSellerStatus(Response response, ResponseDto dto, Request request) {
-        if (response.getSellerStatus().toString().toLowerCase() != dto.sellerStatus.toLowerCase()) {
+        if (!response.getSellerStatus().toString().toLowerCase().equals(dto.sellerStatus.toLowerCase())) {
             String sellerStatus = dto.sellerStatus.toLowerCase();
             if (sellerStatus.equals(Response.SellerStatus.ACCEPTED.toString().toLowerCase())) {
                 response.setSellerStatus(Response.SellerStatus.ACCEPTED);
@@ -308,6 +321,7 @@ public class ResponseService {
         notification.put("body", "Your accepted " + recipient.getFirstName() + "'s offer for $" + response.getOfferPrice() +
                 priceType + ". If you received any other offers for this item, they have now been closed.");
         recipient = userCollection.findOneById(request.getUser().getId());
+        requestCollection.save(request);
         sendFcmMessage(recipient, null, notification);
     }
 
