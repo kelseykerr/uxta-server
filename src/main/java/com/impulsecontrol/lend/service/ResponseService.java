@@ -3,6 +3,7 @@ package com.impulsecontrol.lend.service;
 import com.impulsecontrol.lend.dto.HistoryDto;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
+import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.InternalServerException;
@@ -361,6 +362,10 @@ public class ResponseService {
                 userDto.fullName = seller.getName();
                 d.seller = userDto;
             });
+            Transaction transaction = transactionCollection.findOne(query);
+            if (transaction != null) {
+                dto.transaction = new TransactionDto(transaction, false);
+            }
             dto.responses = dtos;
             historyDtos.add(dto);
         });
@@ -383,6 +388,11 @@ public class ResponseService {
                 //TODO: log an error here, but probably don't need to throw an exception...this really shouldn't happen
             } else {
                 HistoryDto dto = new HistoryDto();
+                BasicDBObject qry = new BasicDBObject("requestId", r.getId());
+                Transaction transaction = transactionCollection.findOne(qry);
+                if (transaction != null) {
+                    dto.transaction = new TransactionDto(transaction, true);
+                }
                 dto.request = new RequestDto(request);
                 dto.responses = Collections.singletonList(new ResponseDto(r));
                 historyDtos.add(dto);

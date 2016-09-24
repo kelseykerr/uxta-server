@@ -8,6 +8,8 @@ public class HistoryDto {
 
     public List<ResponseDto> responses;
 
+    public TransactionDto transaction;
+
     public HistoryDto() {
 
     }

@@ -39,6 +39,7 @@ public class TransactionService {
             if (transaction.getReturnCodeExpireDate().before(currentDate)) {
                 transaction.setReturned(true);
                 transaction.setReturnTime(currentDate);
+                transaction.setReturned(true);
                 calculatePrice(transaction, response);
             } else {
                 LOGGER.error("Transaction [" + transaction.getId() + "]'s return code has expired");
@@ -63,6 +64,7 @@ public class TransactionService {
                 }
                 transaction.setExchanged(true);
                 transaction.setExchangeTime(new Date());
+                transaction.setExchanged(true);
                 transactionCollection.save(transaction);
             } else {
                 LOGGER.error("Transaction [" + transaction.getId() + "]'s code has expired");
@@ -145,10 +147,12 @@ public class TransactionService {
         if (isSeller) {
             transaction.getReturnOverride().sellerAccepted = dto.returnOverride.sellerAccepted;
             transaction.setReturnTime(transaction.getReturnOverride().time);
+            transaction.setReturned(true);
             //TODO: send notification to seller to verify price if true...what to do if false?
         } else {
             transaction.getExchangeOverride().buyerAccepted = dto.exchangeOverride.buyerAccepted;
             transaction.setExchangeTime(transaction.getExchangeOverride().time);
+            transaction.setExchanged(true);
             calculatePrice(transaction, response);
             if (!isRental) {
                 //TODO: send notification to seller to verify price if true...what to do if false?
@@ -161,7 +165,7 @@ public class TransactionService {
     }
 
     private void confirmExchangeDidNotOccur(Transaction transaction, Boolean isSeller) {
-        if ((isSeller && transaction.getExchangeTime() != null) || (!isSeller && transaction.getReturnTime() != null)) {
+        if ((isSeller && transaction.getExchanged()) || (!isSeller && transaction.getReturned())) {
             LOGGER.error(isSeller ? "Seller" : "Buyer" + " tried to create an override for transaction [" +
                     transaction.getId() + "] but the exchange already occurred");
             throw new BadRequestException("Cannot create an override for an item that has already been " +
@@ -171,7 +175,7 @@ public class TransactionService {
 
     private String generateExchangeCode(Transaction transaction) {
         // the initial exchange already happened, why are you requesting this?
-        if (transaction.getExchangeTime() != null) {
+        if (transaction.getExchanged()) {
             LOGGER.error("The initial exchange already occurred for transaction [" + transaction.getId() + "].");
             throw new BadRequestException("You already exhanged this item at [" + transaction.getExchangeTime() + "]");
         }
@@ -186,12 +190,15 @@ public class TransactionService {
             throw new BadRequestException("Can't generate return code for an item that was bought!");
         }
         // can't generate return code if the item was never exchanged!!
-        if (transaction.getExchangeTime() == null) {
+        if (!transaction.getExchanged()) {
             LOGGER.error("Attempted to generate return code for transaction [" + transaction.getId() +
                     "] when the initial exchange wasn't documented!");
             throw new BadRequestException(("Can't generate return code because the exchange was not initiated! " +
                     "Did you exchange this item?"));
-
+        }
+        if (transaction.getReturned()) {
+            LOGGER.error("The return already occurred for transaction [" + transaction.getId() + "].");
+            throw new BadRequestException("You already returned this item at [" + transaction.getReturnTime() + "]");
         }
         return setTransactionCode(transaction, false);
     }

@@ -58,7 +58,7 @@ public class Transaction implements Serializable {
     /**
      * once the transaction is complete, this shows whether the seller accepted the final price
      */
-    private Boolean sellerAccepted = false;
+    private Boolean sellerAccepted;
 
     /**
      * used only if the users forgot to scan/enter codes on the initial scan

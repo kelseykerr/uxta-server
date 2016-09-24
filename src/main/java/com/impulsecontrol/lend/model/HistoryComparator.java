@@ -19,6 +19,14 @@ public class HistoryComparator implements Comparator<HistoryDto> {
     // Returns a negative integer, zero, or a positive integer is h1's date is greater than,
     // equal to, or less than h2's date. Sorts in DESC order!!!
     public int compare(HistoryDto h1, HistoryDto h2) {
+        // is the transaction open? if so, put in at the beginning
+        boolean h1Transaction = h1.transaction != null && h1.transaction.sellerAccepted == null;
+        boolean h2Transaction = h2.transaction != null && h2.transaction.sellerAccepted == null;
+        if (h1Transaction && !h2Transaction) {
+            return 1;
+        } if (h2Transaction && !h1Transaction) {
+            return -1;
+        }
         Date h1Date = getCompareDate(h1);
         Date h2Date = getCompareDate(h2);
         int order =  h1Date.compareTo(h2Date);// in asc
