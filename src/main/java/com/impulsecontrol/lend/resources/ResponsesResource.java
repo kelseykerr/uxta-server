@@ -200,10 +200,6 @@ public class ResponsesResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    @ApiOperation(
-            value = "Update a response - in progress!!",
-            notes = "this method has not been fully implemented!!"
-    )
     public ResponseDto updateResponse(@Auth @ApiParam(hidden = true) User principal,
                                @PathParam("requestId") String requestId,
                                @PathParam("responseId") String responseId,

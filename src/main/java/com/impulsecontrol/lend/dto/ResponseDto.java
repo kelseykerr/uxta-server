@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.impulsecontrol.lend.model.Message;
 import com.impulsecontrol.lend.model.Response;
 
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 /**
  * Created by kerrk on 9/3/16.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseDto {
 
     /**

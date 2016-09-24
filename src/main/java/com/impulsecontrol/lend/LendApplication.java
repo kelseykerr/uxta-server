@@ -7,6 +7,7 @@ import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
+import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.resources.CategoriesResource;
 import com.impulsecontrol.lend.resources.RequestsResource;
@@ -65,6 +66,9 @@ public class LendApplication extends Application<LendConfiguration> {
         JacksonDBCollection<Response, String> responseCollection =
                 JacksonDBCollection.wrap(db.getCollection("response"), Response.class, String.class);
 
+        JacksonDBCollection<Transaction, String> transactionCollection =
+                JacksonDBCollection.wrap(db.getCollection("transaction"), Transaction.class, String.class);
+
         // cloud connection server
         CcsServer ccsServer = new CcsServer(configuration.fcmServer, configuration.fcmPort, "not sure",
                 configuration.fcmApiKey, configuration.fcmSenderId);
@@ -73,7 +77,8 @@ public class LendApplication extends Application<LendConfiguration> {
         requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
         UserService userService = new UserService();
-        ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection, ccsServer);
+        ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection,
+                transactionCollection, ccsServer);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
         RequestService requestService = new RequestService(categoryCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));

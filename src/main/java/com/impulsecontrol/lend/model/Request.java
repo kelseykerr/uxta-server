@@ -148,14 +148,14 @@ public class Request implements Serializable {
         item, service
     }
 
-
     /**
      * OPEN: the request is still open, the buyer has not accepted any offers
      * CLOSED: the request is closed either because the request expired, or the user withdrew the request
-     * FULFILLED: the user accepted an offer from someone
+     * TRANSACTION_PENDING: an offer has been accepted, the transaction is in progress
+     * FULFILLED: the user accepted an offer from someone & it has been exchanged/returned and payment has been submitted
      */
     public static enum Status {
-        OPEN, CLOSED, FULFILLED
+        OPEN, CLOSED, TRANSACTION_PENDING, FULFILLED
     }
 
 }

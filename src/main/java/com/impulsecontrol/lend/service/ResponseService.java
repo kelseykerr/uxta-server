@@ -12,6 +12,7 @@ import com.impulsecontrol.lend.model.HistoryComparator;
 import com.impulsecontrol.lend.model.Message;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
+import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -22,6 +23,7 @@ import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.Transient;
 import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +40,7 @@ public class ResponseService {
     private JacksonDBCollection<Request, String> requestCollection;
     private JacksonDBCollection<Response, String> responseCollection;
     private JacksonDBCollection<User, String> userCollection;
+    private JacksonDBCollection<Transaction, String> transactionCollection;
     private CcsServer ccsServer;
 
     public ResponseService() {
@@ -47,10 +50,12 @@ public class ResponseService {
     public ResponseService(JacksonDBCollection<Request, String> requestCollection,
                            JacksonDBCollection<Response, String> responseCollection,
                            JacksonDBCollection<User, String> userCollection,
+                           JacksonDBCollection<Transaction, String> transactionCollection,
                                    CcsServer ccsServer) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
+        this.transactionCollection = transactionCollection;
         this.ccsServer = ccsServer;
     }
 
@@ -282,7 +287,8 @@ public class ResponseService {
 
     private void acceptResponse(Response response, Request request) {
         response.setResponseStatus(Response.Status.ACCEPTED);
-        request.setStatus(Request.Status.FULFILLED);
+        request.setStatus(Request.Status.TRANSACTION_PENDING);
+        openTransaction(request.getId(), response.getId());
         BasicDBObject query = new BasicDBObject();
         query.append("requestId", request.getId());
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
@@ -323,6 +329,13 @@ public class ResponseService {
         recipient = userCollection.findOneById(request.getUser().getId());
         requestCollection.save(request);
         sendFcmMessage(recipient, null, notification);
+    }
+
+    private void openTransaction(String requestId, String responseId) {
+        Transaction transaction = new Transaction();
+        transaction.setRequestId(requestId);
+        transaction.setResponseId(responseId);
+        transactionCollection.insert(transaction);
     }
 
     public List<HistoryDto> getHistory(User user) {
