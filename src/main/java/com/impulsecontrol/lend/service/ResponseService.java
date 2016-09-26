@@ -388,7 +388,7 @@ public class ResponseService {
                 //TODO: log an error here, but probably don't need to throw an exception...this really shouldn't happen
             } else {
                 HistoryDto dto = new HistoryDto();
-                BasicDBObject qry = new BasicDBObject("requestId", r.getId());
+                BasicDBObject qry = new BasicDBObject("responseId", r.getId());
                 Transaction transaction = transactionCollection.findOne(qry);
                 if (transaction != null) {
                     dto.transaction = new TransactionDto(transaction, true);
