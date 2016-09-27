@@ -20,8 +20,8 @@ public class HistoryComparator implements Comparator<HistoryDto> {
     // equal to, or less than h2's date. Sorts in DESC order!!!
     public int compare(HistoryDto h1, HistoryDto h2) {
         // is the transaction open? if so, put in at the beginning
-        boolean h1Transaction = h1.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
-        boolean h2Transaction = h2.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
+        boolean h1Transaction = h1.request != null && h1.request.status != null && h1.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
+        boolean h2Transaction = h2.request != null && h2.request.status != null && h2.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
         if (h1Transaction && !h2Transaction) {
             return -1;
         } else if (h2Transaction && !h1Transaction) {
