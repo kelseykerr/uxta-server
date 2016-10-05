@@ -215,8 +215,6 @@ public class ResponseService {
 
     private void updateBuyerStatus(Response response, ResponseDto dto, Request request, Boolean updated) {
         boolean sentUpdate = false;
-        LOGGER.info(response.getBuyerStatus().toString().toLowerCase() + "**old buyer status");
-        LOGGER.info(dto.buyerStatus.toLowerCase() + "**updated buyer status");
         if (!response.getBuyerStatus().toString().toLowerCase().equals(dto.buyerStatus.toLowerCase())) {
             String buyerStatus = dto.buyerStatus.toLowerCase();
             if (buyerStatus.equals(Response.BuyerStatus.ACCEPTED.toString().toLowerCase())) {

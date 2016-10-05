@@ -231,6 +231,7 @@ public class Transaction implements Serializable {
         public Date time;
         public Boolean buyerAccepted = false;
         public Boolean sellerAccepted = false;
+        public Boolean declined = false;
 
         public ExchangeOverride() {
 

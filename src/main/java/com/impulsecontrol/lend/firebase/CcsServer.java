@@ -1,6 +1,5 @@
 package com.impulsecontrol.lend.firebase;
 
-import com.mongodb.util.JSON;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.ReconnectionManager;

@@ -12,6 +12,7 @@ import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.resources.CategoriesResource;
 import com.impulsecontrol.lend.resources.RequestsResource;
 import com.impulsecontrol.lend.resources.ResponsesResource;
+import com.impulsecontrol.lend.resources.TransactionsResource;
 import com.impulsecontrol.lend.resources.UserResource;
 import com.impulsecontrol.lend.service.RequestService;
 import com.impulsecontrol.lend.service.ResponseService;
@@ -83,6 +84,7 @@ public class LendApplication extends Application<LendConfiguration> {
         RequestService requestService = new RequestService(categoryCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));
+        environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection, transactionCollection));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)

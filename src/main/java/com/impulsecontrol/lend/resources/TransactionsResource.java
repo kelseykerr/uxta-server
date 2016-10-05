@@ -3,6 +3,7 @@ package com.impulsecontrol.lend.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.exception.*;
+import com.impulsecontrol.lend.exception.IllegalArgumentException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
@@ -143,8 +144,8 @@ public class TransactionsResource {
     @ApiOperation(
             value = "If the users forgot to scan codes on the exchange or return, they can submit and override",
             notes = "If the seller forgot to do the scan on the initial exchange, they can submit an override by " +
-                    "filling in the price field of the exchangeOverride object in the TransactionDto. If the buyer " +
-                    "forgot to scan on the return, they can submit an override by filling in the price field on the " +
+                    "filling in the exchangeTime of the exchangeOverride object in the TransactionDto. If the buyer " +
+                    "forgot to scan on the return, they can submit an override by filling in the returnTime on the " +
                     "returnOverride object in the TransactionDto. Only the price field is required in the dto."
     )
     public TransactionDto createExchangeOverride(@Auth @ApiParam(hidden = true) User principal,
@@ -218,18 +219,30 @@ public class TransactionsResource {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
-        if (!request.getUser().getId().equals(principal.getId())) {
+        if (!response.getSellerId().equals(principal.getId())) {
             LOGGER.error("User [" + principal.getId() + "] attempted to verify price for" +
                     " transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to verify the price for this transaction!");
         }
+        if (transaction.getSellerAccepted() != null && transaction.getSellerAccepted()) {
+            LOGGER.error("Seller [" + principal.getId() + "] attempted to verify price again for transaction ["
+                    + transactionId + "]");
+            throw new IllegalArgumentException("You already confirmed the price for this transaction!");
+        }
         if (dto.priceOverride != null && dto.priceOverride.compareTo(transaction.getCalculatedPrice()) > 0) {
             LOGGER.error("Seller tried to increase total price for transaction [" + transactionId + "]");
-            throw new com.impulsecontrol.lend.exception.IllegalArgumentException("You cannot increase the price!");
+            throw new IllegalArgumentException("You cannot increase the price!");
 
         }
         transaction.setFinalPrice(dto.priceOverride == null ? transaction.getCalculatedPrice() : dto.priceOverride);
+        transaction.setSellerAccepted(true);
         transactionCollection.save(transaction);
+        if (transaction.getFinalPrice() > 0) {
+            request.setStatus(Request.Status.PROCESSING_PAYMENT);
+        } else {
+            request.setStatus(Request.Status.FULFILLED);
+        }
+        requestCollection.save(request);
         //TODO: send notification to buyer that they will be charged $x & initiate payment
         return new TransactionDto(transaction, true);
     }
