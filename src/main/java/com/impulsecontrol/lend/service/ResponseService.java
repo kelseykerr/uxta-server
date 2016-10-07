@@ -1,5 +1,7 @@
 package com.impulsecontrol.lend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.impulsecontrol.lend.dto.HistoryDto;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
@@ -117,15 +119,16 @@ public class ResponseService {
         String messageId = CcsServer.nextMessageId();
         JSONObject payload = new JSONObject();
 
-        //TODO: rethink this, should we send messages separately?
+        /*//TODO: rethink this, should we send messages separately?
         if (hasMessage(dto)) {
             payload.put("message", dto.messages.get(0).getContent());
-        }
+        }*/
+        // we will currently send everything as a message and the client can construct the notification when needed
 
         LOGGER.info("attempting to send message/notification to user [" + recipient.getName() + "] with fcm token [" +
                 recipient.getFcmRegistrationId() + "].");
-        String jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, payload,
-                notification, null, null, null);
+        String jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, notification,
+                payload, null, null, null);
         try {
             Boolean sent = ccsServer.sendDownstreamMessage(jsonMessage);
             if (sent) {
@@ -268,12 +271,24 @@ public class ResponseService {
     }
 
     public void sendUpdateToBuyer(Request request, Response response) {
-        JSONObject notification = new JSONObject();
-        User seller = userCollection.findOneById(response.getSellerId());
-        notification.put("title", seller.getFirstName() + " updated their offer");
-        notification.put("body", seller.getFirstName() + " updated their offer for a " + request.getItemName());
-        User recipient = userCollection.findOneById(request.getUser().getId());
-        sendFcmMessage(recipient, null, notification);
+        try {
+            JSONObject notification = new JSONObject();
+            User seller = userCollection.findOneById(response.getSellerId());
+            notification.put("title", seller.getFirstName() + " updated their offer");
+            notification.put("message", seller.getFirstName() + " updated their offer for a " + request.getItemName());
+            notification.put("type", "response_update");
+            ObjectMapper mapper = new ObjectMapper();
+            String responseJson = mapper.writeValueAsString(new ResponseDto(response));
+            notification.put("response", responseJson);
+            String requestJson = mapper.writeValueAsString(new RequestDto(request));
+            notification.put("request", requestJson);
+            User recipient = userCollection.findOneById(request.getUser().getId());
+            sendFcmMessage(recipient, null, notification);
+        } catch (JsonProcessingException e) {
+            String msg = "Could not convert object to json string, got error: " + e.getMessage();
+            LOGGER.error(msg);
+        }
+
     }
 
     public void sendUpdateToSeller(Request request, Response response) {
