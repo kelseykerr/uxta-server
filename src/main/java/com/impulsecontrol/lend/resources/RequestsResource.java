@@ -37,6 +37,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.net.URI;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -64,6 +65,23 @@ public class RequestsResource {
         this.responseService = responseService;
     }
 
+    @GET
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Path("/notifications")
+    @Timed
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header")})
+    public void getRequestNotifications(@Auth @ApiParam(hidden = true) User principal,
+                                        @QueryParam("longitude") Double longitude,
+                                        @QueryParam("latitude") Double latitude) {
+        if (!principal.getNewRequestNotificationsEnabled()) {
+            return;
+        }
+        requestService.sendRecentRequestsNotification(principal, longitude, latitude);
+    }
+
 
     @GET
     @Produces(value = MediaType.APPLICATION_JSON)
@@ -87,53 +105,7 @@ public class RequestsResource {
             LOGGER.error(msg);
             throw new BadRequestException(msg);
         }
-        BasicDBObject geometry = new BasicDBObject();
-        geometry.append("type", "Point");
-        double[] coords = {longitude, latitude};
-        geometry.append("coordinates", coords);
-
-        BasicDBObject near = new BasicDBObject();
-        near.append("$geometry", geometry);
-        near.append("$maxDistance", milesToMeters(radius));
-
-        BasicDBObject location = new BasicDBObject();
-        location.append("$near", near);
-
-        BasicDBObject query = new BasicDBObject();
-        query.append("location", location);
-
-        if (expired != null && expired) {
-            BasicDBObject expiredQuery = new BasicDBObject();
-            expiredQuery.append("$lte", new Date());
-            query.put("expireDate", expiredQuery);
-        } else if (expired != null && !expired) {
-            // expire date is after current date
-            BasicDBObject notExpiredQuery = new BasicDBObject();
-            notExpiredQuery.append("$gt", new Date());
-            BasicDBObject query1 = new BasicDBObject();
-            query1.append("expireDate", notExpiredQuery);
-
-            // expire date is not set
-            BasicDBObject notSetQuery = new BasicDBObject();
-            notSetQuery.append("$exists", false);
-            BasicDBObject query2 = new BasicDBObject();
-            query2.append("expireDate", notSetQuery);
-
-            BasicDBList or = new BasicDBList();
-            or.add(query1);
-            or.add(query2);
-            query.put("$or", or);
-        }
-
-        if (includeMine != null && !includeMine) {
-            BasicDBObject notMineQuery = new BasicDBObject();
-            notMineQuery.append("$ne", principal.getUserId());
-            query.put("user.userId", notMineQuery);
-        }
-
-        DBCursor userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
-        List<Request> requests = userRequests.toArray();
-        userRequests.close();
+        List<Request> requests = requestService.findRequests(latitude, longitude, radius, expired, includeMine, principal);
         return RequestDto.transform(requests);
     }
 

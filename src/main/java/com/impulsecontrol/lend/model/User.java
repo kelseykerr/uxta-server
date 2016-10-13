@@ -8,6 +8,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 import java.security.Principal;
+import java.util.List;
 
 /**
  * Created by kerrk on 7/5/16.
@@ -50,6 +51,18 @@ public class User implements Serializable, Principal {
     private String state;
 
     private String zip;
+
+    private GeoJsonPoint homeLocation;
+
+    private Boolean newRequestNotificationsEnabled;
+
+    private Double notificationRadius;
+
+    private List<String> notificationKeywords;
+
+    private Boolean currentLocationNotifications;
+
+    private Boolean homeLocationNotifications;
 
     public User() {}
 
@@ -166,5 +179,53 @@ public class User implements Serializable, Principal {
 
     public void setFcmRegistrationId(String fcmRegistrationId) {
         this.fcmRegistrationId = fcmRegistrationId;
+    }
+
+    public GeoJsonPoint getHomeLocation() {
+        return homeLocation;
+    }
+
+    public void setHomeLocation(GeoJsonPoint homeLocation) {
+        this.homeLocation = homeLocation;
+    }
+
+    public Boolean getNewRequestNotificationsEnabled() {
+        return newRequestNotificationsEnabled;
+    }
+
+    public void setNewRequestNotificationsEnabled(Boolean newRequestNotificationsEnabled) {
+        this.newRequestNotificationsEnabled = newRequestNotificationsEnabled;
+    }
+
+    public Double getNotificationRadius() {
+        return notificationRadius;
+    }
+
+    public void setNotificationRadius(Double notificationRadius) {
+        this.notificationRadius = notificationRadius;
+    }
+
+    public List<String> getNotificationKeywords() {
+        return notificationKeywords;
+    }
+
+    public void setNotificationKeywords(List<String> notificationKeywords) {
+        this.notificationKeywords = notificationKeywords;
+    }
+
+    public Boolean getCurrentLocationNotifications() {
+        return currentLocationNotifications;
+    }
+
+    public void setCurrentLocationNotifications(Boolean currentLocationNotifications) {
+        this.currentLocationNotifications = currentLocationNotifications;
+    }
+
+    public Boolean getHomeLocationNotifications() {
+        return homeLocationNotifications;
+    }
+
+    public void setHomeLocationNotifications(Boolean homeLocationNotifications) {
+        this.homeLocationNotifications = homeLocationNotifications;
     }
 }

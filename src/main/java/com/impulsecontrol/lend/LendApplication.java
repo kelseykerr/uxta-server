@@ -81,7 +81,7 @@ public class LendApplication extends Application<LendConfiguration> {
         ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection,
                 transactionCollection, ccsServer);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
-        RequestService requestService = new RequestService(categoryCollection);
+        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection, transactionCollection));

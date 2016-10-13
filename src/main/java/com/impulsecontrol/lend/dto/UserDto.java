@@ -6,6 +6,7 @@ import com.impulsecontrol.lend.model.User;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import java.util.List;
 
 /**
  * Created by kerrk on 8/17/16.
@@ -42,6 +43,20 @@ public class UserDto {
 
     public String zip;
 
+    public Double homeLongitude;
+
+    public Double homeLatitude;
+
+    public Boolean newRequestNotificationsEnabled;
+
+    public Double notificationRadius;
+
+    public List<String> notificationKeywords;
+
+    public Boolean currentLocationNotifications;
+
+    public Boolean homeLocationNotifications;
+
     public UserDto() {}
 
     public UserDto(User user) {
@@ -65,6 +80,13 @@ public class UserDto {
         dto.city = user.getCity();
         dto.state = user.getState();
         dto.zip = user.getZip();
+        dto.homeLongitude = user.getHomeLocation().getCoordinates()[0];
+        dto.homeLatitude = user.getHomeLocation().getCoordinates()[1];
+        dto.newRequestNotificationsEnabled = user.getNewRequestNotificationsEnabled();
+        dto.notificationRadius = user.getNotificationRadius();
+        dto.notificationKeywords = user.getNotificationKeywords();
+        dto.currentLocationNotifications = user.getCurrentLocationNotifications();
+        dto.homeLocationNotifications = user.getHomeLocationNotifications();
         return dto;
     }
 

@@ -11,6 +11,7 @@ import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
+import com.impulsecontrol.lend.firebase.FirebaseUtils;
 import com.impulsecontrol.lend.model.HistoryComparator;
 import com.impulsecontrol.lend.model.Message;
 import com.impulsecontrol.lend.model.Request;
@@ -99,48 +100,25 @@ public class ResponseService {
         }
         JSONObject notification = new JSONObject();
         notification.put("title", title);
-        notification.put("body", body);
+        notification.put("message", body);
+        notification.put("type", "response_update");
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String responseJson = mapper.writeValueAsString(new ResponseDto(response));
+            notification.put("response", responseJson);
+            String requestJson = mapper.writeValueAsString(new RequestDto(request));
+            notification.put("request", requestJson);
+        } catch (JsonProcessingException e) {
+            String msg = "Could not convert object to json string, got error: " + e.getMessage();
+            LOGGER.error(msg);
+        }
         User recipient = userCollection.findOneById(request.getUser().getId());
-        sendFcmMessage(recipient, dto, notification);
+        FirebaseUtils.sendFcmMessage(recipient, dto, notification, ccsServer);
         return response;
     }
 
     private boolean hasMessage(ResponseDto dto) {
         return dto != null && dto.messages != null && dto.messages.size() > 0 && dto.messages.get(0).getContent() != null;
-    }
-
-    private void sendFcmMessage(User recipient, ResponseDto dto, JSONObject notification) {
-        if (recipient.getFcmRegistrationId() == null) {
-            String msg = "could not send notification/message to [" + recipient.getFirstName() + "] " +
-                    "because they have not allowed messages.";
-            LOGGER.error(msg);
-            throw new InternalServerException(msg);
-        }
-        String messageId = CcsServer.nextMessageId();
-        JSONObject payload = new JSONObject();
-
-        /*//TODO: rethink this, should we send messages separately?
-        if (hasMessage(dto)) {
-            payload.put("message", dto.messages.get(0).getContent());
-        }*/
-        // we will currently send everything as a message and the client can construct the notification when needed
-
-        LOGGER.info("attempting to send message/notification to user [" + recipient.getName() + "] with fcm token [" +
-                recipient.getFcmRegistrationId() + "].");
-        String jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, notification,
-                payload, null, null, null);
-        try {
-            Boolean sent = ccsServer.sendDownstreamMessage(jsonMessage);
-            if (sent) {
-                LOGGER.info("Successfully sent message!");
-            } else {
-                LOGGER.error("could not sent message :(");
-            }
-        } catch (Exception e) {
-            String msg = "could not send message, got error: " + e.getMessage();
-            LOGGER.error(msg);
-            throw new InternalServerException(msg);
-        }
     }
 
     public boolean populateResponse(Response response, ResponseDto dto) {
@@ -182,7 +160,7 @@ public class ResponseService {
     public Response updateResponse(ResponseDto dto, Response response, Request request, String userId) {
         if (!(request.getStatus() == Request.Status.OPEN) &&
                 !(request.getStatus() == Request.Status.FULFILLED && request.getFulfilledByUserId().equals(userId))) {
-            String msg = "unable to update this response because the request is not longer open";
+            String msg = "unable to update this response because the request is no longer open";
             LOGGER.error(msg);
             throw new UnauthorizedException(msg);
         }
@@ -266,6 +244,8 @@ public class ResponseService {
                 LOGGER.error(msg);
                 throw new com.impulsecontrol.lend.exception.IllegalArgumentException(msg);
             }
+        } else {
+            sendUpdateToBuyer(request, response);
         }
 
     }
@@ -283,7 +263,7 @@ public class ResponseService {
             String requestJson = mapper.writeValueAsString(new RequestDto(request));
             notification.put("request", requestJson);
             User recipient = userCollection.findOneById(request.getUser().getId());
-            sendFcmMessage(recipient, null, notification);
+            FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
         } catch (JsonProcessingException e) {
             String msg = "Could not convert object to json string, got error: " + e.getMessage();
             LOGGER.error(msg);
@@ -292,11 +272,23 @@ public class ResponseService {
     }
 
     public void sendUpdateToSeller(Request request, Response response) {
-        JSONObject notification = new JSONObject();
-        notification.put("title", request.getUser().getFirstName() + " made updates to the offer");
-        notification.put("body", request.getUser().getFirstName() + " edited your offer for a " + request.getItemName());
-        User recipient = userCollection.findOneById(response.getSellerId());
-        sendFcmMessage(recipient, null, notification);
+        try {
+            JSONObject notification = new JSONObject();
+            notification.put("title", request.getUser().getFirstName() + " made updates to the offer");
+            notification.put("message", request.getUser().getFirstName() + " edited your offer for a " + request.getItemName());
+            notification.put("type", "response_update");
+            ObjectMapper mapper = new ObjectMapper();
+            String responseJson = mapper.writeValueAsString(new ResponseDto(response));
+            notification.put("response", responseJson);
+            String requestJson = mapper.writeValueAsString(new RequestDto(request));
+            notification.put("request", requestJson);
+            User recipient = userCollection.findOneById(response.getSellerId());
+            FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
+        } catch (JsonProcessingException e) {
+            String msg = "Could not convert object to json string, got error: " + e.getMessage();
+            LOGGER.error(msg);
+        }
+
     }
 
     private void acceptResponse(Response response, Request request) {
@@ -314,35 +306,59 @@ public class ResponseService {
         //TODO: think about doing this asynchronously
         responses.forEach(r -> {
             if (r.getId() != response.getId()) {
-                r.setBuyerStatus(Response.BuyerStatus.CLOSED);
-                r.setResponseStatus(Response.Status.CLOSED);
-                responseCollection.save(r);
-                JSONObject notification = new JSONObject();
-                notification.put("title", title);
-                notification.put("body", body);
-                // send message
-                User recipient = userCollection.findOneById(r.getSellerId());
-                sendFcmMessage(recipient, null, notification);
+                try {
+                    r.setBuyerStatus(Response.BuyerStatus.CLOSED);
+                    r.setResponseStatus(Response.Status.CLOSED);
+                    responseCollection.save(r);
+                    JSONObject notification = new JSONObject();
+                    notification.put("title", title);
+                    notification.put("message", body);
+                    notification.put("type", "offer_closed");
+                    ObjectMapper mapper = new ObjectMapper();
+                    String responseJson = mapper.writeValueAsString(new ResponseDto(response));
+                    notification.put("response", responseJson);
+                    String requestJson = mapper.writeValueAsString(new RequestDto(request));
+                    notification.put("request", requestJson);
+                    User recipient = userCollection.findOneById(response.getSellerId());
+                    FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
+                } catch (JsonProcessingException e) {
+                    String msg = "Could not convert object to json string, got error: " + e.getMessage();
+                    LOGGER.error(msg);
+                }
             }
         });
         //let seller know the response has been accepted
         JSONObject notification = new JSONObject();
-        notification.put("title", request.getUser().getFirstName() + " accepted your offer!");
+
+        User recipient = userCollection.findOneById(response.getSellerId());
         String priceType = response.getPriceType().equals(Response.PriceType.FLAT) ? "" :
                 response.getPriceType().equals(Response.PriceType.PER_DAY) ? " per day " : " per hour ";
-        notification.put("body", "Your offer for a " + request.getItemName() + " for $" + response.getOfferPrice() +
-                priceType + " was accepted!");
-        User recipient = userCollection.findOneById(response.getSellerId());
-        sendFcmMessage(recipient, null, notification);
 
-        //let buyer know they accepted the offer and other responses have been closed
-        notification = new JSONObject();
-        notification.put("title", "You accepted " + recipient.getFirstName() + "'s offer!");
-        notification.put("body", "Your accepted " + recipient.getFirstName() + "'s offer for $" + response.getOfferPrice() +
-                priceType + ". If you received any other offers for this item, they have now been closed.");
-        recipient = userCollection.findOneById(request.getUser().getId());
-        requestCollection.save(request);
-        sendFcmMessage(recipient, null, notification);
+        try {
+            notification.put("title", request.getUser().getFirstName() + " accepted your offer!");
+            notification.put("message", "Your offer for a " + request.getItemName() + " for $" + response.getOfferPrice() +
+                    priceType + " was accepted!");
+            notification.put("type", "offer_accepted");
+            ObjectMapper mapper = new ObjectMapper();
+            String responseJson = mapper.writeValueAsString(new ResponseDto(response));
+            notification.put("response", responseJson);
+            String requestJson = mapper.writeValueAsString(new RequestDto(request));
+            notification.put("request", requestJson);
+            FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
+
+            //let buyer know they accepted the offer and other responses have been closed
+            notification = new JSONObject();
+            notification.put("title", "You accepted " + recipient.getFirstName() + "'s offer!");
+            notification.put("message", "Your accepted " + recipient.getFirstName() + "'s offer for $" + response.getOfferPrice() +
+                    priceType + ". If you received any other offers for this item, they have now been closed.");
+            recipient = userCollection.findOneById(request.getUser().getId());
+            requestCollection.save(request);
+            FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
+        } catch (JsonProcessingException e) {
+            String msg = "Could not convert object to json string, got error: " + e.getMessage();
+            LOGGER.error(msg);
+        }
+
     }
 
     private void openTransaction(String requestId, String responseId) {
