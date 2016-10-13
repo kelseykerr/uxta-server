@@ -44,6 +44,10 @@ public class TransactionDto {
 
     public Transaction.ExchangeOverride returnOverride;
 
+    public String canceler;
+
+    public String canceledReason;
+
     public TransactionDto() {
 
     }
@@ -69,6 +73,8 @@ public class TransactionDto {
         this.exchangeOverride = transaction.getExchangeOverride();
         this.returnOverride = transaction.getReturnOverride();
         this.finalPrice = transaction.getFinalPrice();
+        this.canceler = transaction.getCanceler();
+        this.canceledReason = transaction.getCanceledReason();
 
     }
 }

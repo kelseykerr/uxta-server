@@ -4,6 +4,8 @@ import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.exception.*;
 import com.impulsecontrol.lend.exception.IllegalArgumentException;
+import com.impulsecontrol.lend.firebase.CcsServer;
+import com.impulsecontrol.lend.firebase.FirebaseUtils;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
@@ -15,12 +17,14 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.json.JSONObject;
 import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
@@ -43,16 +47,20 @@ public class TransactionsResource {
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<Transaction, String> transactionCollection;
     private TransactionService transactionService;
+    private CcsServer ccsServer;
+
 
     public TransactionsResource(JacksonDBCollection<Request, String> requestCollection,
                                 JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
                                 JacksonDBCollection<User, String> userCollection,
-                                JacksonDBCollection<Transaction, String> transactionCollection) {
+                                JacksonDBCollection<Transaction, String> transactionCollection,
+                                CcsServer ccsServer) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
         this.transactionCollection = transactionCollection;
         this.transactionService = new TransactionService(transactionCollection);
+        this.ccsServer = ccsServer;
     }
 
     @GET
@@ -74,7 +82,46 @@ public class TransactionsResource {
             throw new NotAuthorizedException("You do not have access to this transaction!");
         }
         return new TransactionDto(transaction, isSeller);
+    }
 
+    @DELETE
+    @Timed
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header")})
+    public TransactionDto getTransaction(@Auth @ApiParam(hidden = true) User principal,
+                                         @PathParam("transactionId") String transactionId,
+                                         @Valid TransactionDto dto) {
+        Transaction transaction = getTransaction(transactionId, principal.getUserId());
+        Request request = getRequest(transaction.getRequestId(), transactionId);
+        Response response = getResponse(transaction.getResponseId(), transactionId);
+        boolean isBuyer = request.getUser().getId().equals(principal.getId());
+        boolean isSeller = response.getSellerId().equals(principal.getId());
+        if (!isBuyer && !isSeller) {
+            LOGGER.error("User [" + principal.getId() + "] tried to get code for transaction ["
+                    + transactionId + "]");
+            throw new NotAuthorizedException("Invalid code");
+        }
+        transaction.setCanceler(principal.getId());
+        transaction.setCanceledReason(dto.canceledReason);
+        request.setStatus(Request.Status.CLOSED);
+        transactionCollection.save(transaction);
+        requestCollection.save(request);
+        JSONObject notification = new JSONObject();
+        notification.put("title", "Transaction Cancelled");
+        notification.put("type", "cancelled_transaction");
+        notification.put("reason", transaction.getCanceledReason());
+        if (isBuyer) {
+            User seller = userCollection.findOneById(response.getSellerId());
+            notification.put("message", seller.getFirstName() + " cancelled your transaction for a " + request.getId() + ".");
+            FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
+        } else {
+            notification.put("message", request.getUser().getFirstName() + " cancelled your transaction for a " + request.getId() + ".");
+            FirebaseUtils.sendFcmMessage(request.getUser(), null, notification, ccsServer);
+        }
+        return new TransactionDto(transaction, isSeller);
     }
 
     @GET

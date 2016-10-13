@@ -75,6 +75,10 @@ public class Transaction implements Serializable {
 
     private Boolean lostOrStolen;
 
+    private String canceledReason;
+
+    private String canceler;
+
     @ObjectId
     @JsonProperty("_id")
     public String getId() {
@@ -221,6 +225,22 @@ public class Transaction implements Serializable {
 
     public void setFinalPrice(Double finalPrice) {
         this.finalPrice = finalPrice;
+    }
+
+    public String getCanceledReason() {
+        return canceledReason;
+    }
+
+    public void setCanceledReason(String canceledReason) {
+        this.canceledReason = canceledReason;
+    }
+
+    public String getCanceler() {
+        return canceler;
+    }
+
+    public void setCanceler(String canceler) {
+        this.canceler = canceler;
     }
 
     /**

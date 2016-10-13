@@ -8,7 +8,6 @@ import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
-import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.firebase.FirebaseUtils;
@@ -27,8 +26,6 @@ import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.Transient;
-import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
