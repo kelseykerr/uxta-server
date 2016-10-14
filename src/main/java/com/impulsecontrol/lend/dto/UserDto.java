@@ -80,8 +80,8 @@ public class UserDto {
         dto.city = user.getCity();
         dto.state = user.getState();
         dto.zip = user.getZip();
-        dto.homeLongitude = user.getHomeLocation().getCoordinates()[0];
-        dto.homeLatitude = user.getHomeLocation().getCoordinates()[1];
+        dto.homeLongitude = user.getHomeLocation() != null ? user.getHomeLocation().getCoordinates()[0] : null;
+        dto.homeLatitude = user.getHomeLocation() != null ? user.getHomeLocation().getCoordinates()[1] : null;
         dto.newRequestNotificationsEnabled = user.getNewRequestNotificationsEnabled();
         dto.notificationRadius = user.getNotificationRadius();
         dto.notificationKeywords = user.getNotificationKeywords();

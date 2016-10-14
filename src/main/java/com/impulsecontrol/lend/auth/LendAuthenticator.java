@@ -112,6 +112,8 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         newUser.setFirstName(names[0]);
         newUser.setLastName(names[names.length - 1]);
         newUser.setUserId(userId);
+        String email = (String) userInfo.get("email");
+        newUser.setEmail(email);
         //TODO: check for error
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
         newUser = insertedUser.getSavedObject();
