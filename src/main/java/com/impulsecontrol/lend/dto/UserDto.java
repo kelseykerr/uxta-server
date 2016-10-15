@@ -6,6 +6,7 @@ import com.impulsecontrol.lend.model.User;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 /**
@@ -38,7 +39,7 @@ public class UserDto {
 
     public String city;
 
-    @Max(2)
+    @Size(max = 2)
     public String state;
 
     public String zip;

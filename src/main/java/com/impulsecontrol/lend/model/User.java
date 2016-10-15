@@ -3,9 +3,9 @@ package com.impulsecontrol.lend.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
-import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.security.Principal;
 import java.util.List;
@@ -47,7 +47,7 @@ public class User implements Serializable, Principal {
 
     private String city;
 
-    @Max(2)
+    @Size(max = 2)
     private String state;
 
     private String zip;

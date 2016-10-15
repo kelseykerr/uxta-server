@@ -148,7 +148,7 @@ public class UserResource {
             requestCollection.save(r);
         });
         userRequests.close();
-        return new UserDto(updatedUser);
+        return UserDto.getMyUserDto(updatedUser);
     }
 
     /*@DELETE
