@@ -58,6 +58,21 @@ public class UserDto {
 
     public Boolean homeLocationNotifications;
 
+    public String merchantId;
+
+    public String merchantStatus;
+
+    public String customerId;
+
+    public String dateOfBirth;
+
+    public String bankAccountNumber;
+
+    public String bankRoutingNumber;
+
+    public String fundingDestination;
+
+
     public UserDto() {}
 
     public UserDto(User user) {
@@ -88,6 +103,9 @@ public class UserDto {
         dto.notificationKeywords = user.getNotificationKeywords();
         dto.currentLocationNotifications = user.getCurrentLocationNotifications();
         dto.homeLocationNotifications = user.getHomeLocationNotifications();
+        dto.merchantId = user.getMerchantId();
+        dto.merchantStatus = user.getMerchantStatus();
+        dto.customerId = user.getCustomerId();
         return dto;
     }
 

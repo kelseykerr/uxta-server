@@ -64,6 +64,13 @@ public class User implements Serializable, Principal {
 
     private Boolean homeLocationNotifications;
 
+    private String merchantId;
+
+    private String merchantStatus;
+
+    private String customerId;
+
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -227,5 +234,29 @@ public class User implements Serializable, Principal {
 
     public void setHomeLocationNotifications(Boolean homeLocationNotifications) {
         this.homeLocationNotifications = homeLocationNotifications;
+    }
+
+    public String getMerchantId() {
+        return merchantId;
+    }
+
+    public void setMerchantId(String merchantId) {
+        this.merchantId = merchantId;
+    }
+
+    public String getMerchantStatus() {
+        return merchantStatus;
+    }
+
+    public void setMerchantStatus(String merchantStatus) {
+        this.merchantStatus = merchantStatus;
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
     }
 }

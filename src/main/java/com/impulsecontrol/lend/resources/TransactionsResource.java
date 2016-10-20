@@ -10,6 +10,7 @@ import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
+import com.impulsecontrol.lend.service.BraintreeService;
 import com.impulsecontrol.lend.service.TransactionService;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
@@ -48,6 +49,7 @@ public class TransactionsResource {
     private JacksonDBCollection<Transaction, String> transactionCollection;
     private TransactionService transactionService;
     private CcsServer ccsServer;
+    private BraintreeService braintreeService;
 
 
     public TransactionsResource(JacksonDBCollection<Request, String> requestCollection,
@@ -61,6 +63,7 @@ public class TransactionsResource {
         this.transactionCollection = transactionCollection;
         this.transactionService = new TransactionService(transactionCollection);
         this.ccsServer = ccsServer;
+        this.braintreeService = new BraintreeService();
     }
 
     @GET
@@ -291,6 +294,7 @@ public class TransactionsResource {
         }
         requestCollection.save(request);
         //TODO: send notification to buyer that they will be charged $x & initiate payment
+        braintreeService.doPayment(request.getUser(), transaction);
         return new TransactionDto(transaction, true);
     }
 

@@ -1,5 +1,9 @@
 package com.impulsecontrol.lend.service;
 
+import com.braintreegateway.BraintreeGateway;
+import com.braintreegateway.Environment;
+import com.braintreegateway.Result;
+import com.braintreegateway.TransactionRequest;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.CredentialExpiredException;
@@ -7,12 +11,14 @@ import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
+import com.impulsecontrol.lend.model.User;
 import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.CredentialException;
 import javax.ws.rs.NotAuthorizedException;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.UUID;
 
