@@ -46,4 +46,16 @@ public class LendConfiguration extends Configuration {
     @JsonProperty
     @NotEmpty
     public String fcmSenderId;
+
+    @JsonProperty
+    @NotEmpty
+    public String btMerchantId;
+
+    @JsonProperty
+    @NotEmpty
+    public String btPublicKey;
+
+    @JsonProperty
+    @NotEmpty
+    public String btPrivateKey;
 }

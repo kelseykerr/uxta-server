@@ -15,6 +15,7 @@ import com.impulsecontrol.lend.resources.RequestsResource;
 import com.impulsecontrol.lend.resources.ResponsesResource;
 import com.impulsecontrol.lend.resources.TransactionsResource;
 import com.impulsecontrol.lend.resources.UserResource;
+import com.impulsecontrol.lend.service.BraintreeService;
 import com.impulsecontrol.lend.service.RequestService;
 import com.impulsecontrol.lend.service.ResponseService;
 import com.impulsecontrol.lend.service.UserService;
@@ -49,12 +50,12 @@ public class LendApplication extends Application<LendConfiguration> {
     }
 
     @Override
-    public void run(LendConfiguration configuration, Environment environment) throws Exception {
-        Mongo mongo = new Mongo(configuration.mongohost, configuration.mongoport);
+    public void run(LendConfiguration config, Environment environment) throws Exception {
+        Mongo mongo = new Mongo(config.mongohost, config.mongoport);
 
         MongoManaged mongoManaged = new MongoManaged(mongo);
         environment.lifecycle().manage(mongoManaged);
-        DB db = mongo.getDB(configuration.mongodb);
+        DB db = mongo.getDB(config.mongodb);
 
         JacksonDBCollection<User, String> userCollection =
                 JacksonDBCollection.wrap(db.getCollection("user"), User.class, String.class);
@@ -72,22 +73,25 @@ public class LendApplication extends Application<LendConfiguration> {
                 JacksonDBCollection.wrap(db.getCollection("transaction"), Transaction.class, String.class);
 
         // cloud connection server
-        CcsServer ccsServer = new CcsServer(configuration.fcmServer, configuration.fcmPort, "not sure",
-                configuration.fcmApiKey, configuration.fcmSenderId);
+        CcsServer ccsServer = new CcsServer(config.fcmServer, config.fcmPort, "not sure",
+                config.fcmApiKey, config.fcmSenderId);
         ccsServer.connect();
 
         requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
-        UserService userService = new UserService();
         ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection,
                 transactionCollection, ccsServer);
+        BraintreeService braintreeService = new BraintreeService(config.btMerchantId, config.btPublicKey,
+                config.btPrivateKey, userCollection);
+        UserService userService = new UserService(braintreeService);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
         RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));
-        environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection, transactionCollection, ccsServer));
-        environment.jersey().register(new BraintreeResource());
-        LendAuthenticator authenticator = new LendAuthenticator(userCollection, configuration.fbAccessToken);
+        environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,
+                transactionCollection, ccsServer, braintreeService));
+        environment.jersey().register(new BraintreeResource(braintreeService));
+        LendAuthenticator authenticator = new LendAuthenticator(userCollection, config.fbAccessToken);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)
                 .setAuthorizer(new LendAuthorizer())

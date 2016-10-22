@@ -56,14 +56,14 @@ public class TransactionsResource {
                                 JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
                                 JacksonDBCollection<User, String> userCollection,
                                 JacksonDBCollection<Transaction, String> transactionCollection,
-                                CcsServer ccsServer) {
+                                CcsServer ccsServer, BraintreeService braintreeService) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
         this.transactionCollection = transactionCollection;
         this.transactionService = new TransactionService(transactionCollection);
         this.ccsServer = ccsServer;
-        this.braintreeService = new BraintreeService();
+        this.braintreeService = braintreeService;
     }
 
     @GET

@@ -70,8 +70,11 @@ public class UserDto {
 
     public String bankRoutingNumber;
 
-    public String fundingDestination;
+    public FundDestination fundDestination;
 
+    public Boolean tosAccepted;
+
+    public String paymentMethodNonce;
 
     public UserDto() {}
 
@@ -106,6 +109,7 @@ public class UserDto {
         dto.merchantId = user.getMerchantId();
         dto.merchantStatus = user.getMerchantStatus();
         dto.customerId = user.getCustomerId();
+        dto.tosAccepted = user.getTosAccepted();
         return dto;
     }
 
@@ -117,5 +121,9 @@ public class UserDto {
         dto.lastName = user.getLastName();
         dto.fullName = user.getName();
         return dto;
+    }
+
+    public enum FundDestination {
+        email, mobile_phone, bank
     }
 }

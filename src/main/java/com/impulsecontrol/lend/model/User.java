@@ -70,6 +70,11 @@ public class User implements Serializable, Principal {
 
     private String customerId;
 
+    private String dateOfBirth;
+
+    // the user must accept the tos before getting a braintree account and being able to make requests/responses
+    private Boolean tosAccepted;
+
 
     public User() {}
 
@@ -258,5 +263,21 @@ public class User implements Serializable, Principal {
 
     public void setCustomerId(String customerId) {
         this.customerId = customerId;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public Boolean getTosAccepted() {
+        return tosAccepted;
+    }
+
+    public void setTosAccepted(Boolean tosAccepted) {
+        this.tosAccepted = tosAccepted;
     }
 }

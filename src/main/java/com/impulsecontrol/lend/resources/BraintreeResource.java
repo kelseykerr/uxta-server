@@ -9,9 +9,12 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiParam;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 /**
@@ -23,8 +26,8 @@ public class BraintreeResource {
 
     private BraintreeService braintreeService;
 
-    public BraintreeResource() {
-        this.braintreeService = new BraintreeService();
+    public BraintreeResource(BraintreeService braintreeService) {
+        this.braintreeService = braintreeService;
     }
 
     @GET
@@ -37,5 +40,14 @@ public class BraintreeResource {
             paramType = "header") })
     public String getClientToken(@Auth @ApiParam(hidden=true) User principal) {
         return braintreeService.getBraintreeClientToken();
+    }
+
+    @POST
+    @Path("/webhooks")
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Timed
+    public void submerchantStatus(@QueryParam("bt_signature") String signature,
+                                 @QueryParam("bt_payload") String payload) {
+        braintreeService.handleWebhookResponse(signature, payload);
     }
 }
