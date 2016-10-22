@@ -67,6 +67,9 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
                     User newUser = createNewUser(userId);
                     return Optional.of(newUser);
                 }
+                if (user.getTosAccepted() == null) {
+                    user.setTosAccepted(false);
+                }
                 return Optional.of(user);
             } catch (IOException e) {
                 throw new AuthenticationException("could not authenticate: " + e.getMessage());

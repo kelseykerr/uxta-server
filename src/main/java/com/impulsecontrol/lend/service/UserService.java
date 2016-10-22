@@ -74,7 +74,7 @@ public class UserService {
         individualRequest.dateOfBirth(dto.dateOfBirth);
         individualRequest.done();
         user.setTosAccepted(dto.tosAccepted);
-        braintreeRequest.tosAccepted(dto.tosAccepted);
+        braintreeRequest.tosAccepted(dto.tosAccepted == null ? user.getTosAccepted() : dto.tosAccepted);
         if (dto.fundDestination != null && dto.tosAccepted) {
             saveMerchantAccount(user, dto, braintreeRequest);
         } if (dto.paymentMethodNonce != null) {

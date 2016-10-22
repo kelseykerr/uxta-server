@@ -75,6 +75,8 @@ public class User implements Serializable, Principal {
     // the user must accept the tos before getting a braintree account and being able to make requests/responses
     private Boolean tosAccepted;
 
+    private String paymentMethodNonce;
+
 
     public User() {}
 
@@ -279,5 +281,13 @@ public class User implements Serializable, Principal {
 
     public void setTosAccepted(Boolean tosAccepted) {
         this.tosAccepted = tosAccepted;
+    }
+
+    public String getPaymentMethodNonce() {
+        return paymentMethodNonce;
+    }
+
+    public void setPaymentMethodNonce(String paymentMethodNonce) {
+        this.paymentMethodNonce = paymentMethodNonce;
     }
 }

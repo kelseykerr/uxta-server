@@ -8,12 +8,16 @@ import com.braintreegateway.MerchantAccount;
 import com.braintreegateway.MerchantAccountRequest;
 import com.braintreegateway.Result;
 import com.braintreegateway.Transaction;
+import com.braintreegateway.ValidationError;
 import com.braintreegateway.WebhookNotification;
 import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.exception.NotFoundException;
+import com.impulsecontrol.lend.firebase.CcsServer;
+import com.impulsecontrol.lend.firebase.FirebaseUtils;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.json.JSONObject;
 import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,17 +30,19 @@ public class BraintreeService {
     private String merchantId;
     private String publicKey;
     private String privateKey;
+    private CcsServer ccsServer;
     private static BraintreeGateway gateway;
     private static final Logger LOGGER = LoggerFactory.getLogger(BraintreeService.class);
     private JacksonDBCollection<User, String> userCollection;
 
     public BraintreeService(String merchantId, String publicKey, String privateKey,
-                            JacksonDBCollection<User, String> userCollection) {
+                            JacksonDBCollection<User, String> userCollection, CcsServer ccsServer) {
         this.merchantId = merchantId;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
         this.gateway = new BraintreeGateway(Environment.SANDBOX, merchantId, publicKey, privateKey);
         this.userCollection = userCollection;
+        this.ccsServer = ccsServer;
     }
 
 
@@ -104,9 +110,25 @@ public class BraintreeService {
             user.setMerchantStatus(notification.getMerchantAccount().getStatus().toString());
             userCollection.save(user);
             if (notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_DECLINED) {
-                //TODO: send notification that the braintree merchant account was not approved
+                JSONObject n = new JSONObject();
+                n.put("title", "Merchant Account Declined");
+                String errorMessage = "";
+                for (ValidationError e:notification.getErrors().getAllValidationErrors()) {
+                    errorMessage += "**attribute: " + e.getAttribute() + " **error: " + e.getMessage() + "\n";
+
+                }
+                LOGGER.error("Merchant account declined for user [" + user.getId() + "]: " + errorMessage);
+                n.put("message", errorMessage);
+                n.put("type", "merchant_account_status");
+                User recipient = userCollection.findOneById(user.getId());
+                FirebaseUtils.sendFcmMessage(recipient, null, n, ccsServer);
             } else {
-                //TODO: send notification that the braintree merchant account was approved
+                JSONObject n = new JSONObject();
+                n.put("title", "Merchant Account Approved");
+                n.put("message", "You can now create offers and earn money through Nearby!");
+                n.put("type", "merchant_account_status");
+                User recipient = userCollection.findOneById(user.getId());
+                FirebaseUtils.sendFcmMessage(recipient, null, n, ccsServer);
             }
         }
     }
