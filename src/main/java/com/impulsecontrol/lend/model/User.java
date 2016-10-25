@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.model;
 
+import com.braintreegateway.MerchantAccount;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
@@ -77,6 +78,7 @@ public class User implements Serializable, Principal {
 
     private String paymentMethodNonce;
 
+    private MerchantAccount.FundingDestination fundDestination;
 
     public User() {}
 
@@ -289,5 +291,13 @@ public class User implements Serializable, Principal {
 
     public void setPaymentMethodNonce(String paymentMethodNonce) {
         this.paymentMethodNonce = paymentMethodNonce;
+    }
+
+    public MerchantAccount.FundingDestination getFundDestination() {
+        return fundDestination;
+    }
+
+    public void setFundDestination(MerchantAccount.FundingDestination fundDestination) {
+        this.fundDestination = fundDestination;
     }
 }

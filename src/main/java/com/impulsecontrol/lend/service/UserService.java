@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.service;
 
+import com.braintreegateway.AddressRequest;
 import com.braintreegateway.Customer;
 import com.braintreegateway.CustomerRequest;
 import com.braintreegateway.FundingRequest;
@@ -10,6 +11,7 @@ import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.IllegalArgumentException;
 import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.model.GeoJsonPoint;
+import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -53,15 +55,16 @@ public class UserService {
         user.setPhone(dto.phone);
         individualRequest.phone(dto.phone);
         user.setAddress(dto.address);
-        individualRequest.address().streetAddress(dto.address);
         user.setAddressLine2(dto.addressLine2);
         user.setCity(dto.city);
-        individualRequest.address().locality(dto.city);
         user.setState(dto.state);
-        individualRequest.address().region(dto.state);
         user.setZip(dto.zip);
-        individualRequest.address().postalCode(dto.zip);
-        individualRequest.address().done();
+        individualRequest.address()
+                .streetAddress(dto.address)
+                .locality(dto.city)
+                .region(dto.state)
+                .postalCode(dto.zip)
+                .done();
         if (StringUtils.isNotBlank(dto.address)) {
             setHomeLatLng(user, dto);
         }
@@ -75,9 +78,23 @@ public class UserService {
         individualRequest.done();
         user.setTosAccepted(dto.tosAccepted);
         braintreeRequest.tosAccepted(dto.tosAccepted == null ? user.getTosAccepted() : dto.tosAccepted);
-        if (dto.fundDestination != null && dto.tosAccepted) {
-            saveMerchantAccount(user, dto, braintreeRequest);
-        } if (dto.paymentMethodNonce != null) {
+        if (dto.fundDestination != null) {
+            switch (dto.fundDestination) {
+                case "bank":
+                    user.setFundDestination(MerchantAccount.FundingDestination.BANK);
+                    break;
+                case "email":
+                    user.setFundDestination(MerchantAccount.FundingDestination.EMAIL);
+                    break;
+                case "mobile_phone":
+                    user.setFundDestination(MerchantAccount.FundingDestination.MOBILE_PHONE);
+                    break;
+            }
+            if (dto.tosAccepted) {
+                saveMerchantAccount(user, dto, braintreeRequest);
+            }
+        }
+        if (dto.paymentMethodNonce != null) {
             saveCustomerAccount(user, dto);
         }
         return user;
@@ -156,30 +173,9 @@ public class UserService {
 
     private void saveMerchantAccount(User user, UserDto dto, MerchantAccountRequest braintreeRequest) {
         FundingRequest fundingRequest = braintreeRequest.funding();
-        String destination = dto.fundDestination.toString();
-        fundingRequest.destination(MerchantAccount.FundingDestination.valueOf(destination));
-        switch (destination) {
-            case "email": {
-                if (dto.email == null) {
-                    String msg = "You selected [email] as the destination for your Nearby funds, " +
-                            "but did not enter an email address!";
-                    LOGGER.error(dto.id + " " + msg);
-                    throw new IllegalArgumentException(msg);
-                }
-                fundingRequest.email(dto.email);
-                break;
-            }
-            case "mobile_phone": {
-                if (dto.phone == null) {
-                    String msg = "You selected [mobile phone] as the destination for your Nearby funds, " +
-                            "but did not enter a phone number!";
-                    LOGGER.error(dto.id + " " + msg);
-                    throw new IllegalArgumentException(msg);
-                }
-                fundingRequest.mobilePhone(dto.phone.replace("-", ""));
-                break;
-            }
-            case "bank": {
+        switch (dto.fundDestination) {
+            case "bank":
+                fundingRequest.destination(MerchantAccount.FundingDestination.BANK);
                 if (dto.bankRoutingNumber == null || dto.bankAccountNumber == null) {
                     String msg = "To make bank deposits, you must provide both your routing number and your account number";
                     LOGGER.error(dto.id + " " + msg);
@@ -188,9 +184,29 @@ public class UserService {
                 fundingRequest.accountNumber(dto.bankAccountNumber);
                 fundingRequest.routingNumber(dto.bankRoutingNumber);
                 break;
-            }
+            case "email":
+                fundingRequest.destination(MerchantAccount.FundingDestination.EMAIL);
+                if (dto.email == null) {
+                    String msg = "You selected [email] as the destination for your Nearby funds, " +
+                            "but did not enter an email address!";
+                    LOGGER.error(dto.id + " " + msg);
+                    throw new IllegalArgumentException(msg);
+                }
+                fundingRequest.email(dto.email);
+                break;
+            case "mobile_phone":
+                fundingRequest.destination(MerchantAccount.FundingDestination.MOBILE_PHONE);
+                if (dto.phone == null) {
+                    String msg = "You selected [mobile phone] as the destination for your Nearby funds, " +
+                            "but did not enter a phone number!";
+                    LOGGER.error(dto.id + " " + msg);
+                    throw new IllegalArgumentException(msg);
+                }
+                fundingRequest.mobilePhone(dto.phone.replace("-", ""));
+                break;
         }
         fundingRequest.done();
+        LOGGER.info("braintree request: " + braintreeRequest.toQueryString());
         if (user.getMerchantId() != null) {
             braintreeService.updateMerchantAccount(braintreeRequest, user.getMerchantId());
         } else {
