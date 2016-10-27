@@ -78,19 +78,23 @@ public class UserService {
         individualRequest.done();
         user.setTosAccepted(dto.tosAccepted);
         braintreeRequest.tosAccepted(dto.tosAccepted == null ? user.getTosAccepted() : dto.tosAccepted);
+        boolean updateMerchantAccount = false;
         if (dto.fundDestination != null) {
             switch (dto.fundDestination) {
                 case "bank":
                     user.setFundDestination(MerchantAccount.FundingDestination.BANK);
+                    updateMerchantAccount = StringUtils.isNotEmpty(dto.bankAccountNumber) && StringUtils.isNotEmpty(dto.bankRoutingNumber);
                     break;
                 case "email":
                     user.setFundDestination(MerchantAccount.FundingDestination.EMAIL);
+                    updateMerchantAccount = StringUtils.isNotEmpty(dto.email);
                     break;
                 case "mobile_phone":
                     user.setFundDestination(MerchantAccount.FundingDestination.MOBILE_PHONE);
+                    updateMerchantAccount = StringUtils.isNotEmpty(dto.phone);
                     break;
             }
-            if (dto.tosAccepted) {
+            if (dto.tosAccepted && updateMerchantAccount) {
                 saveMerchantAccount(user, dto, braintreeRequest);
             }
         }
@@ -165,7 +169,8 @@ public class UserService {
                 .lastName(userDto.lastName)
                 .phone(userDto.phone)
                 .email(userDto.email)
-                .paymentMethodNonce(userDto.paymentMethodNonce);
+                .creditCard().paymentMethodNonce(userDto.paymentMethodNonce).options().verifyCard(true).done()
+                .done();
 
         Customer customer = braintreeService.saveOrUpdateCustomer(request, userDto.customerId);
         user.setCustomerId(customer.getId());

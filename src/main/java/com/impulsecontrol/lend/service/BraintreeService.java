@@ -8,6 +8,7 @@ import com.braintreegateway.MerchantAccount;
 import com.braintreegateway.MerchantAccountRequest;
 import com.braintreegateway.Result;
 import com.braintreegateway.Transaction;
+import com.braintreegateway.TransactionRequest;
 import com.braintreegateway.ValidationError;
 import com.braintreegateway.WebhookNotification;
 import com.impulsecontrol.lend.exception.InternalServerException;
@@ -21,6 +22,8 @@ import org.json.JSONObject;
 import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.math.BigDecimal;
 
 /**
  * Created by kerrk on 10/16/16.
@@ -46,17 +49,42 @@ public class BraintreeService {
     }
 
 
-    public Result<Transaction> doPayment(User user, com.impulsecontrol.lend.model.Transaction transaction) {
-        /*TransactionRequest request = new TransactionRequest()
-                .amount(BigDecimal.valueOf(transaction.getFinalPrice()))
-                .paymentMethodNonce(user.getPaymentMethodNonce())
-                .options()
-                .submitForSettlement(true)
-                .done();
+    public Result<Transaction> doPayment(User buyer, User seller, com.impulsecontrol.lend.model.Transaction transaction) {
+        if (buyer.getCustomerId() == null) {
+            String msg = "Could not do payment because user [" + buyer.getId() + "] does not have a customer account.";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
+        } else if (seller.getMerchantId() ==  null) {
+            String msg = "Could not do payment because user [" + seller.getId() + "] does not have a merchant account.";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
+        }
+        BigDecimal price = BigDecimal.valueOf(transaction.getFinalPrice());
+        BigDecimal fee = BigDecimal.valueOf(transaction.getFinalPrice() * .03 + .30);
 
-        Result<com.braintreegateway.Transaction> result = gateway.transaction().sale(request);*/
-        return null;
+        TransactionRequest request = new TransactionRequest()
+                .merchantAccountId(seller.getMerchantId())
+                .amount(price)
+                .customerId(buyer.getCustomerId())
+                .serviceFeeAmount(fee);
 
+        Result<Transaction> result = gateway.transaction().sale(request);
+
+        if (result.isSuccess()) {
+            LOGGER.info("Successfully charged/paid users for transaction[ " + transaction.getId() + "].");
+            return result;
+        } else {
+            String msg = "Unable to charge/pay users for transaction[" + transaction.getId() + "], got error: " +
+                    result.getMessage();
+            LOGGER.error(msg);
+            LOGGER.error(request.toString());
+            if (result.getErrors() != null) {
+                result.getErrors().getAllValidationErrors().forEach(e -> {
+                    LOGGER.error("***braintree attribute: " + e.getAttribute() + "  **error: " + e.getMessage());
+                });
+            }
+            throw new InternalServerException(msg);
+        }
     }
 
     public String getBraintreeClientToken() {
@@ -77,7 +105,6 @@ public class BraintreeService {
     public Customer saveOrUpdateCustomer(CustomerRequest request, String customerId) {
         Result<Customer> result = customerId != null ? gateway.customer().update(customerId, request) :
                 gateway.customer().create(request);
-        result.isSuccess();
         if (result.isSuccess()) {
             Customer customer = result.getTarget();
             LOGGER.info("Successfully created/updated customer account request: " + request.toQueryString());

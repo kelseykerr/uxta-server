@@ -294,7 +294,8 @@ public class TransactionsResource {
         }
         requestCollection.save(request);
         //TODO: send notification to buyer that they will be charged $x & initiate payment
-        braintreeService.doPayment(request.getUser(), transaction);
+        braintreeService.doPayment(request.getUser(), principal, transaction);
+        request.setStatus(Request.Status.FULFILLED);
         return new TransactionDto(transaction, true);
     }
 

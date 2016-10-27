@@ -112,6 +112,7 @@ public class UserDto {
         dto.tosAccepted = user.getTosAccepted();
         dto.paymentMethodNonce = user.getPaymentMethodNonce();
         dto.fundDestination = user.getFundDestination() != null ? user.getFundDestination().toString() : null;
+        dto.dateOfBirth = user.getDateOfBirth();
         return dto;
     }
 
