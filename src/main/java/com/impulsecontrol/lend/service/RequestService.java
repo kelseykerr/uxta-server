@@ -85,6 +85,7 @@ public class RequestService {
     }
 
     public void sendRecentRequestsNotification(User user, Double longitude, Double latitude) {
+        LOGGER.info("Fetching recent requests for user [" + user.getId() + "]");
         JSONObject notification = new JSONObject();
         notification.put("title", "Recent Requests");
         notification.put("type", "request_notification");
@@ -139,6 +140,7 @@ public class RequestService {
             }
             userRequests.close();
         }
+        LOGGER.info("Notification for user [" + user.getId() + "]: " + body);
         notification.put("message", body);
         if (newRequests) {
             FirebaseUtils.sendFcmMessage(user, null, notification, ccsServer);

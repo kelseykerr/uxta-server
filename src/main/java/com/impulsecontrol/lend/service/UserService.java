@@ -1,6 +1,5 @@
 package com.impulsecontrol.lend.service;
 
-import com.braintreegateway.AddressRequest;
 import com.braintreegateway.Customer;
 import com.braintreegateway.CustomerRequest;
 import com.braintreegateway.FundingRequest;
@@ -11,7 +10,6 @@ import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.IllegalArgumentException;
 import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.model.GeoJsonPoint;
-import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -213,10 +211,12 @@ public class UserService {
         fundingRequest.done();
         LOGGER.info("braintree request: " + braintreeRequest.toQueryString());
         if (user.getMerchantId() != null) {
-            braintreeService.updateMerchantAccount(braintreeRequest, user.getMerchantId());
+            MerchantAccount ma = braintreeService.updateMerchantAccount(braintreeRequest, user.getMerchantId());
+            user.setMerchantStatus(ma.getStatus().toString());
         } else {
             MerchantAccount ma = braintreeService.createNewMerchantAccount(braintreeRequest);
             user.setMerchantId(ma.getId());
+            user.setMerchantStatus(ma.getStatus().toString());
         }
 
     }

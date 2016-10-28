@@ -61,7 +61,7 @@ public class TransactionsResource {
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
         this.transactionCollection = transactionCollection;
-        this.transactionService = new TransactionService(transactionCollection);
+        this.transactionService = new TransactionService(transactionCollection, userCollection, ccsServer);
         this.ccsServer = ccsServer;
         this.braintreeService = braintreeService;
     }
@@ -296,6 +296,7 @@ public class TransactionsResource {
         //TODO: send notification to buyer that they will be charged $x & initiate payment
         braintreeService.doPayment(request.getUser(), principal, transaction);
         request.setStatus(Request.Status.FULFILLED);
+        requestCollection.save(request);
         return new TransactionDto(transaction, true);
     }
 

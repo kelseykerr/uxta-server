@@ -302,7 +302,7 @@ public class ResponseService {
                 " has been closed because the user accepted another offer or closed the request. Thanks for your offer!";
         //TODO: think about doing this asynchronously
         responses.forEach(r -> {
-            if (r.getId() != response.getId()) {
+            if (!r.getId().equals(response.getId())) {
                 try {
                     r.setBuyerStatus(Response.BuyerStatus.CLOSED);
                     r.setResponseStatus(Response.Status.CLOSED);

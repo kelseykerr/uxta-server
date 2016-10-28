@@ -4,14 +4,20 @@ import com.braintreegateway.BraintreeGateway;
 import com.braintreegateway.Environment;
 import com.braintreegateway.Result;
 import com.braintreegateway.TransactionRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.impulsecontrol.lend.dto.RequestDto;
+import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.CredentialExpiredException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
+import com.impulsecontrol.lend.firebase.CcsServer;
+import com.impulsecontrol.lend.firebase.FirebaseUtils;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
+import org.json.JSONObject;
 import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +37,16 @@ public class TransactionService {
 
     private JacksonDBCollection<Transaction, String> transactionCollection;
 
+    private JacksonDBCollection<User, String> userCollection;
 
-    public TransactionService(JacksonDBCollection<Transaction, String> transactionCollection) {
+    private CcsServer ccsServer;
+
+
+    public TransactionService(JacksonDBCollection<Transaction, String> transactionCollection,
+                              JacksonDBCollection<User, String> userCollection, CcsServer ccsServer) {
         this.transactionCollection = transactionCollection;
+        this.userCollection = userCollection;
+        this.ccsServer = ccsServer;
     }
 
     public void enterReturnCode(Transaction transaction, Response response, String code) {
@@ -74,6 +87,12 @@ public class TransactionService {
                 transaction.setExchangeTime(new Date());
                 transaction.setExchanged(true);
                 transactionCollection.save(transaction);
+                JSONObject notification = new JSONObject();
+                notification.put("title", "Exchange Confirmed");
+                notification.put("message", "exchange confirmed!");
+                notification.put("type", "exchange_confirmed");
+                User seller = userCollection.findOneById(response.getSellerId());
+                FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
             } else {
                 LOGGER.error("Transaction [" + transaction.getId() + "]'s code has expired");
                 throw new CredentialExpiredException("This exchange code has expired. Ask the seller to generate a new one.");

@@ -24,6 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+import java.util.Currency;
 
 /**
  * Created by kerrk on 10/16/16.
@@ -37,6 +40,9 @@ public class BraintreeService {
     private static BraintreeGateway gateway;
     private static final Logger LOGGER = LoggerFactory.getLogger(BraintreeService.class);
     private JacksonDBCollection<User, String> userCollection;
+    private static final Currency USD = Currency.getInstance("USD");
+    private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.HALF_EVEN;
+
 
     public BraintreeService(String merchantId, String publicKey, String privateKey,
                             JacksonDBCollection<User, String> userCollection, CcsServer ccsServer) {
@@ -60,7 +66,9 @@ public class BraintreeService {
             throw new NotFoundException(msg);
         }
         BigDecimal price = BigDecimal.valueOf(transaction.getFinalPrice());
+        price = price.setScale(USD.getDefaultFractionDigits(), DEFAULT_ROUNDING);
         BigDecimal fee = BigDecimal.valueOf(transaction.getFinalPrice() * .03 + .30);
+        fee = fee.setScale(USD.getDefaultFractionDigits(), DEFAULT_ROUNDING);
 
         TransactionRequest request = new TransactionRequest()
                 .merchantAccountId(seller.getMerchantId())
