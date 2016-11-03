@@ -67,7 +67,10 @@ public class User implements Serializable, Principal {
 
     private String merchantId;
 
+    // options are: PENDING, ACTIVE, SUSPENDED, UNRECOGNIZED
     private String merchantStatus;
+
+    private String merchantStatusMessage;
 
     private String customerId;
 
@@ -299,5 +302,13 @@ public class User implements Serializable, Principal {
 
     public void setFundDestination(MerchantAccount.FundingDestination fundDestination) {
         this.fundDestination = fundDestination;
+    }
+
+    public String getMerchantStatusMessage() {
+        return merchantStatusMessage;
+    }
+
+    public void setMerchantStatusMessage(String merchantStatusMessage) {
+        this.merchantStatusMessage = merchantStatusMessage;
     }
 }

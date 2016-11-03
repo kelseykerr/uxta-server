@@ -3,8 +3,6 @@ package com.impulsecontrol.lend.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.impulsecontrol.lend.model.User;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.util.List;
@@ -62,6 +60,8 @@ public class UserDto {
 
     public String merchantStatus;
 
+    public String merchantStatusMessage;
+
     public String customerId;
 
     public String dateOfBirth;
@@ -108,6 +108,7 @@ public class UserDto {
         dto.homeLocationNotifications = user.getHomeLocationNotifications();
         dto.merchantId = user.getMerchantId();
         dto.merchantStatus = user.getMerchantStatus();
+        dto.merchantStatusMessage = user.getMerchantStatusMessage();
         dto.customerId = user.getCustomerId();
         dto.tosAccepted = user.getTosAccepted();
         dto.paymentMethodNonce = user.getPaymentMethodNonce();

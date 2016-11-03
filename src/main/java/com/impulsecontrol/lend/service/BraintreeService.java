@@ -74,7 +74,10 @@ public class BraintreeService {
                 .merchantAccountId(seller.getMerchantId())
                 .amount(price)
                 .customerId(buyer.getCustomerId())
-                .serviceFeeAmount(fee);
+                .serviceFeeAmount(fee)
+                .options()
+                    .submitForSettlement(true)
+                    .done();
 
         Result<Transaction> result = gateway.transaction().sale(request);
 
@@ -143,7 +146,6 @@ public class BraintreeService {
                 throw new NotFoundException(msg);
             }
             user.setMerchantStatus(notification.getMerchantAccount().getStatus().toString());
-            userCollection.save(user);
             if (notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_DECLINED) {
                 JSONObject n = new JSONObject();
                 n.put("title", "Merchant Account Declined");
@@ -155,8 +157,8 @@ public class BraintreeService {
                 LOGGER.error("Merchant account declined for user [" + user.getId() + "]: " + errorMessage);
                 n.put("message", errorMessage);
                 n.put("type", "merchant_account_status");
-                User recipient = userCollection.findOneById(user.getId());
-                FirebaseUtils.sendFcmMessage(recipient, null, n, ccsServer);
+                user.setMerchantStatusMessage(errorMessage);
+                FirebaseUtils.sendFcmMessage(user, null, n, ccsServer);
             } else {
                 JSONObject n = new JSONObject();
                 n.put("title", "Merchant Account Approved");
@@ -165,6 +167,7 @@ public class BraintreeService {
                 User recipient = userCollection.findOneById(user.getId());
                 FirebaseUtils.sendFcmMessage(recipient, null, n, ccsServer);
             }
+            userCollection.save(user);
         }
     }
 
