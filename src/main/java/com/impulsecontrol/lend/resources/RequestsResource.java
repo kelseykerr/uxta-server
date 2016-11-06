@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
+import com.impulsecontrol.lend.exception.NotAllowedException;
 import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
@@ -123,6 +124,11 @@ public class RequestsResource {
             dataType = "string",
             paramType = "header")})
     public RequestDto createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
+        //TODO: take our Kei bypass when he has this set up
+        if (!principal.isPaymentSetup() && principal.getId() != "190639591352732") {
+            LOGGER.error("User [" + principal.getId() + "] tried to make a request without adding a valid payment method");
+            throw new NotAllowedException("Cannot create request because you have not added a valid payment method to your account");
+        }
         Request request = requestService.transformRequestDto(dto, principal);
         WriteResult<Request, String> newRequest = requestCollection.insert(request);
         request = newRequest.getSavedObject();

@@ -64,6 +64,10 @@ public class UserDto {
 
     public String customerId;
 
+    public Boolean isPaymentSetup;
+
+    public String customerStatus;
+
     public String dateOfBirth;
 
     public String bankAccountNumber;
@@ -114,6 +118,8 @@ public class UserDto {
         dto.paymentMethodNonce = user.getPaymentMethodNonce();
         dto.fundDestination = user.getFundDestination() != null ? user.getFundDestination().toString() : null;
         dto.dateOfBirth = user.getDateOfBirth();
+        dto.isPaymentSetup = user.isPaymentSetup();
+        dto.customerStatus = user.getCustomerStatus();
         return dto;
     }
 

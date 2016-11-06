@@ -121,7 +121,7 @@ public class ResponsesResource {
                                                  @Valid ResponseDto dto) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
-            String msg = "unable to return responses for request [" + id + "], " +
+            String msg = "unable to create response for request [" + id + "], " +
                     "because the request was not found";
             LOGGER.error(msg);
             throw new NotFoundException(msg);
@@ -130,6 +130,13 @@ public class ResponsesResource {
             String msg = "You cannot create an offer for your own request";
             LOGGER.error(msg);
             throw new NotAllowedException(msg);
+        }
+        boolean goodMerchantStatus = principal.getMerchantStatus() != null &&
+                principal.getMerchantStatus().toLowerCase().equals("active");
+        //TODO: take our Kei bypass when he has this set up
+        if ((principal.getMerchantId() == null || !goodMerchantStatus) && principal.getId() != "190639591352732") {
+            LOGGER.error("User [" + principal.getId() + "] tried to create an offer without a valid merchant account");
+            throw new NotAllowedException("Cannot create offer because your merchant account has not been successfully setup.");
         }
         BasicDBObject query = new BasicDBObject();
         query.append("requestId", id);

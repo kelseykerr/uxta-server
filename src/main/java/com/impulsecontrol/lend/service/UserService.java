@@ -99,6 +99,7 @@ public class UserService {
         if (dto.paymentMethodNonce != null) {
             saveCustomerAccount(user, dto);
         }
+        braintreeService.setCustomerStatus(user);
         return user;
     }
 

@@ -187,4 +187,24 @@ public class BraintreeService {
             throw new InternalServerException(msg);
         }
     }
+
+    public void setCustomerStatus(User user) {
+        if (user.getCustomerId() == null) {
+            user.setPaymentSetup(false);
+            user.setCustomerStatus("Customer account has not been created. Please add a payment method to your account");
+        }
+        Customer customer = gateway.customer().find(user.getCustomerId());
+        if (customer == null) {
+            user.setPaymentSetup(false);
+            user.setCustomerStatus("Customer account has not been created. Please add a payment method to your account");
+        }
+        boolean hasCreditCard = customer.getCreditCards() != null && customer.getCreditCards().size() > 0;
+        boolean hasVenmo = customer.getVenmoAccounts() != null && customer.getVenmoAccounts().size() > 0;
+        user.setPaymentSetup(hasCreditCard || hasVenmo);
+        if (hasCreditCard || hasVenmo) {
+            user.setCustomerStatus("valid");
+        } else {
+            user.setCustomerStatus("Please add a payment method to your account");
+        }
+    }
 }

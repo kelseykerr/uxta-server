@@ -83,6 +83,12 @@ public class User implements Serializable, Principal {
 
     private MerchantAccount.FundingDestination fundDestination;
 
+    // is a payment method entered in the customers braintree account?
+    private Boolean paymentSetup;
+
+    // what is the status of the braintree customer account? This string can be displayed on the account page
+    private String customerStatus;
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -310,5 +316,21 @@ public class User implements Serializable, Principal {
 
     public void setMerchantStatusMessage(String merchantStatusMessage) {
         this.merchantStatusMessage = merchantStatusMessage;
+    }
+
+    public Boolean isPaymentSetup() {
+        return paymentSetup;
+    }
+
+    public void setPaymentSetup(boolean paymentSetup) {
+        this.paymentSetup = paymentSetup;
+    }
+
+    public String getCustomerStatus() {
+        return customerStatus;
+    }
+
+    public void setCustomerStatus(String customerStatus) {
+        this.customerStatus = customerStatus;
     }
 }
