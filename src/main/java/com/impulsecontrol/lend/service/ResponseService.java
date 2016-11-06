@@ -23,11 +23,16 @@ import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
+import org.mongojack.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Currency;
 import java.util.Date;
 import java.util.List;
 
@@ -43,6 +48,8 @@ public class ResponseService {
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<Transaction, String> transactionCollection;
     private CcsServer ccsServer;
+    private static final Currency USD = Currency.getInstance("USD");
+    private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.HALF_EVEN;
 
     public ResponseService() {
 
@@ -88,7 +95,14 @@ public class ResponseService {
             message.setContent(dto.messages.get(0).getContent());
             response.addMessage(message);
         }
-        responseCollection.insert(response);
+        WriteResult result = responseCollection.insert(response);
+        response = (Response) result.getSavedObject();
+        try {
+            Thread.sleep(500L);
+        } catch (InterruptedException e) {
+            //do nothing
+        }
+        System.out.println("id of newly created response: " + response.getId());
         String title = "New Offer";
         String body = seller.getFirstName() + " offered their " + request.getItemName() + " for $" + dto.offerPrice;
         if (dto.priceType.toLowerCase() != Response.PriceType.FLAT.toString().toLowerCase()) {
@@ -332,8 +346,10 @@ public class ResponseService {
                 response.getPriceType().equals(Response.PriceType.PER_DAY) ? " per day " : " per hour ";
 
         try {
+            BigDecimal price = BigDecimal.valueOf(response.getOfferPrice());
+            price = price.setScale(USD.getDefaultFractionDigits(), DEFAULT_ROUNDING);
             notification.put("title", request.getUser().getFirstName() + " accepted your offer!");
-            notification.put("message", "Your offer for a " + request.getItemName() + " for $" + response.getOfferPrice() +
+            notification.put("message", "Your offer for a " + request.getItemName() + " for $" + price +
                     priceType + " was accepted!");
             notification.put("type", "offer_accepted");
             ObjectMapper mapper = new ObjectMapper();
@@ -346,8 +362,8 @@ public class ResponseService {
             //let buyer know they accepted the offer and other responses have been closed
             notification = new JSONObject();
             notification.put("title", "You accepted " + recipient.getFirstName() + "'s offer!");
-            notification.put("message", "Your accepted " + recipient.getFirstName() + "'s offer for $" + response.getOfferPrice() +
-                    priceType + ". If you received any other offers for this item, they have now been closed.");
+            notification.put("message", "You accepted " + recipient.getFirstName() + "'s offer for $" + price +
+                    priceType + ". Any other offers have been closed.");
             recipient = userCollection.findOneById(request.getUser().getId());
             requestCollection.save(request);
             FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);

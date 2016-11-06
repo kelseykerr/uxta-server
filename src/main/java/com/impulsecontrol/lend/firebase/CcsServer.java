@@ -178,8 +178,9 @@ public class CcsServer {
                         .setServiceName("localhost:8080")
                         .setHost(fcmServer)
                         .setPort(fcmPort)
-                        .setCompressionEnabled(false)
-                        .setConnectTimeout(30000)
+                       // .setCompressionEnabled(false)
+                       // .setConnectTimeout(30000)
+                        .setDebuggerEnabled(true)
                         .setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible)
                         .setSendPresence(false)
                         .setSocketFactory(SSLSocketFactory.getDefault())
@@ -187,12 +188,47 @@ public class CcsServer {
 
         connection = new XMPPTCPConnection(config);
 
-        ReconnectionManager.getInstanceFor(connection).setReconnectionPolicy(ReconnectionManager.ReconnectionPolicy.RANDOM_INCREASING_DELAY);
+        ReconnectionManager.getInstanceFor(connection).enableAutomaticReconnection();
+                //.setReconnectionPolicy(ReconnectionManager.ReconnectionPolicy.RANDOM_INCREASING_DELAY);
         //disable Roster as I don't think this is supported by GCM
         Roster.getInstanceFor(connection).setRosterLoadedAtLogin(false);
 
-        connection.addConnectionListener(connectionStatusLogger);
-        // Handle incoming packets
+        connection.addConnectionListener(new ConnectionListener() {
+            @Override
+            public void connected(XMPPConnection connection) {
+                LOGGER.info("Connected to CCS");
+            }
+
+            @Override
+            public void authenticated(XMPPConnection connection, boolean resumed) {
+                LOGGER.info("Authenticated with CCS");
+            }
+
+            @Override
+            public void connectionClosed() {
+                LOGGER.info("Connection to CCS closed");
+            }
+
+            @Override
+            public void connectionClosedOnError(Exception e) {
+                LOGGER.error("Connection closed because of an error.", e);
+            }
+
+            @Override
+            public void reconnectionSuccessful() {
+                LOGGER.info("Reconnected to CCS");
+            }
+
+            @Override
+            public void reconnectingIn(int seconds) {
+                LOGGER.info("Reconnecting to CCS in " + seconds);
+            }
+
+            @Override
+            public void reconnectionFailed(Exception e) {
+                LOGGER.error("Reconnection to CCS failed", e);
+            }
+        });        // Handle incoming packets
         connection.addAsyncStanzaListener(incomingStanzaListener, stanzaFilter);
         // Log all outgoing packets
         connection.addPacketInterceptor(outgoingStanzaInterceptor, stanzaFilter);
