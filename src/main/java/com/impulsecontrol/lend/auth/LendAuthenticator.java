@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
@@ -115,8 +116,12 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         newUser.setFirstName(names[0]);
         newUser.setLastName(names[names.length - 1]);
         newUser.setUserId(userId);
-        String email = (String) userInfo.get("email");
-        newUser.setEmail(email);
+        try {
+            String email = (String) userInfo.get("email");
+            newUser.setEmail(email);
+        } catch (JSONException e) {
+            //do nothing
+        }
         //TODO: check for error
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
         newUser = insertedUser.getSavedObject();
