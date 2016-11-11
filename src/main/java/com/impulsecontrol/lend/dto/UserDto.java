@@ -87,6 +87,7 @@ public class UserDto {
         this.userId = user.getUserId();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
+        this.phone = user.getPhone();
     }
 
     public static UserDto getMyUserDto(User user) {

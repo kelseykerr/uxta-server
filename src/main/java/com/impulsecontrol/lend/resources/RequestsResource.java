@@ -77,7 +77,7 @@ public class RequestsResource {
     public void getRequestNotifications(@Auth @ApiParam(hidden = true) User principal,
                                         @QueryParam("longitude") Double longitude,
                                         @QueryParam("latitude") Double latitude) {
-        if (!principal.getNewRequestNotificationsEnabled()) {
+        if (principal.getNewRequestNotificationsEnabled() == null || !principal.getNewRequestNotificationsEnabled()) {
             return;
         }
         requestService.sendRecentRequestsNotification(principal, longitude, latitude);
@@ -125,7 +125,7 @@ public class RequestsResource {
             paramType = "header")})
     public RequestDto createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
         //TODO: take our Kei bypass when he has this set up
-        if (!principal.isPaymentSetup() && principal.getId() != "190639591352732") {
+        if (principal.getId() != "190639591352732" && (principal.isPaymentSetup() == null || !principal.isPaymentSetup())) {
             LOGGER.error("User [" + principal.getId() + "] tried to make a request without adding a valid payment method");
             throw new NotAllowedException("Cannot create request because you have not added a valid payment method to your account");
         }

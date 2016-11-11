@@ -133,40 +133,45 @@ public class BraintreeService {
     }
 
     public void handleWebhookResponse(String signature, String payload) {
-        WebhookNotification notification = gateway.webhookNotification().parse(signature, payload);
-        if (notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_APPROVED ||
-                notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_DECLINED) {
-            String merchantId = notification.getMerchantAccount().getId();
-            DBObject searchByMerchantId = new BasicDBObject("merchantId", merchantId);
-            User user = userCollection.findOne(searchByMerchantId);
-            if (user == null) {
-                String msg = "Could not find user associated with merchant id [" + merchantId + "]";
-                LOGGER.error(msg);
-                throw new NotFoundException(msg);
-            }
-            user.setMerchantStatus(notification.getMerchantAccount().getStatus().toString());
-            if (notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_DECLINED) {
-                JSONObject n = new JSONObject();
-                n.put("title", "Merchant Account Declined");
-                String errorMessage = "";
-                for (ValidationError e:notification.getErrors().getAllValidationErrors()) {
-                    errorMessage += "**attribute: " + e.getAttribute() + " **error: " + e.getMessage() + "\n";
+        LOGGER.info("braintree webhook signature: " + signature);
+        LOGGER.info("braintree webhook payload: " + payload);
 
+        if (signature != null && payload != null) {
+            WebhookNotification notification = gateway.webhookNotification().parse(signature, payload);
+            if (notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_APPROVED ||
+                    notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_DECLINED) {
+                String merchantId = notification.getMerchantAccount().getId();
+                DBObject searchByMerchantId = new BasicDBObject("merchantId", merchantId);
+                User user = userCollection.findOne(searchByMerchantId);
+                if (user == null) {
+                    String msg = "Could not find user associated with merchant id [" + merchantId + "]";
+                    LOGGER.error(msg);
+                    throw new NotFoundException(msg);
                 }
-                LOGGER.error("Merchant account declined for user [" + user.getId() + "]: " + errorMessage);
-                n.put("message", errorMessage);
-                n.put("type", "merchant_account_status");
-                user.setMerchantStatusMessage(errorMessage);
-                FirebaseUtils.sendFcmMessage(user, null, n, ccsServer);
-            } else {
-                JSONObject n = new JSONObject();
-                n.put("title", "Merchant Account Approved");
-                n.put("message", "You can now create offers and earn money through Nearby!");
-                n.put("type", "merchant_account_status");
-                User recipient = userCollection.findOneById(user.getId());
-                FirebaseUtils.sendFcmMessage(recipient, null, n, ccsServer);
+                user.setMerchantStatus(notification.getMerchantAccount().getStatus().toString());
+                if (notification.getKind() == WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_DECLINED) {
+                    JSONObject n = new JSONObject();
+                    n.put("title", "Merchant Account Declined");
+                    String errorMessage = "";
+                    for (ValidationError e:notification.getErrors().getAllValidationErrors()) {
+                        errorMessage += "**attribute: " + e.getAttribute() + " **error: " + e.getMessage() + "\n";
+
+                    }
+                    LOGGER.error("Merchant account declined for user [" + user.getId() + "]: " + errorMessage);
+                    n.put("message", errorMessage);
+                    n.put("type", "merchant_account_status");
+                    user.setMerchantStatusMessage(errorMessage);
+                    FirebaseUtils.sendFcmMessage(user, null, n, ccsServer);
+                } else {
+                    JSONObject n = new JSONObject();
+                    n.put("title", "Merchant Account Approved");
+                    n.put("message", "You can now create offers and earn money through Nearby!");
+                    n.put("type", "merchant_account_status");
+                    User recipient = userCollection.findOneById(user.getId());
+                    FirebaseUtils.sendFcmMessage(recipient, null, n, ccsServer);
+                }
+                userCollection.save(user);
             }
-            userCollection.save(user);
         }
     }
 

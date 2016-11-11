@@ -402,6 +402,7 @@ public class ResponseService {
                 userDto.lastName = seller.getLastName();
                 userDto.firstName = seller.getFirstName();
                 userDto.fullName = seller.getName();
+                userDto.phone = seller.getPhone();
                 d.seller = userDto;
             });
             Transaction transaction = transactionCollection.findOne(query);

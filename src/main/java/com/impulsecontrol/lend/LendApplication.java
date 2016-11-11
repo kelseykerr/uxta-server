@@ -85,7 +85,7 @@ public class LendApplication extends Application<LendConfiguration> {
                 config.btPrivateKey, userCollection, ccsServer);
         UserService userService = new UserService(braintreeService);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
-        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer);
+        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,

@@ -28,6 +28,7 @@ public class RequestService {
 
     private JacksonDBCollection<Category, String> categoriesCollection;
     private JacksonDBCollection<Request, String> requestCollection;
+    private JacksonDBCollection<User, String> userCollection;
     private CcsServer ccsServer;
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestService.class);
     static final long ONE_MINUTE_IN_MILLIS=60000;
@@ -38,9 +39,11 @@ public class RequestService {
 
     public RequestService(JacksonDBCollection<Category, String> categoriesCollection,
                           JacksonDBCollection<Request, String> requestsCollection,
-                          CcsServer ccsServer) {
+                          CcsServer ccsServer,
+                          JacksonDBCollection<User, String> userCollection) {
         this.categoriesCollection = categoriesCollection;
         this.requestCollection = requestsCollection;
+        this.userCollection = userCollection;
         this.ccsServer = ccsServer;
     }
 
@@ -186,6 +189,12 @@ public class RequestService {
         DBCursor userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
         List<Request> requests = userRequests.toArray();
         userRequests.close();
+        //update the user's info
+        requests.stream().forEach(r -> {
+            User requester = userCollection.findOneById(r.getUser().getId());
+            r.setUser(requester);
+            requestCollection.save(r);
+        });
         return requests;
     }
 
