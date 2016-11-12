@@ -27,7 +27,6 @@ import org.mongojack.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ public class ResponseService {
                            JacksonDBCollection<Response, String> responseCollection,
                            JacksonDBCollection<User, String> userCollection,
                            JacksonDBCollection<Transaction, String> transactionCollection,
-                                   CcsServer ccsServer) {
+                           CcsServer ccsServer) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
@@ -398,6 +397,16 @@ public class ResponseService {
             dtos.forEach(d -> {
                 User seller = userCollection.findOneById(d.sellerId);
                 UserDto userDto = new UserDto();
+                if (seller == null) {
+                    for (Response response : responses) {
+                        if (response.getSellerId().equals(d.sellerId)) {
+                            response.setResponseStatus(Response.Status.CLOSED);
+                            responseCollection.save(response);
+                            d.sellerStatus = r.getStatus().toString();
+                        }
+                    }
+                    return;
+                }
                 userDto.userId = seller.getId();
                 userDto.lastName = seller.getLastName();
                 userDto.firstName = seller.getFirstName();
