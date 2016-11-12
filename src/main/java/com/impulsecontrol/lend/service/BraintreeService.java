@@ -106,6 +106,10 @@ public class BraintreeService {
         return handleMerchantAccountResult(result, request);
     }
 
+    public MerchantAccount getMerchantAccount(String merchantId) {
+        return gateway.merchantAccount().find(merchantId);
+    }
+
     public MerchantAccount createNewMerchantAccount(MerchantAccountRequest request) {
         request.masterMerchantAccountId(merchantId);
         Result<MerchantAccount> result = gateway.merchantAccount().create(request);

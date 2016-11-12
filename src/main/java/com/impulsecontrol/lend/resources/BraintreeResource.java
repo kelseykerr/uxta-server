@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiParam;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -34,7 +35,7 @@ public class BraintreeResource {
     @Path("/token")
     @Produces(value = MediaType.APPLICATION_JSON)
     @Timed
-    @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header") })
@@ -44,10 +45,10 @@ public class BraintreeResource {
 
     @POST
     @Path("/webhooks")
-    @Produces(value = MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_FORM_URLENCODED)
     @Timed
-    public void submerchantStatus(@QueryParam("bt_signature") String signature,
-                                 @QueryParam("bt_payload") String payload) {
+    public void submerchantStatus(@FormParam("bt_signature") String signature,
+                                 @FormParam("bt_payload") String payload) {
         braintreeService.handleWebhookResponse(signature, payload);
     }
 }

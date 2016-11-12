@@ -84,7 +84,7 @@ public class LendApplication extends Application<LendConfiguration> {
         BraintreeService braintreeService = new BraintreeService(config.btMerchantId, config.btPublicKey,
                 config.btPrivateKey, userCollection, ccsServer);
         UserService userService = new UserService(braintreeService);
-        environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
+        environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, braintreeService));
         RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));

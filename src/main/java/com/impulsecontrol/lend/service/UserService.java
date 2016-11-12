@@ -100,6 +100,12 @@ public class UserService {
             saveCustomerAccount(user, dto);
         }
         braintreeService.setCustomerStatus(user);
+        if (user.getMerchantId() != null) {
+            MerchantAccount ma = braintreeService.getMerchantAccount(user.getMerchantId());
+            if (ma != null) {
+                user.setMerchantStatus(ma.getStatus().toString());
+            }
+        }
         return user;
     }
 

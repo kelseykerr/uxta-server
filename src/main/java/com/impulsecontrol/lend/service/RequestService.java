@@ -57,6 +57,11 @@ public class RequestService {
     }
 
     public void populateRequest(Request request, RequestDto dto) {
+        if (dto.itemName.isEmpty()) {
+            String msg = "Could not create request because name cannot be empty";
+            LOGGER.error(msg);
+            throw new BadRequestException(msg);
+        }
         request.setItemName(dto.itemName);
         request.setExpireDate(dto.expireDate);
         if (dto.expireDate != null && dto.expireDate.before(new Date())) {

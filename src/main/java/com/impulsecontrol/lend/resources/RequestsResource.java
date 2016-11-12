@@ -2,25 +2,20 @@ package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.RequestDto;
-import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.NotAllowedException;
 import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
-import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.service.RequestService;
 import com.impulsecontrol.lend.service.ResponseService;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
 import org.slf4j.Logger;
@@ -37,9 +32,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import java.net.URI;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 /**
