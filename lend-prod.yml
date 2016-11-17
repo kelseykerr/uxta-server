@@ -4,7 +4,7 @@ mongodb: nearby
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
 fcmServer: gcm.googleapis.com
 fcmPort: 5235
-fcmApiKey: AIzaSyA8M02uaEuOQtEEMK4ZeFb5GcekqKHnyj0
+fcmApiKey: AAAAcm1HACA:APA91bGAKheMc_MifCRMI4_sZSzhQ92vJ2SDJk00n_4DiGWBkCXmcabvxbdvhC49_RK1XxkOZxfAMRhHWTke9mB-fluOGAmyM3nHUrHWbbJ8M62-Q_2iVRvvlgSXy17GU4gTp4Yyvydo8-5juIWR4q4p4R6QQuc0lw
 fcmSenderId: 491459641376
 
 server:
