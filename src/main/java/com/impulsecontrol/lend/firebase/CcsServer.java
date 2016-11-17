@@ -11,6 +11,8 @@ import org.jivesoftware.smack.filter.StanzaFilter;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+import org.jivesoftware.smackx.ping.PingFailedListener;
+import org.jivesoftware.smackx.ping.PingManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.jivesoftware.smack.packet.Message;
@@ -28,7 +30,7 @@ import org.jivesoftware.smack.roster.Roster;
  * Created by kerrk on 8/31/16.
  * CCS = cloud connection server
  */
-public class CcsServer {
+public class CcsServer implements PingFailedListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CcsServer.class);
 
@@ -236,6 +238,25 @@ public class CcsServer {
         LOGGER.info("Connecting...");
         connection.connect();
         connection.login(senderId + "@gcm.googleapis.com", apiKey);
+        PingManager pingManager = PingManager
+                .getInstanceFor(connection);
+        pingManager.setPingInterval(600);
+        pingManager.registerPingFailedListener(this);
+    }
+
+    @Override
+    public void pingFailed() {
+        try {
+            LOGGER.info("Ping to XMPP server failed!! Attempting to reconnect now!");
+            // Connect and authenticate with to XMPP server (GCM CCS in this case).
+            connection.connect();
+            connection.login(senderId + "@gcm.googleapis.com", apiKey);
+            PingManager pingManager = PingManager
+                    .getInstanceFor(connection);
+            pingManager.setPingInterval(600);
+        } catch (SmackException | IOException | XMPPException e) {
+            LOGGER.error("Unable to connect or login to GCM CCS: " + e.getMessage());
+        }
     }
 
     private final StanzaFilter stanzaFilter = new StanzaFilter() {
