@@ -190,6 +190,7 @@ public class RequestService {
             notMineQuery.append("$ne", principal.getUserId());
             query.put("user.userId", notMineQuery);
         }
+        query.put("status", "OPEN");
 
         DBCursor userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
         List<Request> requests = userRequests.toArray();
