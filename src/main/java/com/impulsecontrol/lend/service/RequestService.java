@@ -11,6 +11,7 @@ import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by kerrk on 7/27/16.
@@ -174,7 +176,8 @@ public class RequestService {
         return query;
     }
 
-    public List<Request> findRequests(Double latitude, Double longitude, Double radius, Boolean expired, Boolean includeMine, User principal) {
+    public List<Request> findRequests(Double latitude, Double longitude, Double radius, Boolean expired,
+                                      Boolean includeMine, String searchTerm, String sort, User principal) {
         BasicDBObject query = getLocationQuery(latitude, longitude, radius);
 
         if (expired != null && expired) {
@@ -190,11 +193,53 @@ public class RequestService {
             notMineQuery.append("$ne", principal.getUserId());
             query.put("user.userId", notMineQuery);
         }
+
         query.put("status", "OPEN");
 
-        DBCursor userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+        DBCursor userRequests;
+        if (sort != null && sort.equals("newest")) {
+          userRequests  = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+        } else {
+            // distance is the default sort, best match should also use this for the initial query
+            userRequests = requestCollection.find(query);
+        }
         List<Request> requests = userRequests.toArray();
         userRequests.close();
+
+        if (searchTerm != null && !searchTerm.isEmpty() && requests.size() > 0) {
+            query = new BasicDBObject();
+            BasicDBObject searchQuery = new BasicDBObject();
+            searchQuery.append("$search", searchTerm);
+            query.put("$text", searchQuery);
+
+            BasicDBObject inQuery = new BasicDBObject();
+            List<ObjectId> ids = requests.stream().map(r -> new ObjectId(r.getId())).collect(Collectors.toList());
+            inQuery.put("$in", ids);
+            query.put("_id", inQuery);
+            if (sort != null && sort.equals("newest")) {
+                userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+            } else if (sort == "distance") {
+                // get those that match search in any order
+                userRequests = requestCollection.find(query);
+                requests = userRequests.toArray();
+                userRequests.close();
+                ids = requests.stream().map(r -> new ObjectId(r.getId())).collect(Collectors.toList());
+                //redo location query on the matching results, this will automatically be ordered by closed distance
+                query = getLocationQuery(latitude, longitude, radius);
+                inQuery = new BasicDBObject();
+                inQuery.put("$in", ids);
+                query.put("_id", inQuery);
+                userRequests = requestCollection.find(query);
+            } else {
+                BasicDBObject scoreProjection = new BasicDBObject();
+                scoreProjection.append("$meta", "textScore");
+                BasicDBObject projectionParent = new BasicDBObject();
+                projectionParent.put("score", scoreProjection);
+                userRequests = requestCollection.find(query, projectionParent).sort(new BasicDBObject("score", scoreProjection));
+            }
+            requests = userRequests.toArray();
+            userRequests.close();
+        }
         //update the user's info
         requests.stream().forEach(r -> {
             User requester = userCollection.findOneById(r.getUser().getId());

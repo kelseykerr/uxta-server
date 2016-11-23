@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
@@ -10,6 +11,7 @@ import java.util.Date;
 /**
  * Created by kerrk on 7/26/16.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Request implements Serializable {
 
     private String id;

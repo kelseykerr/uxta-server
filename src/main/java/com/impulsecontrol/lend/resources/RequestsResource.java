@@ -92,13 +92,15 @@ public class RequestsResource {
                                         @QueryParam("latitude") Double latitude,
                                         @QueryParam("radius") Double radius,
                                         @QueryParam("expired") Boolean expired,
-                                        @QueryParam("includeMine") Boolean includeMine) {
+                                        @QueryParam("includeMine") Boolean includeMine,
+                                        @QueryParam("searchTerm") String searchTerm,
+                                        @QueryParam("sort") String sort) {
         if (longitude == null || latitude == null || radius == null) {
             String msg = "query parameters [radius], [longitude] and [latitude] are required.";
             LOGGER.error(msg);
             throw new BadRequestException(msg);
         }
-        List<Request> requests = requestService.findRequests(latitude, longitude, radius, expired, includeMine, principal);
+        List<Request> requests = requestService.findRequests(latitude, longitude, radius, expired, includeMine, searchTerm, sort, principal);
         return RequestDto.transform(requests);
     }
 
