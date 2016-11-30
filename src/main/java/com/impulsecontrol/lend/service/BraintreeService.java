@@ -6,6 +6,7 @@ import com.braintreegateway.CustomerRequest;
 import com.braintreegateway.Environment;
 import com.braintreegateway.MerchantAccount;
 import com.braintreegateway.MerchantAccountRequest;
+import com.braintreegateway.PaymentMethod;
 import com.braintreegateway.Result;
 import com.braintreegateway.Transaction;
 import com.braintreegateway.TransactionRequest;
@@ -107,7 +108,25 @@ public class BraintreeService {
     }
 
     public MerchantAccount getMerchantAccount(String merchantId) {
+        if (merchantId == null) {
+            return null;
+        }
         return gateway.merchantAccount().find(merchantId);
+    }
+
+    public Customer getCustomerAccount(String customerId) {
+        if (customerId == null) {
+            return null;
+        }
+        return gateway.customer().find(customerId);
+    }
+
+    public PaymentMethod getDefaultPaymentMethod(String customerId) {
+        Customer c = getCustomerAccount(customerId);
+        if (c == null) {
+            return null;
+        }
+        return c.getDefaultPaymentMethod();
     }
 
     public MerchantAccount createNewMerchantAccount(MerchantAccountRequest request) {
@@ -134,6 +153,18 @@ public class BraintreeService {
             }
             throw new InternalServerException(msg);
         }
+    }
+
+    public boolean validateMerchantStatus(User user) {
+        boolean good = false;
+        MerchantAccount ma = getMerchantAccount(user.getMerchantId());
+        if (ma != null)  {
+            String status = ma.getStatus().toString();
+            user.setMerchantStatus(status);
+            userCollection.save(user);
+            good = status.toLowerCase().equals("active");
+        }
+        return good;
     }
 
     public void handleWebhookResponse(String signature, String payload) {

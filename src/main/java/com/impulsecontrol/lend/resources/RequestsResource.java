@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.resources;
 
+import com.braintreegateway.PaymentMethod;
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
@@ -8,6 +9,7 @@ import com.impulsecontrol.lend.exception.NotFoundException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
+import com.impulsecontrol.lend.service.BraintreeService;
 import com.impulsecontrol.lend.service.RequestService;
 import com.impulsecontrol.lend.service.ResponseService;
 import io.dropwizard.auth.Auth;
@@ -47,15 +49,17 @@ public class RequestsResource {
     private JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection;
     private RequestService requestService;
     private ResponseService responseService;
+    private BraintreeService braintreeService;
 
     public RequestsResource(JacksonDBCollection<Request, String> requestCollection,
                             RequestService requestService,
                             JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
-                            ResponseService responseService) {
+                            ResponseService responseService, BraintreeService braintreeService) {
         this.requestCollection = requestCollection;
         this.requestService = requestService;
         this.responseCollection = responseCollection;
         this.responseService = responseService;
+        this.braintreeService = braintreeService;
     }
 
     @GET
@@ -119,7 +123,8 @@ public class RequestsResource {
             paramType = "header")})
     public RequestDto createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
         //TODO: take our Kei bypass when he has this set up
-        if (principal.getId() != "190639591352732" && (principal.isPaymentSetup() == null || !principal.isPaymentSetup())) {
+        PaymentMethod pm = braintreeService.getDefaultPaymentMethod(principal.getCustomerId());
+        if (principal.getId() != "190639591352732" && (principal.isPaymentSetup() == null || !principal.isPaymentSetup() || pm == null)) {
             LOGGER.error("User [" + principal.getId() + "] tried to make a request without adding a valid payment method");
             throw new NotAllowedException("Cannot create request because you have not added a valid payment method to your account");
         }

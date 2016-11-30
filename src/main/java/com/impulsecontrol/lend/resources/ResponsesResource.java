@@ -9,13 +9,13 @@ import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
+import com.impulsecontrol.lend.service.BraintreeService;
 import com.impulsecontrol.lend.service.ResponseService;
 import com.mongodb.BasicDBObject;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
@@ -47,14 +47,17 @@ public class ResponsesResource {
     private JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection;
     private JacksonDBCollection<User, String> userCollection;
     private ResponseService responseService;
+    private BraintreeService braintreeService;
 
     public ResponsesResource(JacksonDBCollection<Request, String> requestCollection,
-                            JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
-                            ResponseService responseService, JacksonDBCollection<User, String> userCollection) {
+                             JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
+                             ResponseService responseService, JacksonDBCollection<User, String> userCollection,
+                             BraintreeService braintreeService) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.responseService = responseService;
         this.userCollection = userCollection;
+        this.braintreeService = braintreeService;
     }
 
     @GET
@@ -117,8 +120,8 @@ public class ResponsesResource {
             dataType = "string",
             paramType = "header")})
     public ResponseDto addResponse(@Auth @ApiParam(hidden = true) User principal,
-                                                 @PathParam("requestId") String id,
-                                                 @Valid ResponseDto dto) {
+                                   @PathParam("requestId") String id,
+                                   @Valid ResponseDto dto) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
             String msg = "unable to create response for request [" + id + "], " +
@@ -131,8 +134,7 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotAllowedException(msg);
         }
-        boolean goodMerchantStatus = principal.getMerchantStatus() != null &&
-                principal.getMerchantStatus().toLowerCase().equals("active");
+        boolean goodMerchantStatus = braintreeService.validateMerchantStatus(principal);
         //TODO: take our Kei bypass when he has this set up
         if ((principal.getMerchantId() == null || !goodMerchantStatus) && principal.getId() != "190639591352732") {
             LOGGER.error("User [" + principal.getId() + "] tried to create an offer without a valid merchant account");
@@ -208,9 +210,9 @@ public class ResponsesResource {
             dataType = "string",
             paramType = "header")})
     public ResponseDto updateResponse(@Auth @ApiParam(hidden = true) User principal,
-                               @PathParam("requestId") String requestId,
-                               @PathParam("responseId") String responseId,
-                               @Valid ResponseDto dto) {
+                                      @PathParam("requestId") String requestId,
+                                      @PathParam("responseId") String responseId,
+                                      @Valid ResponseDto dto) {
         Response response = responseCollection.findOneById(responseId);
         if (response == null) {
             String msg = "unable to update response [" + responseId + "] because the response was not found";

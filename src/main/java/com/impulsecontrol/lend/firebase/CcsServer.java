@@ -208,7 +208,17 @@ public class CcsServer implements PingFailedListener {
 
             @Override
             public void connectionClosed() {
-                LOGGER.info("Connection to CCS closed");
+                try {
+                    LOGGER.info("Connection to CCS closed. Attempting to reconnect now!");
+                    // Connect and authenticate with to XMPP server (GCM CCS in this case).
+                    connection.connect();
+                    connection.login(senderId + "@gcm.googleapis.com", apiKey);
+                    PingManager pingManager = PingManager
+                            .getInstanceFor(connection);
+                    pingManager.setPingInterval(600);
+                } catch (SmackException | IOException | XMPPException e) {
+                    LOGGER.error("Unable to connect or login to GCM CCS: " + e.getMessage());
+                }
             }
 
             @Override
@@ -240,8 +250,8 @@ public class CcsServer implements PingFailedListener {
         connection.login(senderId + "@gcm.googleapis.com", apiKey);
         PingManager pingManager = PingManager
                 .getInstanceFor(connection);
-        pingManager.setPingInterval(600);
         pingManager.registerPingFailedListener(this);
+        pingManager.setPingInterval(600);
     }
 
     @Override
