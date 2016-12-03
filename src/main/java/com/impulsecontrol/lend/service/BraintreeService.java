@@ -232,6 +232,7 @@ public class BraintreeService {
         if (user.getCustomerId() == null) {
             user.setPaymentSetup(false);
             user.setCustomerStatus("Customer account has not been created. Please add a payment method to your account");
+            return;
         }
         Customer customer = gateway.customer().find(user.getCustomerId());
         if (customer == null) {
