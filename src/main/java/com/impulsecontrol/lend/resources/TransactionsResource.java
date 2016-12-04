@@ -94,7 +94,7 @@ public class TransactionsResource {
             value = "the authentication token received from facebook",
             dataType = "string",
             paramType = "header")})
-    public TransactionDto getTransaction(@Auth @ApiParam(hidden = true) User principal,
+    public TransactionDto closeTransaction(@Auth @ApiParam(hidden = true) User principal,
                                          @PathParam("transactionId") String transactionId,
                                          @Valid TransactionDto dto) {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
@@ -111,6 +111,8 @@ public class TransactionsResource {
         transaction.setCanceledReason(dto.canceledReason);
         request.setStatus(Request.Status.CLOSED);
         transactionCollection.save(transaction);
+        response.setResponseStatus(Response.Status.CLOSED);
+        responseCollection.save(response);
         requestCollection.save(request);
         JSONObject notification = new JSONObject();
         notification.put("title", "Transaction Cancelled");
