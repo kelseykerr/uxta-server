@@ -3,6 +3,7 @@ package com.impulsecontrol.lend.resources;
 import com.braintreegateway.MerchantAccount;
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.HistoryDto;
+import com.impulsecontrol.lend.dto.PaymentDto;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
@@ -33,8 +34,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import java.net.URI;
 import java.util.List;
 
 
@@ -72,11 +71,11 @@ public class UserResource {
     )
     @ApiImplicitParams({
             @ApiImplicitParam(name = "x-auth-token",
-            value = "the authentication token received from facebook",
-            dataType = "string",
-            paramType = "header")
+                    value = "the authentication token received from facebook",
+                    dataType = "string",
+                    paramType = "header")
     })
-    public UserDto getUser(@Auth @ApiParam(hidden=true) User principal, @PathParam("id")
+    public UserDto getUser(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
     @ApiParam(value = "the id of the user you wish to fetch info about, can use \"me\" to get the " +
             "current user's info") String id) {
         if (id.equals("me") || principal.getId().equals(id)) {
@@ -109,7 +108,7 @@ public class UserResource {
     @Produces(value = MediaType.APPLICATION_JSON)
     @Consumes(value = MediaType.APPLICATION_JSON)
     @Timed
-    public UserDto createUser(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto) {
+    public UserDto createUser(@Auth @ApiParam(hidden = true) User principal, @Valid UserDto userDto) {
         if (userDto.userId != null && !userDto.userId.equals(principal.getUserId())) {
             String msg = "userId did not match the userId of the currently authenticated user";
             LOGGER.error(msg);
@@ -140,9 +139,9 @@ public class UserResource {
     @Produces(value = MediaType.APPLICATION_JSON)
     @Consumes(value = MediaType.APPLICATION_JSON)
     @Timed
-    public UserDto updateUser(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto,
-                               @PathParam("id") @ApiParam(value = "id of the user to update, which must the" +
-                                       " currently authenticated user's id or \"me\"") String id) {
+    public UserDto updateUser(@Auth @ApiParam(hidden = true) User principal, @Valid UserDto userDto,
+                              @PathParam("id") @ApiParam(value = "id of the user to update, which must the" +
+                                      " currently authenticated user's id or \"me\"") String id) {
         if (!id.equals("me") && !userDto.id.equals(principal.getId())) {
             String msg = "id did not match the id of the currently authenticated user";
             LOGGER.error(msg);
@@ -184,8 +183,8 @@ public class UserResource {
             dataType = "string",
             paramType = "header")
     })
-    public List<RequestDto> getAllUserRequests(@Auth @ApiParam(hidden=true) User principal, @PathParam("id")
-    @ApiParam( value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
+    public List<RequestDto> getAllUserRequests(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
+    @ApiParam(value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
     String id) {
         if (!principal.getUserId().equals(id) && !id.equals("me")) {
             String msg = "User [" + principal.getUserId() +
@@ -215,8 +214,8 @@ public class UserResource {
             dataType = "string",
             paramType = "header")
     })
-    public List<HistoryDto> getUserHistory(@Auth @ApiParam(hidden=true) User principal, @PathParam("id")
-    @ApiParam( value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
+    public List<HistoryDto> getUserHistory(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
+    @ApiParam(value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
     String id) {
         if (!principal.getUserId().equals(id) && !id.equals("me")) {
             String msg = "User [" + principal.getUserId() +
@@ -238,11 +237,11 @@ public class UserResource {
             dataType = "string",
             paramType = "header")
     })
-    public void updateFcmToken(@Auth @ApiParam(hidden=true) User principal, @PathParam("id")
-    @ApiParam( value = "the user that we are updating the token for (must be the currenlty auth'ed user") String id,
+    public void updateFcmToken(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
+    @ApiParam(value = "the user that we are updating the token for (must be the currenlty auth'ed user") String id,
                                @PathParam("token")
-                               @ApiParam( value = "the fcm token generated by the client")
-                               String token ) {
+                               @ApiParam(value = "the fcm token generated by the client")
+                               String token) {
         if (!principal.getUserId().equals(id) && !id.equals("me")) {
             String msg = "User [" + principal.getUserId() +
                     "] is not authorized to update the fcm token for user [" + id + "].";
@@ -251,5 +250,31 @@ public class UserResource {
         }
         principal.setFcmRegistrationId(token);
         userCollection.save(principal);
+    }
+
+    @GET
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Path("/{id}/payments")
+    @Timed
+    @ApiOperation(
+            value = "gets the user's braintree customer & merchant acct info if present"
+    )
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header")
+    })
+    public PaymentDto getPaymentInfo(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
+    @ApiParam(value = "the user whose payment info we are fetching (must be the currenlty auth'ed user") String id,
+                                     @PathParam("token")
+                                     @ApiParam(value = "the fcm token generated by the client")
+                                     String token) {
+        if (!principal.getUserId().equals(id) && !id.equals("me")) {
+            String msg = "User [" + principal.getUserId() +
+                    "] is not authorized to fetch the payment info for user [" + id + "].";
+            LOGGER.error(msg);
+            throw new UnauthorizedException(msg);
+        }
+        return userService.getUserPaymentInfo(principal);
     }
 }

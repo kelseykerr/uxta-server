@@ -1,11 +1,16 @@
 package com.impulsecontrol.lend.service;
 
+import com.braintreegateway.CreditCard;
 import com.braintreegateway.Customer;
 import com.braintreegateway.CustomerRequest;
+import com.braintreegateway.FundingDetails;
 import com.braintreegateway.FundingRequest;
 import com.braintreegateway.IndividualRequest;
 import com.braintreegateway.MerchantAccount;
 import com.braintreegateway.MerchantAccountRequest;
+import com.braintreegateway.PaymentMethod;
+import com.braintreegateway.VenmoAccount;
+import com.impulsecontrol.lend.dto.PaymentDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.IllegalArgumentException;
 import com.impulsecontrol.lend.exception.InternalServerException;
@@ -25,6 +30,7 @@ import javax.xml.xpath.XPathFactory;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Optional;
 
 /**
  * Created by kerrk on 8/19/16.
@@ -174,7 +180,13 @@ public class UserService {
                 .lastName(userDto.lastName)
                 .phone(userDto.phone)
                 .email(userDto.email)
-                .creditCard().paymentMethodNonce(userDto.paymentMethodNonce).options().verifyCard(true).done()
+                .creditCard()
+                    .paymentMethodNonce(userDto.paymentMethodNonce)
+                    .options()
+                        .verifyCard(true)
+                        .failOnDuplicatePaymentMethod(true)
+                        .makeDefault(true)
+                    .done()
                 .done();
 
         Customer customer = braintreeService.saveOrUpdateCustomer(request, userDto.customerId);
@@ -226,5 +238,47 @@ public class UserService {
             user.setMerchantStatus(ma.getStatus().toString());
         }
 
+    }
+
+    // Payment form: credit card
+    // Merchant payments (getting paid): bank account or venmo
+    public CreditCard getPaymentDetails(User user) {
+        if (user.getCustomerId() == null) {
+            return null;
+        }
+        PaymentMethod pm = braintreeService.getDefaultPaymentMethod(user.getCustomerId());
+
+        if (pm != null) {
+            try {
+                CreditCard cc = CreditCard.class.cast(pm);
+                return cc;
+            } catch (ClassCastException e) {
+               // must not have payment method because credit card is the only acceptable payment method at this time
+                return null;
+            }
+        }
+        return null;
+
+    }
+
+    public PaymentDto getUserPaymentInfo(User user) {
+        PaymentDto dto = new PaymentDto();
+        CreditCard cc = getPaymentDetails(user);
+        if (cc != null) {
+            dto.ccMaskedNumber = cc.getMaskedNumber();
+            dto.ccExpDate = cc.getExpirationDate();
+        }
+        MerchantAccount ma = braintreeService.getMerchantAccount(user.getMerchantId());
+        if (ma != null) {
+            FundingDetails fa = ma.getFundingDetails();
+            if (fa != null) {
+                dto.destination = fa.getDestination() != null ? fa.getDestination().toString() : null;
+                dto.bankAccountLast4 = fa.getAccountNumberLast4();
+                dto.routingNumber = fa.getRoutingNumber();
+                dto.email = user.getEmail();
+                dto.phone = user.getPhone();
+            }
+        }
+        return dto;
     }
 }

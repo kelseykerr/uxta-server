@@ -4,6 +4,7 @@ import com.braintreegateway.BraintreeGateway;
 import com.braintreegateway.Customer;
 import com.braintreegateway.CustomerRequest;
 import com.braintreegateway.Environment;
+import com.braintreegateway.FundingDetails;
 import com.braintreegateway.MerchantAccount;
 import com.braintreegateway.MerchantAccountRequest;
 import com.braintreegateway.PaymentMethod;
