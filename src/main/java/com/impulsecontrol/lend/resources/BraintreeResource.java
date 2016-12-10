@@ -1,6 +1,7 @@
 package com.impulsecontrol.lend.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.model.User;
 import com.impulsecontrol.lend.service.BraintreeService;
 import io.dropwizard.auth.Auth;
@@ -9,7 +10,9 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiParam;
 
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -50,5 +53,30 @@ public class BraintreeResource {
     public void submerchantStatus(@FormParam("bt_signature") String signature,
                                  @FormParam("bt_payload") String payload) {
         braintreeService.handleWebhookResponse(signature, payload);
+    }
+
+    @POST
+    @Path("/merchant")
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public UserDto createMerchantDestination(@Auth @ApiParam(hidden=true) User principal,  @Valid UserDto userDto) {
+        User user = braintreeService.saveOrUpdateMerchantAccount(principal, userDto);
+        return new UserDto(user);
+    }
+
+    @DELETE
+    @Path("/merchant")
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public UserDto deleteMerchantDestination(@Auth @ApiParam(hidden=true) User principal) {
+        User user = braintreeService.removeMerchantDestination(principal);
+        return new UserDto(user);
     }
 }

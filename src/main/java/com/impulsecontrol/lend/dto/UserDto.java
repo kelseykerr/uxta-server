@@ -80,6 +80,8 @@ public class UserDto {
 
     public String paymentMethodNonce;
 
+    public Boolean removedMerchantDestination;
+
     public UserDto() {}
 
     public UserDto(User user) {
@@ -121,6 +123,7 @@ public class UserDto {
         dto.dateOfBirth = user.getDateOfBirth();
         dto.isPaymentSetup = user.isPaymentSetup();
         dto.customerStatus = user.getCustomerStatus();
+        dto.removedMerchantDestination = user.getRemovedMerchantDestination();
         return dto;
     }
 

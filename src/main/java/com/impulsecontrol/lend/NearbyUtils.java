@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend;
 
+import com.impulsecontrol.lend.model.User;
 import org.apache.commons.codec.binary.Base32;
 
 import java.nio.ByteBuffer;
@@ -19,5 +20,9 @@ public class NearbyUtils {
         String code = BASE32.encodeAsString(byteBuffer.array()).replaceAll("=", "");
         code = code.substring(0, 15);
         return code.replaceAll("(.{5})(?!$)", "$1-");
+    }
+
+    public static String getUserIdString(User user) {
+        return " [" + user.getName() + " - " + user.getId() + "] ";
     }
 }

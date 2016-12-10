@@ -89,6 +89,8 @@ public class User implements Serializable, Principal {
     // what is the status of the braintree customer account? This string can be displayed on the account page
     private String customerStatus;
 
+    private Boolean removedMerchantDestination;
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -332,5 +334,13 @@ public class User implements Serializable, Principal {
 
     public void setCustomerStatus(String customerStatus) {
         this.customerStatus = customerStatus;
+    }
+
+    public Boolean getRemovedMerchantDestination() {
+        return removedMerchantDestination;
+    }
+
+    public void setRemovedMerchantDestination(Boolean removedMerchantDestination) {
+        this.removedMerchantDestination = removedMerchantDestination;
     }
 }
