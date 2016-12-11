@@ -130,25 +130,6 @@ public class UserService {
         }
     }
 
-    private void saveCustomerAccount(User user, UserDto userDto) {
-        CustomerRequest request = new CustomerRequest()
-                .firstName(userDto.firstName)
-                .lastName(userDto.lastName)
-                .phone(userDto.phone)
-                .email(userDto.email)
-                .creditCard()
-                    .paymentMethodNonce(userDto.paymentMethodNonce)
-                    .options()
-                        .verifyCard(true)
-                        .failOnDuplicatePaymentMethod(true)
-                        .makeDefault(true)
-                    .done()
-                .done();
-
-        Customer customer = braintreeService.saveOrUpdateCustomer(request, userDto.customerId);
-        user.setCustomerId(customer.getId());
-    }
-
     // Payment form: credit card
     // Merchant payments (getting paid): bank account or venmo
     public CreditCard getPaymentDetails(User user) {

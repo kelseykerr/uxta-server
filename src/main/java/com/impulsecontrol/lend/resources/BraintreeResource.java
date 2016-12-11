@@ -18,7 +18,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 /**
@@ -79,4 +78,30 @@ public class BraintreeResource {
         User user = braintreeService.removeMerchantDestination(principal);
         return new UserDto(user);
     }
+
+    @POST
+    @Path("/customer")
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public UserDto createOrUpdateCustomerAccount(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto) {
+        User user = braintreeService.saveOrUpdateCustomerAccount(principal, userDto);
+        return new UserDto(user);
+    }
+
+    @DELETE
+    @Path("/customer")
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header") })
+    public UserDto deleteCustomerPayment(@Auth @ApiParam(hidden=true) User principal) {
+        User user = braintreeService.removeCustomerPayment(principal);
+        return new UserDto(user);
+    }
+
 }

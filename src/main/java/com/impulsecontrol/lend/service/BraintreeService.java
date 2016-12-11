@@ -290,6 +290,38 @@ public class BraintreeService {
         }
     }
 
+    public User saveOrUpdateCustomerAccount(User user, UserDto userDto) {
+        validateCustomerParams(user);
+        saveCustomerAccount(user, userDto);
+        userCollection.save(user);
+        return user;
+    }
+
+    private void saveCustomerAccount(User user, UserDto userDto) {
+        CustomerRequest request = new CustomerRequest()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .creditCard()
+                    .paymentMethodNonce(userDto.paymentMethodNonce)
+                    .options()
+                        .verifyCard(true)
+                        .makeDefault(true)
+                    .done()
+                .done();
+
+        Customer customer = saveOrUpdateCustomer(request, userDto.customerId);
+        boolean hasCreditCard = customer.getCreditCards() != null && customer.getCreditCards().size() > 0;
+        user.setPaymentSetup(hasCreditCard);
+        if (hasCreditCard) {
+            user.setCustomerStatus("valid");
+        } else {
+            user.setCustomerStatus("Please add a payment method to your account");
+        }
+        user.setCustomerId(customer.getId());
+    }
+
     public User saveOrUpdateMerchantAccount(User user, UserDto userDto) {
         verifyAllParametersPresent(user);
         if (userDto.fundDestination == null) {
@@ -342,6 +374,32 @@ public class BraintreeService {
         user.setRemovedMerchantDestination(false);
         userCollection.save(user);
         return user;
+    }
+
+    public void validateCustomerParams(User user) {
+        String error = "Cannot update payment info becuase ";
+        List<String> errs = new ArrayList<>();
+        if (user.getFirstName().isEmpty()) {
+            errs.add("first name");
+        }
+        if (user.getLastName().isEmpty()) {
+            errs.add("last name");
+        }
+        if (user.getPhone().isEmpty()) {
+            errs.add("phone");
+        }
+        if (user.getEmail().isEmpty()) {
+            errs.add("email");
+        }
+        if (user.getPaymentMethodNonce().isEmpty()) {
+            errs.add("credit card info");
+        }
+        if (errs.size() > 0) {
+            String errorList = StringUtils.join(errs, ", ");
+            error += (errorList + " cannot be empty");
+            LOGGER.error("Cannot add payment info for user" + NearbyUtils.getUserIdString(user) + error);
+            throw new NotAllowedException(error);
+        }
     }
 
     public void verifyAllParametersPresent(User user) {
@@ -427,5 +485,26 @@ public class BraintreeService {
             user.setMerchantStatus(ma.getStatus().toString());
         }
 
+    }
+
+    public User removeCustomerPayment(User user) {
+        if (user.getCustomerId() == null) {
+            user.setPaymentSetup(false);
+            user.setCustomerStatus("Customer account has not been created. Please add a payment method to your account");
+            userCollection.save(user);
+            return user;        }
+        Customer customer = gateway.customer().find(user.getCustomerId());
+        if (customer == null) {
+            user.setPaymentSetup(false);
+            user.setCustomerStatus("Customer account has not been created. Please add a payment method to your account");
+            userCollection.save(user);
+            return user;        }
+        for (PaymentMethod pm: customer.getPaymentMethods()) {
+            gateway.paymentMethod().delete(pm.getToken());
+        }
+        user.setPaymentSetup(false);
+        user.setCustomerStatus("Please add payment info to your account");
+        userCollection.save(user);
+        return user;
     }
 }
