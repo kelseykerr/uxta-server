@@ -1,9 +1,11 @@
 package com.impulsecontrol.lend.model;
 
 import com.impulsecontrol.lend.dto.HistoryDto;
+import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.Date;
+import java.util.logging.Logger;
 
 /**
  * Created by kerrk on 9/10/16.
@@ -15,6 +17,9 @@ public class HistoryComparator implements Comparator<HistoryDto> {
     public HistoryComparator(String userId) {
         this.userId = userId;
     }
+
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(HistoryComparator.class);
+
 
     // Returns a negative integer, zero, or a positive integer if, sorting by:
     // h1's date is greater than, equal to, or less than h2's date. Sorts in DESC order!!!
@@ -61,6 +66,10 @@ public class HistoryComparator implements Comparator<HistoryDto> {
     private boolean isOpen(HistoryDto dto) {
         // the user is the requester
         if (dto.request.user.id.equals(userId)) {
+            if (dto.request.status == null) {
+                LOGGER.info("Status was null for request [" + dto.request.id + "].");
+                return false;
+            }
             return dto.request.status.toLowerCase().equals(Request.Status.OPEN.toString().toLowerCase());
         } else { // user is buyer..check if the offer is pending, otherwise it's closed and will go at the bottom
                 // or it's accepted and it's a transaction and will go at the top
