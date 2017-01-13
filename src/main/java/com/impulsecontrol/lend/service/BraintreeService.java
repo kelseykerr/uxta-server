@@ -291,7 +291,7 @@ public class BraintreeService {
     }
 
     public User saveOrUpdateCustomerAccount(User user, UserDto userDto) {
-        validateCustomerParams(user);
+        validateCustomerParams(user, userDto);
         saveCustomerAccount(user, userDto);
         userCollection.save(user);
         return user;
@@ -376,8 +376,8 @@ public class BraintreeService {
         return user;
     }
 
-    public void validateCustomerParams(User user) {
-        String error = "Cannot update payment info becuase ";
+    public void validateCustomerParams(User user, UserDto userDto) {
+        String error = "Cannot update payment info because ";
         List<String> errs = new ArrayList<>();
         if (user.getFirstName().isEmpty()) {
             errs.add("first name");
@@ -391,7 +391,7 @@ public class BraintreeService {
         if (user.getEmail().isEmpty()) {
             errs.add("email");
         }
-        if (user.getPaymentMethodNonce().isEmpty()) {
+        if (userDto.paymentMethodNonce.isEmpty()) {
             errs.add("credit card info");
         }
         if (errs.size() > 0) {
