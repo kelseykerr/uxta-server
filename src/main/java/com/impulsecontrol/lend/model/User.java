@@ -91,6 +91,11 @@ public class User implements Serializable, Principal {
 
     private Boolean removedMerchantDestination;
 
+    private String pictureUrl;
+
+    //either facebook or google
+    private String authMethod;
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -342,5 +347,21 @@ public class User implements Serializable, Principal {
 
     public void setRemovedMerchantDestination(Boolean removedMerchantDestination) {
         this.removedMerchantDestination = removedMerchantDestination;
+    }
+
+    public String getPictureUrl() {
+        return pictureUrl;
+    }
+
+    public void setPictureUrl(String pictureUrl) {
+        this.pictureUrl = pictureUrl;
+    }
+
+    public String getAuthMethod() {
+        return authMethod;
+    }
+
+    public void setAuthMethod(String authMethod) {
+        this.authMethod = authMethod;
     }
 }

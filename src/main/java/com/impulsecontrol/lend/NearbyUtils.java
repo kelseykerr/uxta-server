@@ -11,6 +11,9 @@ import java.util.UUID;
  */
 public class NearbyUtils {
 
+    public static final String GOOGLE_AUTH_METHOD = "google";
+    public static final String FB_AUTH_METHOD = "facebook";
+
     public static String getUniqueCode() {
         UUID uuid = UUID.randomUUID();
         ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[16]);

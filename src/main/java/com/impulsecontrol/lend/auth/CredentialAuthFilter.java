@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.auth;
 
+import com.impulsecontrol.lend.NearbyUtils;
 import io.dropwizard.auth.AuthFilter;
 
 import javax.annotation.Nullable;
@@ -17,23 +18,26 @@ public class CredentialAuthFilter<P extends Principal> extends AuthFilter<Creden
 
     public final static String CUSTOM_HEADER = "x-auth-token";
 
+    public static final String METHOD_HEADER = "x-auth-method";
+
     private CredentialAuthFilter() {
     }
 
     public void filter(ContainerRequestContext requestContext) throws IOException {
 
-        Credentials credentials = this.getCredentials((String)requestContext.getHeaders().getFirst(CUSTOM_HEADER));
+        Credentials credentials = this.getCredentials((String)requestContext.getHeaders().getFirst(CUSTOM_HEADER),
+                (String)requestContext.getHeaders().getFirst(METHOD_HEADER));
         if(!this.authenticate(requestContext, credentials, "BASIC")) {
             throw new WebApplicationException(this.unauthorizedHandler.buildResponse(this.prefix, this.realm));
         }
     }
 
     @Nullable
-    private Credentials getCredentials(String header) {
+    private Credentials getCredentials(String header, String method) {
         if(header == null) {
             return null;
         } else {
-            return new Credentials(header);
+            return new Credentials(header,method == null ? NearbyUtils.FB_AUTH_METHOD : method);
         }
     }
 

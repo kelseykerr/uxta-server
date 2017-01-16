@@ -6,11 +6,18 @@ package com.impulsecontrol.lend.auth;
 public class Credentials {
     private final String token;
 
-    public Credentials(String token) {
+    private final String method;
+
+    public Credentials(String token, String method) {
         this.token = token;
+        this.method = method;
     }
 
     public String getToken() {
         return token;
+    }
+
+    public String getMethod() {
+        return method;
     }
 }

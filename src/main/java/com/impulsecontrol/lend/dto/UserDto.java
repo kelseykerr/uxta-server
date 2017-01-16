@@ -82,6 +82,11 @@ public class UserDto {
 
     public Boolean removedMerchantDestination;
 
+    public String pictureUrl;
+
+    //either facebook or google
+    public String authMethod;
+
     public UserDto() {}
 
     public UserDto(User user) {
@@ -90,6 +95,8 @@ public class UserDto {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.phone = user.getPhone();
+        this.pictureUrl = user.getPictureUrl();
+        this.authMethod = user.getAuthMethod();
     }
 
     public static UserDto getMyUserDto(User user) {
@@ -124,6 +131,8 @@ public class UserDto {
         dto.isPaymentSetup = user.isPaymentSetup();
         dto.customerStatus = user.getCustomerStatus();
         dto.removedMerchantDestination = user.getRemovedMerchantDestination();
+        dto.pictureUrl = user.getPictureUrl();
+        dto.authMethod = user.getAuthMethod();
         return dto;
     }
 
@@ -134,6 +143,7 @@ public class UserDto {
         dto.firstName = user.getFirstName();
         dto.lastName = user.getLastName();
         dto.fullName = user.getName();
+        dto.pictureUrl = user.getPictureUrl();
         return dto;
     }
 }

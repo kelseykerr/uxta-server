@@ -121,8 +121,9 @@ public class UserService {
             if (latLng != null) {
                 GeoJsonPoint loc = new GeoJsonPoint(latLng[1], latLng[0]);
                 user.setHomeLocation(loc);
+            } else {
+                LOGGER.info("No geolocation found for address [" + fullAddress + "].");
             }
-            LOGGER.info("No geolocation found for address [" + fullAddress + "].");
         } catch (Exception e){
             String msg = "Unable to calculate latitude and longitude from address [" + fullAddress + "].";
             LOGGER.error(msg + " For user [" + dto.id + "].");
