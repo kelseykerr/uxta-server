@@ -407,7 +407,8 @@ public class ResponseService {
                     }
                     return;
                 }
-                userDto.userId = seller.getId();
+                userDto.id = seller.getId();
+                userDto.userId = seller.getUserId();
                 userDto.lastName = seller.getLastName();
                 userDto.firstName = seller.getFirstName();
                 userDto.fullName = seller.getName();

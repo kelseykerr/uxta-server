@@ -166,7 +166,7 @@ public class TransactionsResource {
     )
     public void enterTransactionCode(@Auth @ApiParam(hidden = true) User principal,
                                      @PathParam("transactionId") String transactionId,
-                                       @PathParam("code") String code) {
+                                     @PathParam("code") String code) {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);

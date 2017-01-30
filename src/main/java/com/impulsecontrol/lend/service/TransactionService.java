@@ -54,13 +54,17 @@ public class TransactionService {
         this.ccsServer = ccsServer;
     }
 
+    public String normalizeCode(String code) {
+        return code.replaceAll("-", "");
+    }
+
     public void enterReturnCode(Transaction transaction, Response response, String code) {
         if (transaction.getReturnTime() != null) {
             LOGGER.error("Seller tried to enter return code for transaction [" + transaction.getId() + "] " +
                     "when the return has already occurred");
             throw new BadRequestException("Return has already occurred!");
         }
-        if (transaction.getReturnCode().equals(code)) {
+        if (normalizeCode(transaction.getReturnCode()).equals(normalizeCode(code))) {
             Date currentDate = new Date();
             if (transaction.getReturnCodeExpireDate().after(currentDate)) {
                 transaction.setReturned(true);
@@ -83,7 +87,7 @@ public class TransactionService {
                     "when the exchange has already occurred");
             throw new BadRequestException("The exchange already occurred!");
         }
-        if (transaction.getExchangeCode().equals(code)) {
+        if (normalizeCode(transaction.getExchangeCode()).equals(normalizeCode(code))) {
             if (transaction.getExchangeCodeExpireDate().after(new Date())) {
                 if (!request.getRental()) {
                     calculatePrice(transaction, response);
