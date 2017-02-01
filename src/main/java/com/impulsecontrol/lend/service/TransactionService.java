@@ -187,6 +187,7 @@ public class TransactionService {
                 transaction.setReturnTime(transaction.getReturnOverride().time);
                 transaction.setReturned(true);
             } else {
+                transaction.getReturnOverride().declined = true;
                 dto.returnOverride.declined = true;
             }
             //TODO: send notification to seller to verify price if true...what to do if false?
