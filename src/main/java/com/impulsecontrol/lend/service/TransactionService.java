@@ -197,6 +197,7 @@ public class TransactionService {
                 transaction.setExchanged(true);
                 calculatePrice(transaction, response);
             } else {
+                transaction.getExchangeOverride().declined = true;
                 dto.exchangeOverride.declined = true;
             }
             if (!isRental) {
