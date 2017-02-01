@@ -141,7 +141,7 @@ public class TransactionService {
     }
 
     public void createExchangeOverride(Transaction transaction, TransactionDto dto, Boolean isSeller, Boolean isRental) {
-        if (!isSeller && !isRental) {
+        if (Boolean.FALSE.equals(isSeller) && Boolean.FALSE.equals(isRental)) {
             LOGGER.error("Buyer tried to create a return override for transaction [" + transaction.getId() +
                     "] for a non-rental item.");
             throw new BadRequestException("Cannot create a return override for a non-rental item");
@@ -212,7 +212,7 @@ public class TransactionService {
     }
 
     private void confirmExchangeDidNotOccur(Transaction transaction, Boolean isSeller) {
-        if ((isSeller && transaction.getReturned()) || (!isSeller && transaction.getExchanged())) {
+        if ((isSeller && transaction.getExchanged()) || (!isSeller && transaction.getReturned())) {
             LOGGER.error((isSeller ? "Seller" : "Buyer") + " tried to create an override for transaction [" +
                     transaction.getId() + "] but the exchange already occurred");
             throw new BadRequestException("Cannot create an override for an item that has already been " +

@@ -345,7 +345,7 @@ public class TransactionsResource {
         Request request = requestCollection.findOneById(requestId);
         if (request == null) {
             LOGGER.error("Could not find request for transaction [" + transactionId + "].");
-            throw new NotFoundException("This transaction does not exist");
+            throw new NotFoundException("This request does not exist");
         }
         return request;
     }
@@ -354,7 +354,7 @@ public class TransactionsResource {
         Response response = responseCollection.findOneById(responseId);
         if (response == null) {
             LOGGER.error("Could not find response for transaction [" + transactionId + "].");
-            throw new NotFoundException("This transaction does not exist");
+            throw new NotFoundException("This response does not exist");
         }
         return response;
     }
