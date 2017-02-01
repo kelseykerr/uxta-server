@@ -94,6 +94,7 @@ public class UserDto {
         this.userId = user.getUserId();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
+        this.fullName = user.getName();
         this.phone = user.getPhone();
         this.pictureUrl = user.getPictureUrl();
         this.authMethod = user.getAuthMethod();

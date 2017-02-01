@@ -407,12 +407,7 @@ public class ResponseService {
                     }
                     return;
                 }
-                userDto.id = seller.getId();
-                userDto.userId = seller.getUserId();
-                userDto.lastName = seller.getLastName();
-                userDto.firstName = seller.getFirstName();
-                userDto.fullName = seller.getName();
-                userDto.phone = seller.getPhone();
+                userDto = new UserDto(seller);
                 d.seller = userDto;
             });
             Transaction transaction = transactionCollection.findOne(query);

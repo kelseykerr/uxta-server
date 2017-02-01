@@ -72,7 +72,11 @@ public class TransactionsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public TransactionDto getTransaction(@Auth @ApiParam(hidden = true) User principal,
                                          @PathParam("transactionId") String transactionId) {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
@@ -93,7 +97,11 @@ public class TransactionsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public TransactionDto closeTransaction(@Auth @ApiParam(hidden = true) User principal,
                                          @PathParam("transactionId") String transactionId,
                                          @Valid TransactionDto dto) {
@@ -136,7 +144,11 @@ public class TransactionsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     @ApiOperation(
             value = "Generate a code that can be exchanged or converted to a QR code to be scanned",
             notes = "The seller will call this method to generate the code on the initial exchange and " +
@@ -157,7 +169,11 @@ public class TransactionsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     @ApiOperation(
             value = "Confirm the exchange/return has occurred by verifying the secret code either by scanning the QR " +
                     "code or manually entering the code",
@@ -192,7 +208,11 @@ public class TransactionsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     @ApiOperation(
             value = "If the users forgot to scan codes on the exchange or return, they can submit and override",
             notes = "If the seller forgot to do the scan on the initial exchange, they can submit an override by " +
@@ -225,7 +245,11 @@ public class TransactionsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     @ApiOperation(
             value = "Confirm/deny the exchange/return override submitted by the other user",
             notes = "If the seller submitted an exchange override, the buyer will confirm or deny that the exchange " +
@@ -258,7 +282,11 @@ public class TransactionsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     @ApiOperation(
             value = "Confirm or update the final price that will be charged to the buyer",
             notes = "If the seller accepts the calculated price, simply leave the priceOverride field in the dto empty, " +

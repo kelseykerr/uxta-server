@@ -40,7 +40,11 @@ public class BraintreeResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public String getClientToken(@Auth @ApiParam(hidden=true) User principal) {
         return braintreeService.getBraintreeClientToken();
     }
@@ -61,7 +65,11 @@ public class BraintreeResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public UserDto createMerchantDestination(@Auth @ApiParam(hidden=true) User principal,  @Valid UserDto userDto) {
         User user = braintreeService.saveOrUpdateMerchantAccount(principal, userDto);
         return new UserDto(user);
@@ -73,7 +81,11 @@ public class BraintreeResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public UserDto deleteMerchantDestination(@Auth @ApiParam(hidden=true) User principal) {
         User user = braintreeService.removeMerchantDestination(principal);
         return new UserDto(user);
@@ -86,7 +98,11 @@ public class BraintreeResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public UserDto createOrUpdateCustomerAccount(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto) {
         User user = braintreeService.saveOrUpdateCustomerAccount(principal, userDto);
         return new UserDto(user);
@@ -98,7 +114,11 @@ public class BraintreeResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public UserDto deleteCustomerPayment(@Auth @ApiParam(hidden=true) User principal) {
         User user = braintreeService.removeCustomerPayment(principal);
         return new UserDto(user);

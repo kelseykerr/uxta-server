@@ -45,7 +45,11 @@ public class CategoriesResource {
     @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public List<CategoryDto> getCategories(@Auth @ApiParam(hidden=true) User principal) {
         DBCursor categoriesRequests = categoriesCollection.find();
         List<Category> categories =  categoriesRequests.toArray();
@@ -60,7 +64,11 @@ public class CategoriesResource {
     @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public CategoryDto getCategory(@Auth @ApiParam(hidden=true) User principal, @PathParam("id") String id) {
         Category category = categoriesCollection.findOneById(id);
         if (category == null) {
@@ -82,7 +90,11 @@ public class CategoriesResource {
     @ApiImplicitParams({ @ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header") })
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header") })
     public CategoryDto createCategory(@Auth @ApiParam(hidden=true) User principal, @Valid CategoryDto category) {
         Category cat = new Category();
         cat.setName(category.name);

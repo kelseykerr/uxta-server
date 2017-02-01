@@ -73,6 +73,10 @@ public class UserResource {
             @ApiImplicitParam(name = "x-auth-token",
                     value = "the authentication token received from facebook",
                     dataType = "string",
+                    paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
                     paramType = "header")
     })
     public UserDto getUser(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
@@ -102,6 +106,10 @@ public class UserResource {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "x-auth-token",
                     value = "the authentication token received from facebook",
+                    dataType = "string",
+                    paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
                     dataType = "string",
                     paramType = "header")
     })
@@ -133,6 +141,10 @@ public class UserResource {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "x-auth-token",
                     value = "the authentication token received from facebook",
+                    dataType = "string",
+                    paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
                     dataType = "string",
                     paramType = "header")
     })
@@ -181,7 +193,11 @@ public class UserResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")
     })
     public List<RequestDto> getAllUserRequests(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
     @ApiParam(value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
@@ -212,7 +228,11 @@ public class UserResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")
     })
     public List<HistoryDto> getUserHistory(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
     @ApiParam(value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
@@ -235,7 +255,11 @@ public class UserResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")
     })
     public void updateFcmToken(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
     @ApiParam(value = "the user that we are updating the token for (must be the currenlty auth'ed user") String id,
@@ -262,7 +286,11 @@ public class UserResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")
     })
     public PaymentDto getPaymentInfo(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
     @ApiParam(value = "the user whose payment info we are fetching (must be the currenlty auth'ed user") String id,

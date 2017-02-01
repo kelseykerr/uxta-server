@@ -69,7 +69,11 @@ public class RequestsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public void getRequestNotifications(@Auth @ApiParam(hidden = true) User principal,
                                         @QueryParam("longitude") Double longitude,
                                         @QueryParam("latitude") Double latitude) {
@@ -90,7 +94,11 @@ public class RequestsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public List<RequestDto> getRequests(@Auth @ApiParam(hidden = true) User principal,
                                         @QueryParam("longitude") Double longitude,
                                         @QueryParam("latitude") Double latitude,
@@ -120,7 +128,11 @@ public class RequestsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public RequestDto createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
         //TODO: take our Kei bypass when he has this set up
         PaymentMethod pm = braintreeService.getDefaultPaymentMethod(principal.getCustomerId());
@@ -141,7 +153,11 @@ public class RequestsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public RequestDto getRequestById(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {
@@ -160,7 +176,11 @@ public class RequestsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public RequestDto updateRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id,
                               @Valid RequestDto dto) {
         Request request = requestCollection.findOneById(id);
@@ -187,7 +207,11 @@ public class RequestsResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public javax.ws.rs.core.Response deleteRequest(@Auth @ApiParam(hidden = true) User principal, @PathParam("requestId") String id) {
         Request request = requestCollection.findOneById(id);
         if (request == null) {

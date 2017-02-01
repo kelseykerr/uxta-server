@@ -67,7 +67,11 @@ public class ResponsesResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public List<ResponseDto> getRequestResponses(@Auth @ApiParam(hidden = true) User principal,
                                                  @PathParam("requestId") String id,
                                                  @QueryParam("seller")
@@ -118,7 +122,11 @@ public class ResponsesResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public ResponseDto addResponse(@Auth @ApiParam(hidden = true) User principal,
                                    @PathParam("requestId") String id,
                                    @Valid ResponseDto dto) {
@@ -165,7 +173,11 @@ public class ResponsesResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public ResponseDto getResponse(@Auth @ApiParam(hidden = true) User principal,
                                    @PathParam("requestId") String requestId,
                                    @PathParam("responseId") String responseId) {
@@ -208,7 +220,11 @@ public class ResponsesResource {
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
             dataType = "string",
-            paramType = "header")})
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
     public ResponseDto updateResponse(@Auth @ApiParam(hidden = true) User principal,
                                       @PathParam("requestId") String requestId,
                                       @PathParam("responseId") String responseId,
