@@ -173,7 +173,6 @@ public class TransactionService {
                     "] for a non-rental item.");
             throw new BadRequestException("Cannot update override for a non-rental item");
         }
-        confirmExchangeDidNotOccur(transaction, isSeller);
         // should not happen
         if (isSeller ? (transaction.getReturnOverride() == null || transaction.getReturnOverride().time == null) :
                 (transaction.getExchangeOverride() == null || transaction.getExchangeOverride().time == null)) {
