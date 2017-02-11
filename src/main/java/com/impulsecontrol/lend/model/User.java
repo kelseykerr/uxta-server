@@ -1,6 +1,4 @@
 package com.impulsecontrol.lend.model;
-
-import com.braintreegateway.MerchantAccount;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
@@ -9,6 +7,7 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.security.Principal;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -65,15 +64,6 @@ public class User implements Serializable, Principal {
 
     private Boolean homeLocationNotifications;
 
-    private String merchantId;
-
-    // options are: PENDING, ACTIVE, SUSPENDED, UNRECOGNIZED
-    private String merchantStatus;
-
-    private String merchantStatusMessage;
-
-    private String customerId;
-
     private String dateOfBirth;
 
     // the user must accept the tos before getting a braintree account and being able to make requests/responses
@@ -81,13 +71,8 @@ public class User implements Serializable, Principal {
 
     private String paymentMethodNonce;
 
-    private MerchantAccount.FundingDestination fundDestination;
-
     // is a payment method entered in the customers braintree account?
     private Boolean paymentSetup;
-
-    // what is the status of the braintree customer account? This string can be displayed on the account page
-    private String customerStatus;
 
     private Boolean removedMerchantDestination;
 
@@ -95,6 +80,22 @@ public class User implements Serializable, Principal {
 
     //either facebook or google
     private String authMethod;
+
+    private Date timeTosAccepted;
+
+    private String tosAcceptIp;
+
+    private String stripeManagedAccountId;
+
+    private String stripeCustomerId;
+
+    private String stripeSecretKey;
+
+    private String stripePublishableKey;
+
+    private Boolean hasCustomerAccount;
+
+    private Boolean hasManagedAccount;
 
     public User() {}
 
@@ -261,28 +262,12 @@ public class User implements Serializable, Principal {
         this.homeLocationNotifications = homeLocationNotifications;
     }
 
-    public String getMerchantId() {
-        return merchantId;
+    public String getStripeCustomerId() {
+        return stripeCustomerId;
     }
 
-    public void setMerchantId(String merchantId) {
-        this.merchantId = merchantId;
-    }
-
-    public String getMerchantStatus() {
-        return merchantStatus;
-    }
-
-    public void setMerchantStatus(String merchantStatus) {
-        this.merchantStatus = merchantStatus;
-    }
-
-    public String getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(String customerId) {
-        this.customerId = customerId;
+    public void setStripeCustomerId(String stripeCustomerId) {
+        this.stripeCustomerId = stripeCustomerId;
     }
 
     public String getDateOfBirth() {
@@ -309,36 +294,12 @@ public class User implements Serializable, Principal {
         this.paymentMethodNonce = paymentMethodNonce;
     }
 
-    public MerchantAccount.FundingDestination getFundDestination() {
-        return fundDestination;
-    }
-
-    public void setFundDestination(MerchantAccount.FundingDestination fundDestination) {
-        this.fundDestination = fundDestination;
-    }
-
-    public String getMerchantStatusMessage() {
-        return merchantStatusMessage;
-    }
-
-    public void setMerchantStatusMessage(String merchantStatusMessage) {
-        this.merchantStatusMessage = merchantStatusMessage;
-    }
-
     public Boolean isPaymentSetup() {
         return paymentSetup;
     }
 
     public void setPaymentSetup(boolean paymentSetup) {
         this.paymentSetup = paymentSetup;
-    }
-
-    public String getCustomerStatus() {
-        return customerStatus;
-    }
-
-    public void setCustomerStatus(String customerStatus) {
-        this.customerStatus = customerStatus;
     }
 
     public Boolean getRemovedMerchantDestination() {
@@ -363,5 +324,70 @@ public class User implements Serializable, Principal {
 
     public void setAuthMethod(String authMethod) {
         this.authMethod = authMethod;
+    }
+
+    public Date getTimeTosAccepted() {
+        return timeTosAccepted;
+    }
+
+    public void setTimeTosAccepted(Date timeTosAccepted) {
+        this.timeTosAccepted = timeTosAccepted;
+    }
+
+    public String getTosAcceptIp() {
+        return tosAcceptIp;
+    }
+
+    public void setTosAcceptIp(String topAcceptIp) {
+        this.tosAcceptIp = topAcceptIp;
+    }
+
+    public String getStripeManagedAccountId() {
+        return stripeManagedAccountId;
+    }
+
+    public void setStripeManagedAccountId(String stripeManagedAccountId) {
+        this.stripeManagedAccountId = stripeManagedAccountId;
+    }
+
+    public String getStripeSecretKey() {
+        return stripeSecretKey;
+    }
+
+    public void setStripeSecretKey(String stripeSecretKey) {
+        this.stripeSecretKey = stripeSecretKey;
+    }
+
+    public String getStripePublishableKey() {
+        return stripePublishableKey;
+    }
+
+    public void setStripePublishableKey(String stripePublishableKey) {
+        this.stripePublishableKey = stripePublishableKey;
+    }
+
+
+    public Boolean getHasManagedAccount() {
+        return hasManagedAccount;
+    }
+
+    public void setHasManagedAccount(Boolean stripeTransfersEnables) {
+        this.hasManagedAccount = stripeTransfersEnables;
+    }
+
+    public Boolean getHasCustomerAccount() {
+        return hasCustomerAccount;
+    }
+
+    public void setHasCustomerAccount(Boolean hasCustomerAccount) {
+        this.hasCustomerAccount = hasCustomerAccount;
+    }
+
+    public Boolean getPaymentSetup() {
+        return paymentSetup;
+    }
+
+    public void setPaymentSetup(Boolean paymentSetup) {
+        this.paymentSetup = paymentSetup;
     }
 }

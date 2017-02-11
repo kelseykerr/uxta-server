@@ -15,7 +15,5 @@ swagger:
   swaggerViewConfiguration:
     showAuth: false
 
-
-btMerchantId: superstartupteam
-btPublicKey: v6rxkbqpcdyskcp4
-btPrivateKey: 0091ed63f6708b2a048f342c25f52da6
+stripeSecretKey: sk_test_0ZfCmmO2N7mo6JiLsjmfkQ8g
+stripePublishableKey: pk_test_XXhtxu1S44u1en0gH6ozoB7t

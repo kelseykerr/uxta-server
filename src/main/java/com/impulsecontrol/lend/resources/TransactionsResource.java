@@ -10,7 +10,7 @@ import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
-import com.impulsecontrol.lend.service.BraintreeService;
+import com.impulsecontrol.lend.service.StripeService;
 import com.impulsecontrol.lend.service.TransactionService;
 import io.dropwizard.auth.Auth;
 import io.swagger.annotations.Api;
@@ -49,21 +49,21 @@ public class TransactionsResource {
     private JacksonDBCollection<Transaction, String> transactionCollection;
     private TransactionService transactionService;
     private CcsServer ccsServer;
-    private BraintreeService braintreeService;
+    private StripeService stripeService;
 
 
     public TransactionsResource(JacksonDBCollection<Request, String> requestCollection,
                                 JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
                                 JacksonDBCollection<User, String> userCollection,
                                 JacksonDBCollection<Transaction, String> transactionCollection,
-                                CcsServer ccsServer, BraintreeService braintreeService) {
+                                CcsServer ccsServer, StripeService stripeService) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
         this.transactionCollection = transactionCollection;
         this.transactionService = new TransactionService(transactionCollection, userCollection, ccsServer);
         this.ccsServer = ccsServer;
-        this.braintreeService = braintreeService;
+        this.stripeService = stripeService;
     }
 
     @GET
@@ -324,7 +324,8 @@ public class TransactionsResource {
         }
         requestCollection.save(request);
         //TODO: send notification to buyer that they will be charged $x & initiate payment
-        braintreeService.doPayment(request.getUser(), principal, transaction);
+        stripeService.doPayment(request.getUser(), principal, transaction);
+        transactionCollection.save(transaction);
         request.setStatus(Request.Status.FULFILLED);
         requestCollection.save(request);
         return new TransactionDto(transaction, true);

@@ -9,7 +9,7 @@ import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
-import com.impulsecontrol.lend.service.BraintreeService;
+import com.impulsecontrol.lend.service.StripeService;
 import com.impulsecontrol.lend.service.ResponseService;
 import com.mongodb.BasicDBObject;
 import io.dropwizard.auth.Auth;
@@ -47,17 +47,17 @@ public class ResponsesResource {
     private JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection;
     private JacksonDBCollection<User, String> userCollection;
     private ResponseService responseService;
-    private BraintreeService braintreeService;
+    private StripeService stripeService;
 
     public ResponsesResource(JacksonDBCollection<Request, String> requestCollection,
                              JacksonDBCollection<com.impulsecontrol.lend.model.Response, String> responseCollection,
                              ResponseService responseService, JacksonDBCollection<User, String> userCollection,
-                             BraintreeService braintreeService) {
+                             StripeService stripeService) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.responseService = responseService;
         this.userCollection = userCollection;
-        this.braintreeService = braintreeService;
+        this.stripeService = stripeService;
     }
 
     @GET
@@ -142,11 +142,9 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotAllowedException(msg);
         }
-        boolean goodMerchantStatus = braintreeService.validateMerchantStatus(principal);
-        //TODO: take our Kei bypass when he has this set up
-        if ((principal.getMerchantId() == null || !goodMerchantStatus) && principal.getId() != "190639591352732") {
-            LOGGER.error("User [" + principal.getId() + "] tried to create an offer without a valid merchant account");
-            throw new NotAllowedException("Cannot create offer because your merchant account has not been successfully setup.");
+        if (principal.getStripeManagedAccountId() == null || !stripeService.canAcceptTransfers(principal)) {
+            LOGGER.error("User [" + principal.getId() + "] tried to create an offer without a valid bank account");
+            throw new NotAllowedException("Cannot create offer because you do not have a valid bank account setup");
         }
         BasicDBObject query = new BasicDBObject();
         query.append("requestId", id);

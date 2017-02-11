@@ -9,13 +9,13 @@ import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
-import com.impulsecontrol.lend.resources.BraintreeResource;
+import com.impulsecontrol.lend.resources.StripeResource;
 import com.impulsecontrol.lend.resources.CategoriesResource;
 import com.impulsecontrol.lend.resources.RequestsResource;
 import com.impulsecontrol.lend.resources.ResponsesResource;
 import com.impulsecontrol.lend.resources.TransactionsResource;
 import com.impulsecontrol.lend.resources.UserResource;
-import com.impulsecontrol.lend.service.BraintreeService;
+import com.impulsecontrol.lend.service.StripeService;
 import com.impulsecontrol.lend.service.RequestService;
 import com.impulsecontrol.lend.service.ResponseService;
 import com.impulsecontrol.lend.service.UserService;
@@ -81,16 +81,15 @@ public class LendApplication extends Application<LendConfiguration> {
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
         ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection,
                 transactionCollection, ccsServer);
-        BraintreeService braintreeService = new BraintreeService(config.btMerchantId, config.btPublicKey,
-                config.btPrivateKey, userCollection, ccsServer);
-        UserService userService = new UserService(braintreeService);
-        environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, braintreeService));
+        StripeService stripeService = new StripeService(config.stripeSecretKey, config.stripePublishableKey, userCollection, ccsServer);
+        UserService userService = new UserService(stripeService);
+        environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
         RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection);
-        environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService, braintreeService));
-        environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection, braintreeService));
+        environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService, stripeService));
+        environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection, stripeService));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,
-                transactionCollection, ccsServer, braintreeService));
-        environment.jersey().register(new BraintreeResource(braintreeService));
+                transactionCollection, ccsServer, stripeService));
+        environment.jersey().register(new StripeResource(stripeService));
         LendAuthenticator authenticator = new LendAuthenticator(userCollection, config.fbAccessToken);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)

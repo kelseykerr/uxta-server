@@ -49,13 +49,9 @@ public class LendConfiguration extends Configuration {
 
     @JsonProperty
     @NotEmpty
-    public String btMerchantId;
+    public String stripeSecretKey;
 
     @JsonProperty
     @NotEmpty
-    public String btPublicKey;
-
-    @JsonProperty
-    @NotEmpty
-    public String btPrivateKey;
+    public String stripePublishableKey;
 }

@@ -1,11 +1,5 @@
 package com.impulsecontrol.lend.service;
 
-import com.braintreegateway.CreditCard;
-import com.braintreegateway.Customer;
-import com.braintreegateway.CustomerRequest;
-import com.braintreegateway.FundingDetails;
-import com.braintreegateway.MerchantAccount;
-import com.braintreegateway.PaymentMethod;
 import com.impulsecontrol.lend.dto.PaymentDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.InternalServerException;
@@ -25,6 +19,7 @@ import javax.xml.xpath.XPathFactory;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Date;
 
 /**
  * Created by kerrk on 8/19/16.
@@ -33,10 +28,10 @@ public class UserService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
-    private BraintreeService braintreeService;
+    private StripeService stripeService;
 
-    public UserService(BraintreeService braintreeService) {
-        this.braintreeService = braintreeService;
+    public UserService(StripeService stripeService) {
+        this.stripeService = stripeService;
     }
 
 
@@ -60,13 +55,10 @@ public class UserService {
         user.setHomeLocationNotifications(dto.homeLocationNotifications);
         user.setNotificationKeywords(dto.notificationKeywords);
         user.setDateOfBirth(dto.dateOfBirth);
-        user.setTosAccepted(dto.tosAccepted);
-        braintreeService.setCustomerStatus(user);
-        if (user.getMerchantId() != null) {
-            MerchantAccount ma = braintreeService.getMerchantAccount(user.getMerchantId());
-            if (ma != null) {
-                user.setMerchantStatus(ma.getStatus().toString());
-            }
+        if (dto.tosAccepted == true && (user.getTosAccepted() == null || user.getTosAccepted() == false)) {
+            user.setTosAccepted(dto.tosAccepted);
+            user.setTimeTosAccepted(new Date());
+            user.setTosAcceptIp(dto.tosAcceptIp);
         }
         return user;
     }
@@ -133,43 +125,11 @@ public class UserService {
 
     // Payment form: credit card
     // Merchant payments (getting paid): bank account or venmo
-    public CreditCard getPaymentDetails(User user) {
-        if (user.getCustomerId() == null) {
-            return null;
-        }
-        PaymentMethod pm = braintreeService.getDefaultPaymentMethod(user.getCustomerId());
-
-        if (pm != null) {
-            try {
-                CreditCard cc = CreditCard.class.cast(pm);
-                return cc;
-            } catch (ClassCastException e) {
-               // must not have payment method because credit card is the only acceptable payment method at this time
-                return null;
-            }
-        }
-        return null;
-
+    public void getPaymentDetails(User user) {
     }
 
     public PaymentDto getUserPaymentInfo(User user) {
         PaymentDto dto = new PaymentDto();
-        CreditCard cc = getPaymentDetails(user);
-        if (cc != null) {
-            dto.ccMaskedNumber = cc.getMaskedNumber();
-            dto.ccExpDate = cc.getExpirationDate();
-        }
-        MerchantAccount ma = braintreeService.getMerchantAccount(user.getMerchantId());
-        if (ma != null && (user.getRemovedMerchantDestination() == null || !user.getRemovedMerchantDestination())) {
-            FundingDetails fa = ma.getFundingDetails();
-            if (fa != null) {
-                dto.destination = fa.getDestination() != null ? fa.getDestination().toString() : null;
-                dto.bankAccountLast4 = fa.getAccountNumberLast4();
-                dto.routingNumber = fa.getRoutingNumber();
-                dto.email = user.getEmail();
-                dto.phone = user.getPhone();
-            }
-        }
         return dto;
     }
 }

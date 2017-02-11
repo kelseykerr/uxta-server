@@ -1,6 +1,5 @@
 package com.impulsecontrol.lend.resources;
 
-import com.braintreegateway.MerchantAccount;
 import com.codahale.metrics.annotation.Timed;
 import com.impulsecontrol.lend.dto.HistoryDto;
 import com.impulsecontrol.lend.dto.PaymentDto;
@@ -9,8 +8,8 @@ import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.User;
-import com.impulsecontrol.lend.service.BraintreeService;
 import com.impulsecontrol.lend.service.ResponseService;
+import com.impulsecontrol.lend.service.StripeService;
 import com.impulsecontrol.lend.service.UserService;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -47,17 +46,17 @@ public class UserResource {
     private JacksonDBCollection<Request, String> requestCollection;
     private UserService userService;
     private ResponseService responseService;
-    private BraintreeService braintreeService;
+    private StripeService stripeService;
 
 
     public UserResource(JacksonDBCollection<User, String> userCollection,
                         JacksonDBCollection<Request, String> requestCollection, UserService userService,
-                        ResponseService responseService, BraintreeService braintreeService) {
+                        ResponseService responseService, StripeService stripeService) {
         this.userCollection = userCollection;
         this.requestCollection = requestCollection;
         this.userService = userService;
         this.responseService = responseService;
-        this.braintreeService = braintreeService;
+        this.stripeService = stripeService;
     }
 
     @GET
@@ -83,15 +82,6 @@ public class UserResource {
     @ApiParam(value = "the id of the user you wish to fetch info about, can use \"me\" to get the " +
             "current user's info") String id) {
         if (id.equals("me") || principal.getId().equals(id)) {
-            if (principal.getMerchantId() != null) {
-                System.out.println(principal.getMerchantId() + "***merchant id");
-                MerchantAccount ma = braintreeService.getMerchantAccount(principal.getMerchantId());
-                if (ma != null) {
-                    System.out.println(ma.getStatus().toString() + "***merchant status");
-                    principal.setMerchantStatus(ma.getStatus().toString());
-                    userCollection.save(principal);
-                }
-            }
             return UserDto.getMyUserDto(principal);
         }
         User user = userCollection.findOneById(id);

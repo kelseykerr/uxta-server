@@ -56,17 +56,11 @@ public class UserDto {
 
     public Boolean homeLocationNotifications;
 
-    public String merchantId;
-
-    public String merchantStatus;
-
     public String merchantStatusMessage;
 
     public String customerId;
 
     public Boolean isPaymentSetup;
-
-    public String customerStatus;
 
     public String dateOfBirth;
 
@@ -74,11 +68,11 @@ public class UserDto {
 
     public String bankRoutingNumber;
 
-    public String fundDestination;
-
     public Boolean tosAccepted;
 
-    public String paymentMethodNonce;
+    public String stripeCCToken;
+
+    public String stripeBankToken;
 
     public Boolean removedMerchantDestination;
 
@@ -86,6 +80,14 @@ public class UserDto {
 
     //either facebook or google
     public String authMethod;
+
+    public String tosAcceptIp;
+
+    //Can we make charges to this users Stripe account?
+    public Boolean canRequest;
+
+    //Can we make transfers to this users Stripe account?
+    public Boolean canRespond;
 
     public UserDto() {}
 
@@ -121,16 +123,10 @@ public class UserDto {
         dto.notificationKeywords = user.getNotificationKeywords();
         dto.currentLocationNotifications = user.getCurrentLocationNotifications();
         dto.homeLocationNotifications = user.getHomeLocationNotifications();
-        dto.merchantId = user.getMerchantId();
-        dto.merchantStatus = user.getMerchantStatus();
-        dto.merchantStatusMessage = user.getMerchantStatusMessage();
-        dto.customerId = user.getCustomerId();
+        dto.customerId = user.getStripeCustomerId();
         dto.tosAccepted = user.getTosAccepted();
-        dto.paymentMethodNonce = user.getPaymentMethodNonce();
-        dto.fundDestination = user.getFundDestination() != null ? user.getFundDestination().toString() : null;
         dto.dateOfBirth = user.getDateOfBirth();
         dto.isPaymentSetup = user.isPaymentSetup();
-        dto.customerStatus = user.getCustomerStatus();
         dto.removedMerchantDestination = user.getRemovedMerchantDestination();
         dto.pictureUrl = user.getPictureUrl();
         dto.authMethod = user.getAuthMethod();

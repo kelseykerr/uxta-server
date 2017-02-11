@@ -79,6 +79,8 @@ public class Transaction implements Serializable {
 
     private String canceler;
 
+    private String stripeChargeId;
+
     @ObjectId
     @JsonProperty("_id")
     public String getId() {
@@ -241,6 +243,14 @@ public class Transaction implements Serializable {
 
     public void setCanceler(String canceler) {
         this.canceler = canceler;
+    }
+
+    public String getStripeChargeId() {
+        return stripeChargeId;
+    }
+
+    public void setStripeChargeId(String stripeChargeId) {
+        this.stripeChargeId = stripeChargeId;
     }
 
     /**
