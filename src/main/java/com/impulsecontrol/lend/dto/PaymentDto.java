@@ -9,9 +9,6 @@ public class PaymentDto {
 
     public String ccExpDate;
 
-    //bank, mobile_phone, email
-    public String destination;
-
     public String bankAccountLast4;
 
     public String routingNumber;

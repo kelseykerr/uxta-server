@@ -129,7 +129,6 @@ public class UserService {
     }
 
     public PaymentDto getUserPaymentInfo(User user) {
-        PaymentDto dto = new PaymentDto();
-        return dto;
+        return stripeService.getPaymentDetails(user);
     }
 }

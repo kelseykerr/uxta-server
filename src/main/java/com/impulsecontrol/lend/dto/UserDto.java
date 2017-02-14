@@ -2,6 +2,7 @@ package com.impulsecontrol.lend.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.impulsecontrol.lend.model.User;
+import com.stripe.model.Token;
 
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -70,9 +71,9 @@ public class UserDto {
 
     public Boolean tosAccepted;
 
-    public String stripeCCToken;
+    public Token stripeCCToken;
 
-    public String stripeBankToken;
+    public Token stripeBankToken;
 
     public Boolean removedMerchantDestination;
 

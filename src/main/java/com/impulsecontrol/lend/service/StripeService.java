@@ -1,14 +1,19 @@
 package com.impulsecontrol.lend.service;
 
 import com.impulsecontrol.lend.NearbyUtils;
+import com.impulsecontrol.lend.dto.PaymentDto;
 import com.impulsecontrol.lend.dto.UserDto;
 import com.impulsecontrol.lend.exception.*;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
 import com.stripe.model.Account;
+import com.stripe.model.BankAccount;
+import com.stripe.model.Card;
 import com.stripe.model.Charge;
 import com.stripe.model.Customer;
+import com.stripe.model.ExternalAccount;
+import com.stripe.model.ExternalAccountCollection;
 import com.stripe.model.Token;
 import com.stripe.net.RequestOptions;
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +50,42 @@ public class StripeService {
         this.stripePublishableKey = stripePublishableKey;
         this.userCollection = userCollection;
         this.ccsServer = ccsServer;
+    }
+
+    public PaymentDto getPaymentDetails(User user) {
+        try {
+            RequestOptions requestOptions = RequestOptions.builder()
+                    .setApiKey(stripeSecretKey)
+                    .setIdempotencyKey(UUID.randomUUID().toString())
+                    .build();
+            PaymentDto paymentDto = new PaymentDto();
+            paymentDto.email = user.getEmail();
+            paymentDto.phone = user.getPhone();
+            if (StringUtils.isNotEmpty(user.getStripeCustomerId())) {
+                Customer customer = Customer.retrieve(user.getStripeCustomerId(), requestOptions);
+                if (StringUtils.isNotEmpty(customer.getDefaultSource())) {
+                    Card card = (Card) customer.getSources().retrieve(customer.getDefaultSource(), requestOptions);
+                    paymentDto.ccMaskedNumber = card != null ? "************" + card.getLast4() : null;
+                }
+            }
+            if (StringUtils.isNotEmpty(user.getStripeManagedAccountId())) {
+                Account account = Account.retrieve(user.getStripeManagedAccountId(), requestOptions);
+                ExternalAccountCollection eacs = account.getExternalAccounts();
+                for (ExternalAccount eac:eacs.getData()) {
+                    if (eac.getObject().equals("bank_account")) {
+                        BankAccount ba = (BankAccount) eac;
+                        paymentDto.routingNumber = ba.getRoutingNumber();
+                        paymentDto.bankAccountLast4 = "********" + ba.getLast4();
+                        break;
+                    }
+                }
+            }
+            return paymentDto;
+        } catch (Exception e) {
+            String msg = "Unable to get user's info from Stripe, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        }
     }
 
 
@@ -122,7 +163,7 @@ public class StripeService {
     }
 
     public void createStripeCustomer(User user, UserDto userDto) {
-        if (StringUtils.isEmpty(userDto.stripeCCToken)) {
+        if (userDto.stripeCCToken == null) {
             String msg = "Cannot create stripe customer for [" + user.getName() +
                     "] because the credit card token was empty";
             LOGGER.error(msg);
@@ -217,7 +258,7 @@ public class StripeService {
             bankAccount.put("country", "US");
             bankAccount.put("currency", "usd");
             bankAccount.put("routing_number", userDto.bankRoutingNumber);
-        } else if (StringUtils.isNotEmpty(userDto.stripeBankToken)) {
+        } else if (userDto.stripeBankToken != null) {
             bankAccount.put("external_account", userDto.stripeBankToken);
         } else {
             return;
@@ -233,7 +274,7 @@ public class StripeService {
 
     private void updateStripeCreditCard(Account account, UserDto userDto) {
         Map<String, Object> cc = new HashMap<String, Object>();
-        if (StringUtils.isNotEmpty(userDto.stripeCCToken)) {
+        if (userDto.stripeCCToken != null) {
             cc.put("external_account", userDto.stripeCCToken);
             try {
                 account.getExternalAccounts().create(cc);

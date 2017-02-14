@@ -1,6 +1,6 @@
 mongohost: 172.31.30.85
 mongoport: 27017
-mongodb: nearby
+mongodb: nearby-stripe
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
 fcmServer: gcm.googleapis.com
 fcmPort: 5235
