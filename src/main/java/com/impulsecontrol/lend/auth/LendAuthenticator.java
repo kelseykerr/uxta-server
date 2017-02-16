@@ -228,7 +228,7 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         newUser.setPictureUrl(pictureUrl);
         newUser.setTosAccepted(false);
         newUser.setPaymentSetup(false);
-        newUser.setStripeChargesEnabled(false);
+        newUser.setHasCustomerAccount(false);
         newUser.setHasManagedAccount(false);
         newUser.setAuthMethod(NearbyUtils.GOOGLE_AUTH_METHOD);
         //TODO: check for error
@@ -256,7 +256,7 @@ public class LendAuthenticator implements Authenticator<Credentials, User> {
         newUser.setFirstName(names[0]);
         newUser.setLastName(names[names.length - 1]);
         newUser.setUserId(userId);
-        newUser.setStripeChargesEnabled(false);
+        newUser.setHasCustomerAccount(false);
         newUser.setHasManagedAccount(false);
         newUser.setAuthMethod(NearbyUtils.FB_AUTH_METHOD);
         try {

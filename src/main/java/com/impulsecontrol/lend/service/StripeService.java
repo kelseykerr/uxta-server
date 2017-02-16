@@ -7,6 +7,12 @@ import com.impulsecontrol.lend.exception.*;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
+import com.stripe.exception.APIConnectionException;
+import com.stripe.exception.AuthenticationException;
+import com.stripe.exception.CardException;
+import com.stripe.exception.InvalidRequestException;
+import com.stripe.exception.RateLimitException;
+import com.stripe.exception.StripeException;
 import com.stripe.model.Account;
 import com.stripe.model.BankAccount;
 import com.stripe.model.Card;
@@ -71,16 +77,52 @@ public class StripeService {
             if (StringUtils.isNotEmpty(user.getStripeManagedAccountId())) {
                 Account account = Account.retrieve(user.getStripeManagedAccountId(), requestOptions);
                 ExternalAccountCollection eacs = account.getExternalAccounts();
-                for (ExternalAccount eac:eacs.getData()) {
-                    if (eac.getObject().equals("bank_account")) {
-                        BankAccount ba = (BankAccount) eac;
-                        paymentDto.routingNumber = ba.getRoutingNumber();
-                        paymentDto.bankAccountLast4 = "********" + ba.getLast4();
-                        break;
+                if (eacs != null) {
+                    for (ExternalAccount eac:eacs.getData()) {
+                        if (eac.getObject().equals("bank_account")) {
+                            BankAccount ba = (BankAccount) eac;
+                            paymentDto.routingNumber = ba.getRoutingNumber();
+                            paymentDto.bankAccountLast4 = "********" + ba.getLast4();
+                            break;
+                        }
                     }
                 }
             }
             return paymentDto;
+        } catch (CardException e) {
+            // Since it's a decline, CardException will be caught
+            System.out.println("Status is: " + e.getCode());
+            System.out.println("Message is: " + e.getMessage());
+            String msg = "Card Exception, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (RateLimitException e) {
+            // Too many requests made to the API too quickly
+            String msg = "Too many requests made to the API too quickly, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (InvalidRequestException e) {
+            // Invalid parameters were supplied to Stripe's API
+            String msg = "Invalid parameters were supplied to Stripe's API, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (AuthenticationException e) {
+            // Authentication with Stripe's API failed
+            // (maybe you changed API keys recently)
+            String msg = "Authentication with Stripe's API failed, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (APIConnectionException e) {
+            // Network communication with Stripe failed
+            String msg = "Network communication with Stripe failed, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (StripeException e) {
+            // Display a very generic error to the user, and maybe send
+            // yourself an email
+            String msg = "Could not add Stripe bank account, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
         } catch (Exception e) {
             String msg = "Unable to get user's info from Stripe, got error: " + e.getMessage();
             LOGGER.error(msg);
@@ -147,10 +189,14 @@ public class StripeService {
             Map<String, Object> accountParams = updateStripeAccountParams(userDto);
 
             Map<String, Object> tosAcceptanceParams = new HashMap<String, Object>();
-            tosAcceptanceParams.put("date", new Date().toInstant());
+            int dateAccepted = (int) (new Date().getTime()/1000);
+            dateAccepted--;
+            LOGGER.info("date accepted: " + dateAccepted);
+
+            tosAcceptanceParams.put("date", dateAccepted);
             tosAcceptanceParams.put("ip", userDto.tosAcceptIp);
 
-            accountParams.put("tosAcceptance", tosAcceptanceParams);
+            accountParams.put("tos_acceptance", tosAcceptanceParams);
             Account act = Account.create(accountParams, requestOptions);
             user.setStripeManagedAccountId(act.getId());
             user.setStripePublishableKey(act.getKeys().getPublishable());
@@ -225,18 +271,18 @@ public class StripeService {
         accountParams.put("country", "US");
         accountParams.put("email", userDto.email);
         Map<String, Object> legalEntityParams = new HashMap<String, Object>();
-        legalEntityParams.put("firstname", userDto.firstName);
-        legalEntityParams.put("lastname", userDto.lastName);
+        legalEntityParams.put("first_name", userDto.firstName);
+        legalEntityParams.put("last_name", userDto.lastName);
 
         Map<String, Object> addressParams = new HashMap<String, Object>();
         addressParams.put("city", userDto.city);
         addressParams.put("country", "US");
         addressParams.put("line1", userDto.address);
         addressParams.put("line2", userDto.addressLine2);
-        addressParams.put("postalCode", userDto.zip);
+        addressParams.put("postal_code", userDto.zip);
         addressParams.put("state", userDto.state);
 
-        legalEntityParams.put("personalAddress", addressParams);
+        legalEntityParams.put("personal_address", addressParams);
 
         Map<String, Object> dobParams = new HashMap<String, Object>();
         String[] dobValues = userDto.dateOfBirth.split("-");
@@ -245,8 +291,8 @@ public class StripeService {
         dobParams.put("year", dobValues[0]);
 
         legalEntityParams.put("dob", dobParams);
-        legalEntityParams.put("type", "managed");
-        accountParams.put("legalEntity", legalEntityParams);
+        legalEntityParams.put("type", "individual");
+        accountParams.put("legal_entity", legalEntityParams);
         return accountParams;
     }
 
@@ -265,6 +311,40 @@ public class StripeService {
         }
         try {
             account.getExternalAccounts().create(bankAccount);
+        } catch (CardException e) {
+            // Since it's a decline, CardException will be caught
+            System.out.println("Status is: " + e.getCode());
+            System.out.println("Message is: " + e.getMessage());
+            String msg = "Card Exception, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (RateLimitException e) {
+            // Too many requests made to the API too quickly
+            String msg = "Too many requests made to the API too quickly, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (InvalidRequestException e) {
+            // Invalid parameters were supplied to Stripe's API
+            String msg = "Invalid parameters were supplied to Stripe's API, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (AuthenticationException e) {
+            // Authentication with Stripe's API failed
+            // (maybe you changed API keys recently)
+            String msg = "Authentication with Stripe's API failed, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (APIConnectionException e) {
+            // Network communication with Stripe failed
+            String msg = "Network communication with Stripe failed, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        } catch (StripeException e) {
+            // Display a very generic error to the user, and maybe send
+            // yourself an email
+            String msg = "Could not add Stripe bank account, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
         } catch (Exception e) {
             String msg = "Could not add Stripe bank account, got error: " + e.getMessage();
             LOGGER.error(msg);

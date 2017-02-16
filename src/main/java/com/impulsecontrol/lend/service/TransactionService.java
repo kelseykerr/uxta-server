@@ -1,17 +1,9 @@
 package com.impulsecontrol.lend.service;
 
-import com.braintreegateway.BraintreeGateway;
-import com.braintreegateway.Environment;
-import com.braintreegateway.Result;
-import com.braintreegateway.TransactionRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.impulsecontrol.lend.NearbyUtils;
-import com.impulsecontrol.lend.dto.RequestDto;
-import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.CredentialExpiredException;
-import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.firebase.FirebaseUtils;
@@ -24,14 +16,7 @@ import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.login.CredentialException;
-import javax.ws.rs.NotAuthorizedException;
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.util.Base64;
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Created by kerrk on 9/22/16.

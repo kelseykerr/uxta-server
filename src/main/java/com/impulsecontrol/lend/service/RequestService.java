@@ -218,7 +218,7 @@ public class RequestService {
             query.put("_id", inQuery);
             if (sort != null && sort.equals("newest")) {
                 userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
-            } else if (sort == "distance") {
+            } else if (sort != null && sort.equals("distance")) {
                 // get those that match search in any order
                 userRequests = requestCollection.find(query);
                 requests = userRequests.toArray();
