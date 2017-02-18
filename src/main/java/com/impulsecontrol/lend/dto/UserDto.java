@@ -57,11 +57,7 @@ public class UserDto {
 
     public Boolean homeLocationNotifications;
 
-    public String merchantStatusMessage;
-
     public String customerId;
-
-    public Boolean isPaymentSetup;
 
     public String dateOfBirth;
 
@@ -75,8 +71,6 @@ public class UserDto {
 
     public Token stripeBankToken;
 
-    public Boolean removedMerchantDestination;
-
     public String pictureUrl;
 
     //either facebook or google
@@ -89,6 +83,14 @@ public class UserDto {
 
     //Can we make transfers to this users Stripe account?
     public Boolean canRespond;
+
+    public Boolean hasCustomerAccount;
+
+    public Boolean hasManagedAccount;
+
+    public String stripeManagedAccountId;
+
+    public String stripeCustomerId;
 
     public UserDto() {}
 
@@ -127,10 +129,12 @@ public class UserDto {
         dto.customerId = user.getStripeCustomerId();
         dto.tosAccepted = user.getTosAccepted();
         dto.dateOfBirth = user.getDateOfBirth();
-        dto.isPaymentSetup = user.isPaymentSetup();
-        dto.removedMerchantDestination = user.getRemovedMerchantDestination();
         dto.pictureUrl = user.getPictureUrl();
         dto.authMethod = user.getAuthMethod();
+        dto.hasCustomerAccount = user.getHasCustomerAccount();
+        dto.hasManagedAccount = user.getHasManagedAccount();
+        dto.stripeManagedAccountId = user.getStripeManagedAccountId();
+        dto.stripeCustomerId = user.getStripeCustomerId();
         return dto;
     }
 

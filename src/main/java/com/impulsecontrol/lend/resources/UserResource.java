@@ -82,7 +82,10 @@ public class UserResource {
     @ApiParam(value = "the id of the user you wish to fetch info about, can use \"me\" to get the " +
             "current user's info") String id) {
         if (id.equals("me") || principal.getId().equals(id)) {
-            return UserDto.getMyUserDto(principal);
+            UserDto userDto = UserDto.getMyUserDto(principal);
+            userDto.canRespond = stripeService.canAcceptTransfers(principal);
+            userDto.canRequest = stripeService.hasCustomerAccount(principal);
+            return userDto;
         }
         User user = userCollection.findOneById(id);
         return UserDto.getOtherUserDto(user);

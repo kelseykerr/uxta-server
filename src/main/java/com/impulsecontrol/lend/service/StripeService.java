@@ -8,6 +8,7 @@ import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
 import com.stripe.exception.APIConnectionException;
+import com.stripe.exception.APIException;
 import com.stripe.exception.AuthenticationException;
 import com.stripe.exception.CardException;
 import com.stripe.exception.InvalidRequestException;
@@ -58,24 +59,27 @@ public class StripeService {
         this.ccsServer = ccsServer;
     }
 
+    private RequestOptions getRequestOptions() {
+        return RequestOptions.builder()
+                .setApiKey(stripeSecretKey)
+                .setIdempotencyKey(UUID.randomUUID().toString())
+                .build();
+    }
+
     public PaymentDto getPaymentDetails(User user) {
         try {
-            RequestOptions requestOptions = RequestOptions.builder()
-                    .setApiKey(stripeSecretKey)
-                    .setIdempotencyKey(UUID.randomUUID().toString())
-                    .build();
             PaymentDto paymentDto = new PaymentDto();
             paymentDto.email = user.getEmail();
             paymentDto.phone = user.getPhone();
             if (StringUtils.isNotEmpty(user.getStripeCustomerId())) {
-                Customer customer = Customer.retrieve(user.getStripeCustomerId(), requestOptions);
+                Customer customer = Customer.retrieve(user.getStripeCustomerId(), getRequestOptions());
                 if (StringUtils.isNotEmpty(customer.getDefaultSource())) {
-                    Card card = (Card) customer.getSources().retrieve(customer.getDefaultSource(), requestOptions);
+                    Card card = (Card) customer.getSources().retrieve(customer.getDefaultSource(), getRequestOptions());
                     paymentDto.ccMaskedNumber = card != null ? "************" + card.getLast4() : null;
                 }
             }
             if (StringUtils.isNotEmpty(user.getStripeManagedAccountId())) {
-                Account account = Account.retrieve(user.getStripeManagedAccountId(), requestOptions);
+                Account account = Account.retrieve(user.getStripeManagedAccountId(), getRequestOptions());
                 ExternalAccountCollection eacs = account.getExternalAccounts();
                 if (eacs != null) {
                     for (ExternalAccount eac:eacs.getData()) {
@@ -120,7 +124,7 @@ public class StripeService {
         } catch (StripeException e) {
             // Display a very generic error to the user, and maybe send
             // yourself an email
-            String msg = "Could not add Stripe bank account, got error: " + e.getMessage();
+            String msg = "Could not get user's info from Stripe, got error: " + e.getMessage();
             LOGGER.error(msg);
             throw new InternalServerException(msg);
         } catch (Exception e) {
@@ -133,16 +137,12 @@ public class StripeService {
 
     public void doPayment(User buyer, User seller, Transaction transaction) {
         try {
-            RequestOptions requestOptions = RequestOptions.builder()
-                    .setApiKey(stripeSecretKey)
-                    .setIdempotencyKey(UUID.randomUUID().toString())
-                    .build();
-            Account account = Account.retrieve(seller.getStripeManagedAccountId(), requestOptions);
-            Customer customer = Customer.retrieve(buyer.getStripeCustomerId(), requestOptions);
+            Account account = Account.retrieve(seller.getStripeManagedAccountId(), getRequestOptions());
+            Customer customer = Customer.retrieve(buyer.getStripeCustomerId(), getRequestOptions());
             Map<String, Object> tokenParams = new HashMap<String, Object>();
             tokenParams.put("customer", buyer.getStripeCustomerId());
             tokenParams.put("card", customer.getDefaultSource());
-            Token token = Token.create(tokenParams, requestOptions);
+            Token token = Token.create(tokenParams, getRequestOptions());
 
             Map<String, Object> chargeParams = new HashMap<String, Object>();
             chargeParams.put("amount", transaction.getFinalPrice());
@@ -165,11 +165,7 @@ public class StripeService {
 
     public void updateStripeManagedAccount(User user, UserDto userDto) {
         try {
-            RequestOptions requestOptions = RequestOptions.builder()
-                    .setApiKey(stripeSecretKey)
-                    .setIdempotencyKey(UUID.randomUUID().toString())
-                    .build();
-            Account account = Account.retrieve(user.getStripeManagedAccountId(), requestOptions);
+            Account account = Account.retrieve(user.getStripeManagedAccountId(), getRequestOptions());
             Map<String, Object> accountParams = updateStripeAccountParams(userDto);
             account.update(accountParams);
         } catch (Exception e) {
@@ -182,22 +178,17 @@ public class StripeService {
 
     public void createStripeManagedAccount(User user, UserDto userDto) {
         try {
-            RequestOptions requestOptions = RequestOptions.builder()
-                    .setApiKey(stripeSecretKey)
-                    .setIdempotencyKey(UUID.randomUUID().toString())
-                    .build();
             Map<String, Object> accountParams = updateStripeAccountParams(userDto);
 
             Map<String, Object> tosAcceptanceParams = new HashMap<String, Object>();
-            int dateAccepted = (int) (new Date().getTime()/1000);
-            dateAccepted--;
+            int dateAccepted = (int) (user.getTimeTosAccepted().getTime()/1000);
             LOGGER.info("date accepted: " + dateAccepted);
 
             tosAcceptanceParams.put("date", dateAccepted);
-            tosAcceptanceParams.put("ip", userDto.tosAcceptIp);
+            tosAcceptanceParams.put("ip", user.getTosAcceptIp());
 
             accountParams.put("tos_acceptance", tosAcceptanceParams);
-            Account act = Account.create(accountParams, requestOptions);
+            Account act = Account.create(accountParams, getRequestOptions());
             user.setStripeManagedAccountId(act.getId());
             user.setStripePublishableKey(act.getKeys().getPublishable());
             user.setStripeSecretKey(act.getKeys().getSecret());
@@ -234,11 +225,7 @@ public class StripeService {
 
     public boolean canAcceptTransfers(User user) {
         try {
-            RequestOptions requestOptions = RequestOptions.builder()
-                    .setApiKey(stripeSecretKey)
-                    .setIdempotencyKey(UUID.randomUUID().toString())
-                    .build();
-            Account account = Account.retrieve(user.getStripeManagedAccountId(), requestOptions);
+            Account account = Account.retrieve(user.getStripeManagedAccountId(), getRequestOptions());
             return account.getTransfersEnabled();
         } catch (Exception e) {
             String msg = "Could not fetch Stripe managed account, got error: " + e.getMessage();
@@ -252,11 +239,7 @@ public class StripeService {
             if (StringUtils.isEmpty(user.getStripeCustomerId())) {
                 return false;
             }
-            RequestOptions requestOptions = RequestOptions.builder()
-                    .setApiKey(stripeSecretKey)
-                    .setIdempotencyKey(UUID.randomUUID().toString())
-                    .build();
-            Customer customer = Customer.retrieve(user.getStripeCustomerId(), requestOptions);
+            Customer customer = Customer.retrieve(user.getStripeCustomerId(), getRequestOptions());
             return StringUtils.isNotEmpty(customer.getDefaultSource());
         } catch (Exception e) {
             String msg = "Could not fetch Stripe customer, got error: " + e.getMessage();
@@ -270,6 +253,7 @@ public class StripeService {
         //right now we will assume everyone using our app is in the US
         accountParams.put("country", "US");
         accountParams.put("email", userDto.email);
+        accountParams.put("managed", true);
         Map<String, Object> legalEntityParams = new HashMap<String, Object>();
         legalEntityParams.put("first_name", userDto.firstName);
         legalEntityParams.put("last_name", userDto.lastName);
@@ -299,18 +283,35 @@ public class StripeService {
     private void updateStripeBankAccount(Account account, UserDto userDto) {
         Map<String, Object> bankAccount = new HashMap<String, Object>();
         if (StringUtils.isNotEmpty(userDto.bankAccountNumber) && StringUtils.isNotEmpty(userDto.bankRoutingNumber)) {
-            bankAccount.put("object", "bank_account");
-            bankAccount.put("account_number", userDto.bankAccountNumber);
-            bankAccount.put("country", "US");
-            bankAccount.put("currency", "usd");
-            bankAccount.put("routing_number", userDto.bankRoutingNumber);
+            Map<String, Object> tokenParams = new HashMap<String, Object>();
+            Map<String, Object> bank_accountParams = new HashMap<String, Object>();
+            bank_accountParams.put("country", "US");
+            bank_accountParams.put("currency", "usd");
+            //bank_accountParams.put("account_holder_name", userDto.fullName);
+            bank_accountParams.put("account_holder_type", "individual");
+            bank_accountParams.put("routing_number", userDto.bankRoutingNumber);
+            bank_accountParams.put("account_number", userDto.bankAccountNumber);
+            tokenParams.put("bank_account", bank_accountParams);
+
+            try {
+                Token t = Token.create(tokenParams, getRequestOptions());
+                LOGGER.info("Stripe bank token: " + t.getId());
+                bankAccount.put("external_account", t.getId());
+            } catch (Exception e) {
+                String msg = "Couldn't generate bank account token, got error: " + e.getMessage();
+                LOGGER.error(msg);
+                throw new InternalServerException(msg);
+            }
+
+            //bankAccount.put("object", "bank_account");
         } else if (userDto.stripeBankToken != null) {
-            bankAccount.put("external_account", userDto.stripeBankToken);
+            bankAccount.put("external_account", userDto.stripeBankToken.getId());
         } else {
             return;
         }
+        LOGGER.info("Attempting to update bank account for [" + account.getEmail() + "]");
         try {
-            account.getExternalAccounts().create(bankAccount);
+            account.getExternalAccounts().create(bankAccount, getRequestOptions());
         } catch (CardException e) {
             // Since it's a decline, CardException will be caught
             System.out.println("Status is: " + e.getCode());
@@ -343,11 +344,7 @@ public class StripeService {
             // Display a very generic error to the user, and maybe send
             // yourself an email
             String msg = "Could not add Stripe bank account, got error: " + e.getMessage();
-            LOGGER.error(msg);
-            throw new InternalServerException(msg);
-        } catch (Exception e) {
-            String msg = "Could not add Stripe bank account, got error: " + e.getMessage();
-            LOGGER.error(msg);
+            LOGGER.error("StripeException: " + msg);
             throw new InternalServerException(msg);
         }
     }
@@ -446,12 +443,9 @@ public class StripeService {
         if (StringUtils.isEmpty(user.getStripeManagedAccountId())) {
             saveOrUpdateManagedAccount(user, userDto);
         }
-        RequestOptions requestOptions = RequestOptions.builder()
-                .setApiKey(stripeSecretKey)
-                .setIdempotencyKey(UUID.randomUUID().toString())
-                .build();
         try {
-            Account account = Account.retrieve(user.getStripeManagedAccountId(), requestOptions);
+            Account account = Account.retrieve(user.getStripeManagedAccountId(), getRequestOptions());
+            LOGGER.info("Account is managed: [" + account.getManaged() + "]");
             updateStripeBankAccount(account, userDto);
         } catch (Exception e) {
             String msg = "Could not add bank account to Stripe, got error: " + e.getMessage();
