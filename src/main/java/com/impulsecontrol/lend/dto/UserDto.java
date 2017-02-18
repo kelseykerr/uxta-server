@@ -67,7 +67,7 @@ public class UserDto {
 
     public Boolean tosAccepted;
 
-    public Token stripeCCToken;
+    public String stripeCCToken;
 
     public Token stripeBankToken;
 
@@ -83,10 +83,6 @@ public class UserDto {
 
     //Can we make transfers to this users Stripe account?
     public Boolean canRespond;
-
-    public Boolean hasCustomerAccount;
-
-    public Boolean hasManagedAccount;
 
     public String stripeManagedAccountId;
 
@@ -131,8 +127,6 @@ public class UserDto {
         dto.dateOfBirth = user.getDateOfBirth();
         dto.pictureUrl = user.getPictureUrl();
         dto.authMethod = user.getAuthMethod();
-        dto.hasCustomerAccount = user.getHasCustomerAccount();
-        dto.hasManagedAccount = user.getHasManagedAccount();
         dto.stripeManagedAccountId = user.getStripeManagedAccountId();
         dto.stripeCustomerId = user.getStripeCustomerId();
         return dto;

@@ -3,12 +3,12 @@ package com.impulsecontrol.lend.service;
 import com.impulsecontrol.lend.NearbyUtils;
 import com.impulsecontrol.lend.dto.PaymentDto;
 import com.impulsecontrol.lend.dto.UserDto;
-import com.impulsecontrol.lend.exception.*;
+import com.impulsecontrol.lend.exception.InternalServerException;
+import com.impulsecontrol.lend.exception.NotAllowedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
 import com.stripe.exception.APIConnectionException;
-import com.stripe.exception.APIException;
 import com.stripe.exception.AuthenticationException;
 import com.stripe.exception.CardException;
 import com.stripe.exception.InvalidRequestException;
@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Currency;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -210,7 +209,7 @@ public class StripeService {
         customerParams.put("email", user.getEmail());
         customerParams.put("source", userDto.stripeCCToken);
         try {
-            Customer customer = Customer.create(customerParams);
+            Customer customer = Customer.create(customerParams, getRequestOptions());
             user.setStripeCustomerId(customer.getId());
         } catch (Exception e) {
             String msg = "Could not create Stripe customer, got error: " + e.getMessage();
@@ -220,7 +219,16 @@ public class StripeService {
     }
 
     public void updateStripeCustomer(User user, UserDto userDto) {
-        //TODO: do this method
+        try {
+            Customer customer = Customer.retrieve(user.getStripeCustomerId(), getRequestOptions());
+            Map<String, Object> customerParams = new HashMap<String, Object>();
+            customerParams.put("source", userDto.stripeCCToken);
+            customer.update(customerParams, getRequestOptions());
+        } catch (Exception e) {
+            String msg = "Could not update Stripe customer account, got error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new InternalServerException(msg);
+        }
     }
 
     public boolean canAcceptTransfers(User user) {
@@ -349,20 +357,6 @@ public class StripeService {
         }
     }
 
-    private void updateStripeCreditCard(Account account, UserDto userDto) {
-        Map<String, Object> cc = new HashMap<String, Object>();
-        if (userDto.stripeCCToken != null) {
-            cc.put("external_account", userDto.stripeCCToken);
-            try {
-                account.getExternalAccounts().create(cc);
-            } catch (Exception e) {
-                String msg = "Could not add Stripe credit card, got error: " + e.getMessage();
-                LOGGER.error(msg);
-                throw new InternalServerException(msg);
-            }
-        }
-    }
-
 
     public void handleWebhookResponse(String signature, String payload) {
         LOGGER.info("braintree webhook signature: " + signature);
@@ -456,22 +450,17 @@ public class StripeService {
     }
 
     public void saveCreditCard(User user, UserDto userDto) {
-        if (StringUtils.isEmpty(user.getStripeManagedAccountId())) {
-            saveOrUpdateManagedAccount(user, userDto);
+        verifyAllParametersPresent(user);
+        if (!user.getTosAccepted()) {
+            LOGGER.error("Cannot add payment details for user" + NearbyUtils.getUserIdString(user) +
+                    "because the terms of service has not been accepted");
+            throw new NotAllowedException("You must accept the terms of service");
         }
-        RequestOptions requestOptions = RequestOptions.builder()
-                .setApiKey(stripeSecretKey)
-                .setIdempotencyKey(UUID.randomUUID().toString())
-                .build();
-        try {
-            Account account = Account.retrieve(user.getStripeManagedAccountId(), requestOptions);
-            updateStripeCreditCard(account, userDto);
-        } catch (Exception e) {
-            String msg = "Could not add credit card to Stripe, got error: " + e.getMessage();
-            LOGGER.error(msg);
-            throw new InternalServerException(msg);
+        if (user.getStripeCustomerId() != null && StringUtils.isNotEmpty(user.getStripeCustomerId())) {
+            updateStripeCustomer(user, userDto);
+        } else {
+            createStripeCustomer(user, userDto);
         }
-
     }
 
     public void verifyAllParametersPresent(User user) {

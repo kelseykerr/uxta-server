@@ -74,6 +74,7 @@ public class StripeResource {
                     dataType = "string",
                     paramType = "header") })
     public UserDto addCreditCard(@Auth @ApiParam(hidden=true) User principal, @Valid UserDto userDto) {
+        System.out.println("***successfully hit endpoint");
         stripeService.saveCreditCard(principal, userDto);
         userDto = new UserDto(principal);
         userDto.canRespond = stripeService.canAcceptTransfers(principal);

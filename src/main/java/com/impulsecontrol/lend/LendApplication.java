@@ -44,7 +44,11 @@ public class LendApplication extends Application<LendConfiguration> {
 
             @Override
             protected SwaggerBundleConfiguration getSwaggerBundleConfiguration(LendConfiguration configuration) {
-                return configuration.swaggerBundleConfiguration;
+                SwaggerBundleConfiguration sbc = configuration.swaggerBundleConfiguration;
+                String [] schemes = new String[1];
+                schemes[0] = "https";
+                sbc.setSchemes(schemes);
+                return sbc;
             }
         });
     }

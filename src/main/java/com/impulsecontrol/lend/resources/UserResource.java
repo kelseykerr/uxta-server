@@ -83,8 +83,8 @@ public class UserResource {
             "current user's info") String id) {
         if (id.equals("me") || principal.getId().equals(id)) {
             UserDto userDto = UserDto.getMyUserDto(principal);
-            userDto.canRespond = stripeService.canAcceptTransfers(principal);
-            userDto.canRequest = stripeService.hasCustomerAccount(principal);
+            userDto.canRespond = principal.getStripeManagedAccountId() != null && stripeService.canAcceptTransfers(principal);
+            userDto.canRequest = principal.getStripeCustomerId() != null && stripeService.hasCustomerAccount(principal);
             return userDto;
         }
         User user = userCollection.findOneById(id);

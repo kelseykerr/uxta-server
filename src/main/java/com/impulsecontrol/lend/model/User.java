@@ -93,10 +93,6 @@ public class User implements Serializable, Principal {
 
     private String stripePublishableKey;
 
-    private Boolean hasCustomerAccount;
-
-    private Boolean hasManagedAccount;
-
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -364,23 +360,6 @@ public class User implements Serializable, Principal {
 
     public void setStripePublishableKey(String stripePublishableKey) {
         this.stripePublishableKey = stripePublishableKey;
-    }
-
-
-    public Boolean getHasManagedAccount() {
-        return hasManagedAccount;
-    }
-
-    public void setHasManagedAccount(Boolean stripeTransfersEnables) {
-        this.hasManagedAccount = stripeTransfersEnables;
-    }
-
-    public Boolean getHasCustomerAccount() {
-        return hasCustomerAccount;
-    }
-
-    public void setHasCustomerAccount(Boolean hasCustomerAccount) {
-        this.hasCustomerAccount = hasCustomerAccount;
     }
 
     public Boolean getPaymentSetup() {
