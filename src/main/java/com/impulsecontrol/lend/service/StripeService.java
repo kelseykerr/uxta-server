@@ -74,6 +74,8 @@ public class StripeService {
                 Customer customer = Customer.retrieve(user.getStripeCustomerId(), getRequestOptions());
                 if (StringUtils.isNotEmpty(customer.getDefaultSource())) {
                     Card card = (Card) customer.getSources().retrieve(customer.getDefaultSource(), getRequestOptions());
+                    paymentDto.ccType = card.getBrand();
+                    paymentDto.ccExpDate = card.getExpMonth() + "/" + card.getExpYear();
                     paymentDto.ccMaskedNumber = card != null ? "************" + card.getLast4() : null;
                 }
             }
@@ -248,7 +250,9 @@ public class StripeService {
                 return false;
             }
             Customer customer = Customer.retrieve(user.getStripeCustomerId(), getRequestOptions());
-            return StringUtils.isNotEmpty(customer.getDefaultSource());
+            ExternalAccountCollection eac = customer.getSources();
+            List<ExternalAccount> eas = eac != null ? eac.getData() : null;
+            return eas != null && eas.size() > 0;
         } catch (Exception e) {
             String msg = "Could not fetch Stripe customer, got error: " + e.getMessage();
             LOGGER.error(msg);
@@ -313,7 +317,7 @@ public class StripeService {
 
             //bankAccount.put("object", "bank_account");
         } else if (userDto.stripeBankToken != null) {
-            bankAccount.put("external_account", userDto.stripeBankToken.getId());
+            bankAccount.put("external_account", userDto.stripeBankToken);
         } else {
             return;
         }
@@ -460,6 +464,7 @@ public class StripeService {
             updateStripeCustomer(user, userDto);
         } else {
             createStripeCustomer(user, userDto);
+            userCollection.save(user);
         }
     }
 

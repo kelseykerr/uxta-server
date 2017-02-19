@@ -57,7 +57,7 @@ public class UserDto {
 
     public Boolean homeLocationNotifications;
 
-    public String customerId;
+    public String stripeCustomerId;
 
     public String dateOfBirth;
 
@@ -69,7 +69,7 @@ public class UserDto {
 
     public String stripeCCToken;
 
-    public Token stripeBankToken;
+    public String stripeBankToken;
 
     public String pictureUrl;
 
@@ -85,8 +85,6 @@ public class UserDto {
     public Boolean canRespond;
 
     public String stripeManagedAccountId;
-
-    public String stripeCustomerId;
 
     public UserDto() {}
 
@@ -122,7 +120,7 @@ public class UserDto {
         dto.notificationKeywords = user.getNotificationKeywords();
         dto.currentLocationNotifications = user.getCurrentLocationNotifications();
         dto.homeLocationNotifications = user.getHomeLocationNotifications();
-        dto.customerId = user.getStripeCustomerId();
+        dto.stripeCustomerId = user.getStripeCustomerId();
         dto.tosAccepted = user.getTosAccepted();
         dto.dateOfBirth = user.getDateOfBirth();
         dto.pictureUrl = user.getPictureUrl();

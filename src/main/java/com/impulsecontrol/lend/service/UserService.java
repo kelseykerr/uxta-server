@@ -123,11 +123,6 @@ public class UserService {
         }
     }
 
-    // Payment form: credit card
-    // Merchant payments (getting paid): bank account or venmo
-    public void getPaymentDetails(User user) {
-    }
-
     public PaymentDto getUserPaymentInfo(User user) {
         return stripeService.getPaymentDetails(user);
     }
