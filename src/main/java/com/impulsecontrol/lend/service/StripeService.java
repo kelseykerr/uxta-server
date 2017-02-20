@@ -28,6 +28,7 @@ import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Currency;
@@ -141,24 +142,37 @@ public class StripeService {
             Account account = Account.retrieve(seller.getStripeManagedAccountId(), getRequestOptions());
             Customer customer = Customer.retrieve(buyer.getStripeCustomerId(), getRequestOptions());
             Map<String, Object> tokenParams = new HashMap<String, Object>();
-            tokenParams.put("customer", buyer.getStripeCustomerId());
+            /*tokenParams.put("customer", buyer.getStripeCustomerId());
             tokenParams.put("card", customer.getDefaultSource());
-            Token token = Token.create(tokenParams, getRequestOptions());
+            Token token = Token.create(tokenParams, getRequestOptions());*/
 
-            Map<String, Object> chargeParams = new HashMap<String, Object>();
-            chargeParams.put("amount", transaction.getFinalPrice());
-            Double fee = (transaction.getFinalPrice() * .05) + 0.30;
+            BigDecimal price = new BigDecimal(transaction.getFinalPrice());
+            price = price.setScale(2, RoundingMode.HALF_UP);
+            Double finalPrice =  price.doubleValue();
+            // we take 5% + $0.30 - Stripe gets 3.5% +  $0.30
+            Double fee = (finalPrice * .05) + 0.30;
+            BigDecimal bdFee = new BigDecimal(fee);
+            bdFee = bdFee.setScale(2, RoundingMode.HALF_UP);
+            fee = bdFee.doubleValue();
             LOGGER.info("Charging a fee of [" + Double.toString(fee) + "] for transaction [" + transaction.getId() +
-                    "] totaling [" + Double.toString(transaction.getFinalPrice()) + "]");
-            chargeParams.put("application_fee", fee);
+                    "] totaling [" + Double.toString(finalPrice) + "]");
+            //stripe accepts values in cents represented as integers
+            finalPrice *= 100;
+            fee *= 100;
+            Integer stripePrice = finalPrice.intValue();
+            Integer stripeFee = fee.intValue();
+            Map<String, Object> chargeParams = new HashMap<String, Object>();
+            chargeParams.put("amount", stripePrice);
+            chargeParams.put("application_fee", stripeFee);
             chargeParams.put("currency", "usd");
-            chargeParams.put("source", token);
+            chargeParams.put("customer", buyer.getStripeCustomerId());
+            //chargeParams.put("source", token);
             chargeParams.put("destination", account.getId());
 
-            Charge charge = Charge.create(chargeParams);
+            Charge charge = Charge.create(chargeParams, getRequestOptions());
             transaction.setStripeChargeId(charge.getId());
         } catch (Exception e) {
-            String msg = "Could not update Stripe managed account, got error: " + e.getMessage();
+            String msg = "Could not complete charge, got error: " + e.getMessage();
             LOGGER.error(msg);
             throw new InternalServerException(msg);
         }

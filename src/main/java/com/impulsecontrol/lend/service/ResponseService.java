@@ -81,7 +81,7 @@ public class ResponseService {
         }
         Response response = new Response();
         response.setResponseTime(new Date());
-        response.setSellerStatus(Response.SellerStatus.OFFERED);
+        response.setSellerStatus(Response.SellerStatus.ACCEPTED);
         response.setResponseStatus(Response.Status.PENDING);
         response.setRequestId(request.getId());
         response.setSellerId(seller.getId());
