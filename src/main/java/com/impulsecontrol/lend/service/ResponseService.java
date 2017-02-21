@@ -104,7 +104,7 @@ public class ResponseService {
         System.out.println("id of newly created response: " + response.getId());
         String title = "New Offer";
         String body = seller.getFirstName() + " offered their " + request.getItemName() + " for $" + dto.offerPrice;
-        if (dto.priceType.toLowerCase() != Response.PriceType.FLAT.toString().toLowerCase()) {
+        if (!dto.priceType.toLowerCase().equals(Response.PriceType.FLAT.toString().toLowerCase())) {
             body += (dto.priceType.toLowerCase().equals(Response.PriceType.PER_DAY.toString().toLowerCase())) ?
                     " per day" : " per hour";
         }
