@@ -13,6 +13,7 @@ public class NearbyUtils {
 
     public static final String GOOGLE_AUTH_METHOD = "google";
     public static final String FB_AUTH_METHOD = "facebook";
+    public static final Double MINIMUM_OFFER_PRICE = 0.5;
 
     public static String getUniqueCode() {
         UUID uuid = UUID.randomUUID();

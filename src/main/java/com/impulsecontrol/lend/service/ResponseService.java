@@ -2,13 +2,14 @@ package com.impulsecontrol.lend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.impulsecontrol.lend.NearbyUtils;
 import com.impulsecontrol.lend.dto.HistoryDto;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.dto.UserDto;
-import com.impulsecontrol.lend.exception.BadRequestException;
-import com.impulsecontrol.lend.exception.UnauthorizedException;
+import com.impulsecontrol.lend.exception.*;
+import com.impulsecontrol.lend.exception.IllegalArgumentException;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.firebase.FirebaseUtils;
 import com.impulsecontrol.lend.model.HistoryComparator;
@@ -79,6 +80,7 @@ public class ResponseService {
             LOGGER.info(msg);
             throw new BadRequestException(msg);
         }
+        ensureValidOffferPrice(dto.offerPrice);
         Response response = new Response();
         response.setResponseTime(new Date());
         response.setSellerStatus(Response.SellerStatus.ACCEPTED);
@@ -131,7 +133,18 @@ public class ResponseService {
         return dto != null && dto.messages != null && dto.messages.size() > 0 && dto.messages.get(0).getContent() != null;
     }
 
+    public void ensureValidOffferPrice(Double offerPrice) {
+        if (offerPrice.equals(0)) {
+            return;
+        } else if (offerPrice < NearbyUtils.MINIMUM_OFFER_PRICE) {
+            String msg = "Cannot create offer because offer price must be greater than $0.50 or $0.00";
+            LOGGER.error(msg);
+            throw new com.impulsecontrol.lend.exception.IllegalArgumentException(msg);
+        }
+    }
+
     public boolean populateResponse(Response response, ResponseDto dto) {
+        ensureValidOffferPrice(dto.offerPrice);
         boolean changed = getResponseUpdated(response, dto);
         LOGGER.info("[" + response.getId() + "] has been updated: " + changed);
         response.setOfferPrice(dto.offerPrice);
