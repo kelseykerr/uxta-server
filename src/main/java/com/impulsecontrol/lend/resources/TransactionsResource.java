@@ -117,7 +117,11 @@ public class TransactionsResource {
         }
         transaction.setCanceler(principal.getId());
         transaction.setCanceledReason(dto.canceledReason);
-        request.setStatus(Request.Status.CLOSED);
+        if (!isBuyer) {
+            request.setStatus(Request.Status.OPEN);
+        } else {
+            request.setStatus(Request.Status.CLOSED);
+        }
         transactionCollection.save(transaction);
         response.setResponseStatus(Response.Status.CLOSED);
         responseCollection.save(response);
