@@ -103,7 +103,6 @@ public class ResponseService {
         } catch (InterruptedException e) {
             //do nothing
         }
-        System.out.println("id of newly created response: " + response.getId());
         String title = "New Offer";
         String body = seller.getFirstName() + " offered their " + request.getItemName() + " for $" + dto.offerPrice;
         if (!dto.priceType.toLowerCase().equals(Response.PriceType.FLAT.toString().toLowerCase())) {

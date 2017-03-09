@@ -1,6 +1,10 @@
 package com.impulsecontrol.lend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.impulsecontrol.lend.NearbyUtils;
+import com.impulsecontrol.lend.dto.RequestDto;
+import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.CredentialExpiredException;
@@ -43,7 +47,7 @@ public class TransactionService {
         return code.replaceAll("-", "");
     }
 
-    public void enterReturnCode(Transaction transaction, Response response, String code) {
+    public void enterReturnCode(Transaction transaction, Response response, Request request, String code) {
         if (transaction.getReturnTime() != null) {
             LOGGER.error("Seller tried to enter return code for transaction [" + transaction.getId() + "] " +
                     "when the return has already occurred");
@@ -56,6 +60,14 @@ public class TransactionService {
                 transaction.setReturnTime(currentDate);
                 transaction.setReturned(true);
                 calculatePrice(transaction, response);
+                JSONObject notification = new JSONObject();
+                notification.put("title", "Exchange Confirmed");
+                notification.put("message", "exchange confirmed!");
+                notification.put("type", "exchange_confirmed");
+                User buyer = userCollection.findOneById(request.getUser().getId());
+                FirebaseUtils.sendFcmMessage(buyer, null, notification, ccsServer);
+                User seller = userCollection.findOneById(response.getSellerId());
+                FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
             } else {
                 LOGGER.error("Transaction [" + transaction.getId() + "]'s return code has expired");
                 throw new CredentialExpiredException("This return code has expired. Ask the buyer to generate a new one.");
@@ -87,6 +99,8 @@ public class TransactionService {
                 notification.put("type", "exchange_confirmed");
                 User seller = userCollection.findOneById(response.getSellerId());
                 FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
+                User buyer = userCollection.findOneById(request.getUser().getId());
+                FirebaseUtils.sendFcmMessage(buyer, null, notification, ccsServer);
             } else {
                 LOGGER.error("Transaction [" + transaction.getId() + "]'s code has expired");
                 throw new CredentialExpiredException("This exchange code has expired. Ask the seller to generate a new one.");
@@ -108,7 +122,6 @@ public class TransactionService {
             transaction.setCalculatedPrice(price);
         }
         transactionCollection.save(transaction);
-        //TODO: send alerts to seller and buyer to confirm
     }
 
     public String generateCode(Transaction transaction, Request request, Response response, String userId) {

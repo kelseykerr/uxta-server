@@ -193,7 +193,7 @@ public class TransactionsResource {
         boolean isBuyer = request.getUser().getId().equals(principal.getId());
         boolean isSeller = response.getSellerId().equals(principal.getId());
         if (isSeller) {
-            transactionService.enterReturnCode(transaction, response, code);
+            transactionService.enterReturnCode(transaction, response, request, code);
         } else if (isBuyer) {
             transactionService.enterExchangeCode(transaction, response, request, code);
         } else {
