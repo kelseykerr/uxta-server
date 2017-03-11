@@ -108,18 +108,21 @@ public class TransactionsResource {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
-        boolean isBuyer = request.getUser().getId().equals(principal.getId());
+        boolean isRequester = request.getUser().getId().equals(principal.getId());
         boolean isSeller = response.getSellerId().equals(principal.getId());
-        if (!isBuyer && !isSeller) {
-            LOGGER.error("User [" + principal.getId() + "] tried to get code for transaction ["
+        if (!isRequester && !isSeller) {
+            LOGGER.error("User [" + principal.getId() + "] tried to close transaction ["
                     + transactionId + "]");
-            throw new NotAuthorizedException("Invalid code");
+            // return generic not found exception -- don't want to be too specific for security reasons
+            throw new NotFoundException("Transaction not found");
         }
         transaction.setCanceler(principal.getId());
         transaction.setCanceledReason(dto.canceledReason);
-        if (!isBuyer) {
+        if (!isRequester) {
+            // reopen the request so the requester can receive new offers
             request.setStatus(Request.Status.OPEN);
         } else {
+            // if the requester cancels the transaction, close the request
             request.setStatus(Request.Status.CLOSED);
         }
         transactionCollection.save(transaction);
@@ -130,12 +133,12 @@ public class TransactionsResource {
         notification.put("title", "Transaction Cancelled");
         notification.put("type", "cancelled_transaction");
         notification.put("reason", transaction.getCanceledReason());
-        if (isBuyer) {
+        if (isRequester) {
             User seller = userCollection.findOneById(response.getSellerId());
-            notification.put("message", seller.getFirstName() + " cancelled your transaction for a " + request.getId() + ".");
+            notification.put("message", seller.getFirstName() + " cancelled your transaction for a " + request.getItemName() + ".");
             FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
         } else {
-            notification.put("message", request.getUser().getFirstName() + " cancelled your transaction for a " + request.getId() + ".");
+            notification.put("message", request.getUser().getFirstName() + " cancelled your transaction for a " + request.getItemName() + ".");
             FirebaseUtils.sendFcmMessage(request.getUser(), null, notification, ccsServer);
         }
         return new TransactionDto(transaction, isSeller);
