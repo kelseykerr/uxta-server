@@ -218,6 +218,7 @@ public class ResponseService {
 
     private void updateBuyerStatus(Response response, ResponseDto dto, Request request, Boolean updated) {
         boolean sentUpdate = false;
+        String notification = null;
         if (!response.getBuyerStatus().toString().toLowerCase().equals(dto.buyerStatus.toLowerCase())) {
             String buyerStatus = dto.buyerStatus.toLowerCase();
             if (buyerStatus.equals(Response.BuyerStatus.ACCEPTED.toString().toLowerCase())) {
@@ -230,14 +231,14 @@ public class ResponseService {
             } else if (buyerStatus.equals(Response.BuyerStatus.DECLINED.toString().toLowerCase())) {
                 response.setBuyerStatus(Response.BuyerStatus.DECLINED);
                 response.setResponseStatus(Response.Status.CLOSED);
-                //TODO: should we send a notification here??
-                sentUpdate = true;
+                notification = request.getUser().getFirstName() + " declined your offer for a " + request.getItemName();
+                updated = true;
             } else {
                 //THIS SHOULD NOT HAPPEN
             }
         }
         if (!sentUpdate && updated) {
-            sendUpdateToSeller(request, response);
+            sendUpdateToSeller(request, response, notification);
         }
     }
 
@@ -250,34 +251,35 @@ public class ResponseService {
                     acceptResponse(response, request);
                 } else {
                     // send notification to buyer that the offer has been updated
-                    sendUpdateToBuyer(request, response);
+                    sendUpdateToBuyer(request, response, null);
                 }
             } else if (sellerStatus.equals(Response.SellerStatus.OFFERED.toString().toLowerCase())) {
                 //Not sure what scenario this would be
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
                 // send notification to buyer that the offer has been updated
-                sendUpdateToBuyer(request, response);
+                sendUpdateToBuyer(request, response, null);
             } else if (sellerStatus.equals(Response.SellerStatus.WITHDRAWN.toString().toLowerCase())) {
                 response.setSellerStatus(Response.SellerStatus.WITHDRAWN);
                 response.setResponseStatus(Response.Status.CLOSED);
-                //TODO: should we send a notification here?
+                String msg = request.getUser().getFirstName() + " withdrew their offer for a " + request.getItemName();
+                sendUpdateToBuyer(request, response, msg);
             } else {
                 String msg = "Unable to update status to [" + sellerStatus + "]. Options are WITHDRAWN, OFFERED, and ACCEPTED";
                 LOGGER.error(msg);
                 throw new com.impulsecontrol.lend.exception.IllegalArgumentException(msg);
             }
         } else {
-            sendUpdateToBuyer(request, response);
+            sendUpdateToBuyer(request, response, null);
         }
 
     }
 
-    public void sendUpdateToBuyer(Request request, Response response) {
+    public void sendUpdateToBuyer(Request request, Response response, String msg) {
         try {
             JSONObject notification = new JSONObject();
             User seller = userCollection.findOneById(response.getSellerId());
-            notification.put("title", seller.getFirstName() + " updated their offer");
-            notification.put("message", seller.getFirstName() + " updated their offer for a " + request.getItemName());
+            notification.put("title", msg != null ? msg : seller.getFirstName() + " updated their offer");
+            notification.put("message", msg != null ? msg : seller.getFirstName() + " updated their offer for a " + request.getItemName());
             notification.put("type", "response_update");
             ObjectMapper mapper = new ObjectMapper();
             String responseJson = mapper.writeValueAsString(new ResponseDto(response));
@@ -287,17 +289,18 @@ public class ResponseService {
             User recipient = userCollection.findOneById(request.getUser().getId());
             FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
         } catch (JsonProcessingException e) {
-            String msg = "Could not convert object to json string, got error: " + e.getMessage();
-            LOGGER.error(msg);
+            String err = "Could not send update to seller for response [" + response.getId() + "], " +
+                    "got error converting object to json string: " + e.getMessage();
+            LOGGER.error(err);
         }
 
     }
 
-    public void sendUpdateToSeller(Request request, Response response) {
+    public void sendUpdateToSeller(Request request, Response response, String msg) {
         try {
             JSONObject notification = new JSONObject();
-            notification.put("title", request.getUser().getFirstName() + " made updates to the offer");
-            notification.put("message", request.getUser().getFirstName() + " edited your offer for a " + request.getItemName());
+            notification.put("title", msg != null ? msg : request.getUser().getFirstName() + " made updates to the offer");
+            notification.put("message", msg != null ? msg : request.getUser().getFirstName() + " edited your offer for a " + request.getItemName());
             notification.put("type", "response_update");
             ObjectMapper mapper = new ObjectMapper();
             String responseJson = mapper.writeValueAsString(new ResponseDto(response));
@@ -307,8 +310,9 @@ public class ResponseService {
             User recipient = userCollection.findOneById(response.getSellerId());
             FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
         } catch (JsonProcessingException e) {
-            String msg = "Could not convert object to json string, got error: " + e.getMessage();
-            LOGGER.error(msg);
+            String err = "Could not send update to seller for response [" + response.getId() + "], " +
+                    "got error converting object to json string: " + e.getMessage();
+            LOGGER.error(err);
         }
 
     }
