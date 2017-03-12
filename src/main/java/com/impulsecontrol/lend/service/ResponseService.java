@@ -394,50 +394,111 @@ public class ResponseService {
         transactionCollection.insert(transaction);
     }
 
-    public List<HistoryDto> getHistory(User user) {
+    public List<HistoryDto> getHistory(User user, List<String> types, List<String> status) {
         DBObject searchByUser = new BasicDBObject("user._id", new ObjectId(user.getId()));
-        DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
-        List<Request> requests = userRequests.toArray();
-        userRequests.close();
+        boolean getRequests = false;
+        boolean getOffers = false;
+        boolean getTransactions = false;
+        boolean getOpen = false;
+        boolean getClosed = false;
+        if (types == null || types.size() == 0) {
+            getRequests = true;
+            getOffers = true;
+            getTransactions = true;
+        } else {
+            for (String type:types) {
+                if (type.toLowerCase().equals("requests")) {
+                    getRequests = true;
+                } else if (type.toLowerCase().equals("offers")) {
+                    getOffers = true;
+                } else if (type.toLowerCase().equals("transactions")) {
+                    getTransactions = true;
+                }
+            }
+        }
+        if (status == null || status.size() == 0) {
+            getOpen = true;
+            getClosed = true;
+        } else {
+            for (String s:status) {
+                if (s.toLowerCase().equals("open")) {
+                    getOpen = true;
+                } else if (s.toLowerCase().equals("closed")) {
+                    getClosed = true;
+                }
+            }
+        }
+        final boolean addRequests = getRequests;
+        final boolean addOffers = getOffers;
+        final boolean addTransactions = getTransactions;
+        final boolean addOpen = getOpen;
+        final boolean addClosed = getClosed;
         List<HistoryDto> historyDtos = new ArrayList<>();
-        requests.forEach(r -> {
-            BasicDBObject query = new BasicDBObject("requestId", r.getId());
-            DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
-            List<Response> responses = requestResponses.toArray();
-            requestResponses.close();
-            HistoryDto dto = new HistoryDto();
-            dto.request = new RequestDto(r);
-            List<ResponseDto> dtos = ResponseDto.transform(responses);
-            dtos.forEach(d -> {
-                User seller = userCollection.findOneById(d.sellerId);
-                UserDto userDto = new UserDto();
-                if (seller == null) {
-                    for (Response response : responses) {
-                        if (response.getSellerId().equals(d.sellerId)) {
-                            response.setResponseStatus(Response.Status.CLOSED);
-                            responseCollection.save(response);
-                            d.sellerStatus = r.getStatus().toString();
-                        }
-                    }
+        if (getRequests || getTransactions) {
+            DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
+            List<Request> requests = userRequests.toArray();
+            userRequests.close();
+            requests.forEach(r -> {
+                BasicDBObject query = new BasicDBObject("requestId", r.getId());
+                DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
+                List<Response> responses = requestResponses.toArray();
+                requestResponses.close();
+                HistoryDto dto = new HistoryDto();
+                dto.request = new RequestDto(r);
+                if (!addOpen && (r.getStatus().equals(Request.Status.OPEN) ||
+                        r.getStatus().equals(Request.Status.PROCESSING_PAYMENT) ||
+                        r.getStatus().equals(Request.Status.TRANSACTION_PENDING))) {
+                    return;
+                } else if (!addClosed && (r.getStatus().equals(Request.Status.CLOSED) ||
+                        r.getStatus().equals(Request.Status.FULFILLED))) {
                     return;
                 }
-                userDto = new UserDto(seller);
-                d.seller = userDto;
+                List<ResponseDto> dtos = ResponseDto.transform(responses);
+                dtos.forEach(d -> {
+                    User seller = userCollection.findOneById(d.sellerId);
+                    UserDto userDto = new UserDto();
+                    if (seller == null) {
+                        for (Response response : responses) {
+                            if (response.getSellerId().equals(d.sellerId)) {
+                                response.setResponseStatus(Response.Status.CLOSED);
+                                responseCollection.save(response);
+                                d.sellerStatus = r.getStatus().toString();
+                            }
+                        }
+                        return;
+                    }
+                    userDto = new UserDto(seller);
+                    d.seller = userDto;
+                });
+                Transaction transaction = transactionCollection.findOne(query);
+                dto.responses = dtos;
+                if (transaction != null) {
+                    dto.transaction = new TransactionDto(transaction, false);
+                    if (addTransactions) {
+                        historyDtos.add(dto);
+                    }
+                } else {
+                    if (addRequests) {
+                        historyDtos.add(dto);
+                    }
+                }
             });
-            Transaction transaction = transactionCollection.findOne(query);
-            if (transaction != null) {
-                dto.transaction = new TransactionDto(transaction, false);
-            }
-            dto.responses = dtos;
-            historyDtos.add(dto);
-        });
-        List<HistoryDto> userOffers = getMyOfferHistory(user.getId());
-        historyDtos.addAll(userOffers);
+        }
+
+        if (getOffers || getTransactions) {
+            List<HistoryDto> userOffers = getMyOfferHistory(user.getId(), getOffers, getTransactions, getOpen, getClosed);
+            historyDtos.addAll(userOffers);
+        }
         Collections.sort(historyDtos, new HistoryComparator(user.getId()));
-        return historyDtos;
+        if (historyDtos.size() > NearbyUtils.DEFAULT_LIMIT) {
+            return historyDtos.subList(0, NearbyUtils.DEFAULT_LIMIT);
+        } else {
+            return historyDtos;
+        }
     }
 
-    public List<HistoryDto> getMyOfferHistory(String userId) {
+    public List<HistoryDto> getMyOfferHistory(String userId, final boolean getOffers, final boolean getTransactions,
+                                              final boolean getOpen, final boolean getClosed) {
         BasicDBObject query = new BasicDBObject("sellerId", userId);
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
         List<Response> responses = requestResponses.toArray();
@@ -449,15 +510,32 @@ public class ResponseService {
             if (request == null) {
                 //TODO: log an error here, but probably don't need to throw an exception...this really shouldn't happen
             } else {
+                if (!getClosed && r.getResponseStatus().equals(Response.Status.CLOSED)) {
+                    return;
+                } else if (!getOpen && r.getResponseStatus().equals(Response.Status.PENDING)) {
+                    return;
+                }
                 HistoryDto dto = new HistoryDto();
+                dto.request = new RequestDto(request);
+                dto.responses = Collections.singletonList(new ResponseDto(r));
                 BasicDBObject qry = new BasicDBObject("responseId", r.getId());
                 Transaction transaction = transactionCollection.findOne(qry);
                 if (transaction != null) {
                     dto.transaction = new TransactionDto(transaction, true);
+                    if (getTransactions) {
+                        if (!getOpen && (request.getStatus().equals(Request.Status.PROCESSING_PAYMENT) ||
+                        request.getStatus().equals(Request.Status.TRANSACTION_PENDING))) {
+                            return;
+                        } else if (!getClosed && (request.getStatus().equals(Request.Status.CLOSED) ||
+                        request.getStatus().equals(Request.Status.FULFILLED))) {
+                            return;
+                        }
+                        historyDtos.add(dto);
+                    }
+                } else if (getOffers) {
+                    historyDtos.add(dto);
                 }
-                dto.request = new RequestDto(request);
-                dto.responses = Collections.singletonList(new ResponseDto(r));
-                historyDtos.add(dto);
+
             }
         });
         return historyDtos;

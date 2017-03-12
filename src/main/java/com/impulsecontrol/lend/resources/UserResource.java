@@ -32,6 +32,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
@@ -229,14 +230,14 @@ public class UserResource {
     })
     public List<HistoryDto> getUserHistory(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
     @ApiParam(value = "the id of the user to get requests from, can use \"me\" to get the current user's info")
-    String id) {
+    String id,  @QueryParam("types") List<String> types, @QueryParam("status") List<String> status) {
         if (!principal.getUserId().equals(id) && !id.equals("me")) {
             String msg = "User [" + principal.getUserId() +
                     "] is not authorized to get user [" + id + "]'s history.";
             LOGGER.error(msg);
             throw new UnauthorizedException(msg);
         }
-        return responseService.getHistory(principal);
+        return responseService.getHistory(principal, types, status);
     }
 
     @PUT
