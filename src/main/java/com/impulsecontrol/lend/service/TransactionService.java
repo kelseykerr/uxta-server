@@ -1,10 +1,6 @@
 package com.impulsecontrol.lend.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.impulsecontrol.lend.NearbyUtils;
-import com.impulsecontrol.lend.dto.RequestDto;
-import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.CredentialExpiredException;
@@ -20,6 +16,7 @@ import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -44,7 +41,20 @@ public class TransactionService {
     }
 
     public String normalizeCode(String code) {
-        return code.replaceAll("-", "");
+        //ignore case and dashes
+        return code.replaceAll("-", "").toLowerCase();
+    }
+
+    public void sendTransactionFulfilledNotification(Transaction transaction, User seller, User requester) {
+        JSONObject notification = new JSONObject();
+        BigDecimal price = BigDecimal.valueOf(transaction.getFinalPrice());
+        price = price.setScale(NearbyUtils.USD.getDefaultFractionDigits(), NearbyUtils.DEFAULT_ROUNDING);
+        notification.put("title", "Payment Confirmed");
+        notification.put("message", "Payment of $" + price + " submitted to " +
+                seller.getFirstName() + " and transaction closed");
+        notification.put("type", FirebaseUtils.NotificationTypes.payment_confirmed.name());
+        User buyer = userCollection.findOneById(requester.getId());
+        FirebaseUtils.sendFcmMessage(buyer, null, notification, ccsServer);
     }
 
     public void enterReturnCode(Transaction transaction, Response response, Request request, String code) {
@@ -63,7 +73,7 @@ public class TransactionService {
                 JSONObject notification = new JSONObject();
                 notification.put("title", "Exchange Confirmed");
                 notification.put("message", "exchange confirmed!");
-                notification.put("type", "exchange_confirmed");
+                notification.put("type", FirebaseUtils.NotificationTypes.exchange_confirmed.name());
                 User buyer = userCollection.findOneById(request.getUser().getId());
                 FirebaseUtils.sendFcmMessage(buyer, null, notification, ccsServer);
                 User seller = userCollection.findOneById(response.getSellerId());
@@ -96,7 +106,7 @@ public class TransactionService {
                 JSONObject notification = new JSONObject();
                 notification.put("title", "Exchange Confirmed");
                 notification.put("message", "exchange confirmed!");
-                notification.put("type", "exchange_confirmed");
+                notification.put("type", FirebaseUtils.NotificationTypes.exchange_confirmed.name());
                 User seller = userCollection.findOneById(response.getSellerId());
                 FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
                 User buyer = userCollection.findOneById(request.getUser().getId());
@@ -221,7 +231,7 @@ public class TransactionService {
         // the initial exchange already happened, why are you requesting this?
         if (transaction.getExchanged()) {
             LOGGER.error("The initial exchange already occurred for transaction [" + transaction.getId() + "].");
-            throw new BadRequestException("You already exhanged this item at [" + transaction.getExchangeTime() + "]");
+            throw new BadRequestException("You already exchanged this item at [" + transaction.getExchangeTime() + "]");
         }
         return setTransactionCode(transaction, true);
     }

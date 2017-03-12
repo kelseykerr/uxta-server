@@ -1,5 +1,6 @@
 package com.impulsecontrol.lend.service;
 
+import com.impulsecontrol.lend.NearbyUtils;
 import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.NotFoundException;
@@ -8,9 +9,11 @@ import com.impulsecontrol.lend.firebase.FirebaseUtils;
 import com.impulsecontrol.lend.model.Category;
 import com.impulsecontrol.lend.model.GeoJsonPoint;
 import com.impulsecontrol.lend.model.Request;
+import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.User;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
@@ -34,6 +37,7 @@ public class RequestService {
     private CcsServer ccsServer;
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestService.class);
     static final long ONE_MINUTE_IN_MILLIS=60000;
+    private ResponseService responseService;
 
     public RequestService() {
 
@@ -42,11 +46,13 @@ public class RequestService {
     public RequestService(JacksonDBCollection<Category, String> categoriesCollection,
                           JacksonDBCollection<Request, String> requestsCollection,
                           CcsServer ccsServer,
-                          JacksonDBCollection<User, String> userCollection) {
+                          JacksonDBCollection<User, String> userCollection,
+                          ResponseService responseService) {
         this.categoriesCollection = categoriesCollection;
         this.requestCollection = requestsCollection;
         this.userCollection = userCollection;
         this.ccsServer = ccsServer;
+        this.responseService = responseService;
     }
 
     public Request transformRequestDto(RequestDto dto, User user) {
@@ -56,6 +62,29 @@ public class RequestService {
         populateRequest(request, dto);
         request.setStatus(Request.Status.OPEN);
         return request;
+    }
+
+    /**
+     * Returns true if the user can make a new request. User CANNOT make a new request if they have 5 or more
+     * open requests
+     * @param user
+     * @return
+     */
+    public boolean canCreateRequest(User user) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("user.userId", user.getUserId());
+        query.put("status", Request.Status.OPEN.name());
+        DBCursor userRequests  = requestCollection.find(query);
+        List<Request> userRs = userRequests.toArray();
+        String msg = "User [" + user.getFirstName() + ":" + user.getId() + "] has [" +
+                userRequests.size() + "] open requests";
+        if (userRs.size() < NearbyUtils.MAX_OPEN_REQUESTS) {
+            LOGGER.info(msg);
+            return true;
+        } else {
+            LOGGER.info("Cannot make request: " + msg);
+            return false;
+        }
     }
 
     public void populateRequest(Request request, RequestDto dto) {
@@ -68,6 +97,7 @@ public class RequestService {
         request.setExpireDate(dto.expireDate);
         if (dto.expireDate != null && dto.expireDate.before(new Date())) {
             request.setStatus(Request.Status.CLOSED);
+            responseService.alertRespondersOfClosedRequest(request);
         }
         if (dto.category != null) {
             Category category = categoriesCollection.findOneById(dto.category.id);
@@ -98,7 +128,7 @@ public class RequestService {
         LOGGER.info("Fetching recent requests for user [" + user.getId() + "]");
         JSONObject notification = new JSONObject();
         notification.put("title", "Recent Requests");
-        notification.put("type", "request_notification");
+        notification.put("type", FirebaseUtils.NotificationTypes.request_notification.name());
         String body = "";
         boolean singleNearbyRequest = false;
         boolean multipleNearbyRequests = false;
@@ -176,9 +206,11 @@ public class RequestService {
         return query;
     }
 
-    public List<Request> findRequests(Double latitude, Double longitude, Double radius, Boolean expired,
+    public List<Request> findRequests(Integer offset, Integer limit, Double latitude, Double longitude, Double radius, Boolean expired,
                                       Boolean includeMine, String searchTerm, String sort, User principal) {
         BasicDBObject query = getLocationQuery(latitude, longitude, radius);
+        offset = (offset != null ? offset : 0);
+        limit = (limit == null || limit > NearbyUtils.MAX_LIMIT) ? NearbyUtils.DEFAULT_LIMIT : limit;
 
         if (expired != null && expired) {
             BasicDBObject expiredQuery = new BasicDBObject();
@@ -198,10 +230,23 @@ public class RequestService {
 
         DBCursor userRequests;
         if (sort != null && sort.equals("newest")) {
-          userRequests  = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+            if (StringUtils.isBlank(searchTerm)) {
+                //go ahead and add offset and limit here
+                userRequests  = requestCollection.find(query)
+                        .sort(new BasicDBObject("postDate", -1))
+                        .skip(offset)
+                        .limit(limit);
+            } else {
+                userRequests  = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+            }
         } else {
             // distance is the default sort, best match should also use this for the initial query
-            userRequests = requestCollection.find(query);
+            if (StringUtils.isBlank(searchTerm)) {
+                //go ahead and add offset and limit here
+                userRequests = requestCollection.find(query).skip(offset).limit(limit);
+            } else {
+                userRequests = requestCollection.find(query);
+            }
         }
         List<Request> requests = userRequests.toArray();
         userRequests.close();
@@ -217,25 +262,31 @@ public class RequestService {
             inQuery.put("$in", ids);
             query.put("_id", inQuery);
             if (sort != null && sort.equals("newest")) {
-                userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+                userRequests = requestCollection.find(query)
+                        .sort(new BasicDBObject("postDate", -1))
+                        .skip(offset)
+                        .limit(limit);
             } else if (sort != null && sort.equals("distance")) {
                 // get those that match search in any order
                 userRequests = requestCollection.find(query);
                 requests = userRequests.toArray();
                 userRequests.close();
                 ids = requests.stream().map(r -> new ObjectId(r.getId())).collect(Collectors.toList());
-                //redo location query on the matching results, this will automatically be ordered by closed distance
+                //redo location query on the matching results, this will automatically be ordered by closest distance
                 query = getLocationQuery(latitude, longitude, radius);
                 inQuery = new BasicDBObject();
                 inQuery.put("$in", ids);
                 query.put("_id", inQuery);
-                userRequests = requestCollection.find(query);
+                userRequests = requestCollection.find(query).skip(offset).limit(limit);
             } else {
                 BasicDBObject scoreProjection = new BasicDBObject();
                 scoreProjection.append("$meta", "textScore");
                 BasicDBObject projectionParent = new BasicDBObject();
                 projectionParent.put("score", scoreProjection);
-                userRequests = requestCollection.find(query, projectionParent).sort(new BasicDBObject("score", scoreProjection));
+                userRequests = requestCollection.find(query, projectionParent)
+                        .sort(new BasicDBObject("score", scoreProjection))
+                        .skip(offset)
+                        .limit(limit);
             }
             requests = userRequests.toArray();
             userRequests.close();

@@ -88,7 +88,7 @@ public class LendApplication extends Application<LendConfiguration> {
         StripeService stripeService = new StripeService(config.stripeSecretKey, config.stripePublishableKey, userCollection, ccsServer);
         UserService userService = new UserService(stripeService);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
-        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection);
+        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService, stripeService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection, stripeService));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,

@@ -159,7 +159,9 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotAllowedException(msg);
         }
-
+        if (!responseService.canCreateResponse(principal)) {
+            throw new NotAllowedException("You have exceeded the maximum number of open/pending offers");
+        }
         Response response = responseService.transformResponseDto(dto, request, principal);
         return new ResponseDto(response);
     }

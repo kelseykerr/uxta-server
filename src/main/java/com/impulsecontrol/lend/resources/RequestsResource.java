@@ -105,13 +105,16 @@ public class RequestsResource {
                                         @QueryParam("expired") Boolean expired,
                                         @QueryParam("includeMine") Boolean includeMine,
                                         @QueryParam("searchTerm") String searchTerm,
-                                        @QueryParam("sort") String sort) {
+                                        @QueryParam("sort") String sort,
+                                        @QueryParam("offset") Integer offset,
+                                        @QueryParam("limit") Integer limit) {
         if (longitude == null || latitude == null || radius == null) {
             String msg = "query parameters [radius], [longitude] and [latitude] are required.";
             LOGGER.error(msg);
             throw new BadRequestException(msg);
         }
-        List<Request> requests = requestService.findRequests(latitude, longitude, radius, expired, includeMine, searchTerm, sort, principal);
+        List<Request> requests = requestService.findRequests(offset, limit, latitude, longitude, radius, expired, includeMine,
+                searchTerm, sort, principal);
         return RequestDto.transform(requests);
     }
 
@@ -136,6 +139,9 @@ public class RequestsResource {
         if (!stripeService.hasCustomerAccount(principal)) {
             LOGGER.error("User [" + principal.getId() + "] tried to make a request without adding a valid payment method");
             throw new NotAllowedException("Cannot create request because you have not added a valid payment method to your account");
+        }
+        if (!requestService.canCreateRequest(principal)) {
+            throw new NotAllowedException("You have exceeded the maximum number of open requests.");
         }
         Request request = requestService.transformRequestDto(dto, principal);
         WriteResult<Request, String> newRequest = requestCollection.insert(request);

@@ -48,8 +48,6 @@ public class ResponseService {
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<Transaction, String> transactionCollection;
     private CcsServer ccsServer;
-    private static final Currency USD = Currency.getInstance("USD");
-    private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.HALF_EVEN;
 
     public ResponseService() {
 
@@ -112,7 +110,7 @@ public class ResponseService {
         JSONObject notification = new JSONObject();
         notification.put("title", title);
         notification.put("message", body);
-        notification.put("type", "response_update");
+        notification.put("type", FirebaseUtils.NotificationTypes.response_update.name());
         try {
             ObjectMapper mapper = new ObjectMapper();
             String responseJson = mapper.writeValueAsString(new ResponseDto(response));
@@ -280,7 +278,7 @@ public class ResponseService {
             User seller = userCollection.findOneById(response.getSellerId());
             notification.put("title", msg != null ? msg : seller.getFirstName() + " updated their offer");
             notification.put("message", msg != null ? msg : seller.getFirstName() + " updated their offer for a " + request.getItemName());
-            notification.put("type", "response_update");
+            notification.put("type", FirebaseUtils.NotificationTypes.response_update.name());
             ObjectMapper mapper = new ObjectMapper();
             String responseJson = mapper.writeValueAsString(new ResponseDto(response));
             notification.put("response", responseJson);
@@ -301,7 +299,7 @@ public class ResponseService {
             JSONObject notification = new JSONObject();
             notification.put("title", msg != null ? msg : request.getUser().getFirstName() + " made updates to the offer");
             notification.put("message", msg != null ? msg : request.getUser().getFirstName() + " edited your offer for a " + request.getItemName());
-            notification.put("type", "response_update");
+            notification.put("type", FirebaseUtils.NotificationTypes.response_update.name());
             ObjectMapper mapper = new ObjectMapper();
             String responseJson = mapper.writeValueAsString(new ResponseDto(response));
             notification.put("response", responseJson);
@@ -339,7 +337,7 @@ public class ResponseService {
                     JSONObject notification = new JSONObject();
                     notification.put("title", title);
                     notification.put("message", body);
-                    notification.put("type", "offer_closed");
+                    notification.put("type", FirebaseUtils.NotificationTypes.offer_closed.name());
                     ObjectMapper mapper = new ObjectMapper();
                     String responseJson = mapper.writeValueAsString(new ResponseDto(response));
                     notification.put("response", responseJson);
@@ -362,11 +360,11 @@ public class ResponseService {
 
         try {
             BigDecimal price = BigDecimal.valueOf(response.getOfferPrice());
-            price = price.setScale(USD.getDefaultFractionDigits(), DEFAULT_ROUNDING);
+            price = price.setScale(NearbyUtils.USD.getDefaultFractionDigits(), NearbyUtils.DEFAULT_ROUNDING);
             notification.put("title", request.getUser().getFirstName() + " accepted your offer!");
             notification.put("message", "Your offer for a " + request.getItemName() + " for $" + price +
                     priceType + " was accepted!");
-            notification.put("type", "offer_accepted");
+            notification.put("type", FirebaseUtils.NotificationTypes.offer_accepted.name());
             ObjectMapper mapper = new ObjectMapper();
             String responseJson = mapper.writeValueAsString(new ResponseDto(response));
             notification.put("response", responseJson);
@@ -463,5 +461,61 @@ public class ResponseService {
             }
         });
         return historyDtos;
+    }
+
+    /**
+     * Returns true if the user can make a new response/offer. User CANNOT make a new response/offer if they have 5 or more
+     * open/pending offers
+     * @param user
+     * @return
+     */
+    public boolean canCreateResponse(User user) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("sellerId", user.getUserId());
+        query.put("responseStatus", Response.Status.PENDING);
+        DBCursor userRequests  = requestCollection.find(query);
+        List<Request> userRs = userRequests.toArray();
+        String msg = "User [" + user.getFirstName() + ":" + user.getId() + "] has [" +
+                userRequests.size() + "] pending offers";
+        if (userRs.size() < NearbyUtils.MAX_OPEN_RESPONSES) {
+            LOGGER.info(msg);
+            return true;
+        } else {
+            LOGGER.info("Cannot make offer: " + msg);
+            return false;
+        }
+    }
+
+    public void alertRespondersOfClosedRequest(Request request) {
+        BasicDBObject query = new BasicDBObject();
+        query.append("requestId", request.getId());
+        DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
+        List<Response> responses = requestResponses.toArray();
+        requestResponses.close();
+        String title = "Offer Closed";
+        String body = "Your offer to " + request.getUser().getFirstName() + " for a " + request.getItemName() +
+                " has been closed because the seller closed the request";
+        //TODO: think about doing this asynchronously
+        responses.forEach(r -> {
+            try {
+                r.setBuyerStatus(Response.BuyerStatus.CLOSED);
+                r.setResponseStatus(Response.Status.CLOSED);
+                responseCollection.save(r);
+                JSONObject notification = new JSONObject();
+                notification.put("title", title);
+                notification.put("message", body);
+                notification.put("type", FirebaseUtils.NotificationTypes.offer_closed.name());
+                ObjectMapper mapper = new ObjectMapper();
+                String responseJson = mapper.writeValueAsString(new ResponseDto(r));
+                notification.put("response", responseJson);
+                String requestJson = mapper.writeValueAsString(new RequestDto(request));
+                notification.put("request", requestJson);
+                User recipient = userCollection.findOneById(r.getSellerId());
+                FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
+            } catch (JsonProcessingException e) {
+                String msg = "Could not convert object to json string, got error: " + e.getMessage();
+                LOGGER.error(msg);
+            }
+        });
     }
 }

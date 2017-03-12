@@ -14,6 +14,10 @@ public class FirebaseUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FirebaseUtils.class);
 
+    public enum NotificationTypes {
+        request_notification, offer_closed, offer_accepted, response_update, exchange_confirmed,
+        cancelled_transaction, payment_confirmed
+    }
 
     public static void sendFcmMessage(User recipient, ResponseDto dto, JSONObject notification, CcsServer ccsServer) {
         if (recipient.getFcmRegistrationId() == null) {

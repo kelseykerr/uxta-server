@@ -131,7 +131,7 @@ public class TransactionsResource {
         requestCollection.save(request);
         JSONObject notification = new JSONObject();
         notification.put("title", "Transaction Cancelled");
-        notification.put("type", "cancelled_transaction");
+        notification.put("type", FirebaseUtils.NotificationTypes.cancelled_transaction.name());
         notification.put("reason", transaction.getCanceledReason());
         if (isRequester) {
             User seller = userCollection.findOneById(response.getSellerId());
@@ -330,11 +330,11 @@ public class TransactionsResource {
             request.setStatus(Request.Status.FULFILLED);
         }
         requestCollection.save(request);
-        //TODO: send notification to buyer that they will be charged $x & initiate payment
         stripeService.doPayment(request.getUser(), principal, transaction);
         transactionCollection.save(transaction);
         request.setStatus(Request.Status.FULFILLED);
         requestCollection.save(request);
+        transactionService.sendTransactionFulfilledNotification(transaction, principal, request.getUser());
         return new TransactionDto(transaction, true);
     }
 

@@ -11,6 +11,6 @@ public class NearbyUtilsTest {
     @Test
     public void testTransactionCode() {
         String code = NearbyUtils.getUniqueCode();
-        assertTrue(code.length() == 17);
+        assertTrue(code.length() == 6);
     }
 }
