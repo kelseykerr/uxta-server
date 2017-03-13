@@ -118,6 +118,7 @@ public class TransactionsResource {
         }
         transaction.setCanceler(principal.getId());
         transaction.setCanceledReason(dto.canceledReason);
+        transaction.setCanceled(true);
         if (!isRequester) {
             // reopen the request so the requester can receive new offers
             request.setStatus(Request.Status.OPEN);
@@ -127,6 +128,7 @@ public class TransactionsResource {
         }
         transactionCollection.save(transaction);
         response.setResponseStatus(Response.Status.CLOSED);
+        response.setCanceledReason(dto.canceledReason);
         responseCollection.save(response);
         requestCollection.save(request);
         JSONObject notification = new JSONObject();

@@ -71,6 +71,8 @@ public class ResponseDto {
 
     public List<Message> messages;
 
+    public String canceledReason;
+
     public ResponseDto() {
 
     }
@@ -90,6 +92,7 @@ public class ResponseDto {
         this.sellerStatus = r.getSellerStatus() != null ? r.getSellerStatus().toString() : null;
         this.responseStatus = r.getResponseStatus() != null ? r.getResponseStatus().toString() : null;
         this.messages = r.getMessages();
+        this.canceledReason = r.getCanceledReason();
     }
 
     public static List<ResponseDto> transform(List<Response> responses) {

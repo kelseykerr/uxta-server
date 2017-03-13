@@ -48,6 +48,8 @@ public class TransactionDto {
 
     public String canceledReason;
 
+    public Boolean canceled;
+
     public TransactionDto() {
 
     }
@@ -74,6 +76,7 @@ public class TransactionDto {
         this.returnOverride = transaction.getReturnOverride();
         this.finalPrice = transaction.getFinalPrice();
         this.canceler = transaction.getCanceler();
+        this.canceled = transaction.getCanceled();
         this.canceledReason = transaction.getCanceledReason();
 
     }

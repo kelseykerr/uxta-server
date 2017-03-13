@@ -73,6 +73,8 @@ public class Transaction implements Serializable {
      */
     private ExchangeOverride returnOverride;
 
+    private boolean canceled = false;
+
     private Boolean lostOrStolen;
 
     private String canceledReason;
@@ -251,6 +253,14 @@ public class Transaction implements Serializable {
 
     public void setStripeChargeId(String stripeChargeId) {
         this.stripeChargeId = stripeChargeId;
+    }
+
+    public boolean getCanceled() {
+        return canceled;
+    }
+
+    public void setCanceled(boolean canceled) {
+        this.canceled = canceled;
     }
 
     /**

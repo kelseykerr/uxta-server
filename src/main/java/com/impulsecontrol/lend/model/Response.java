@@ -62,6 +62,10 @@ public class Response implements Serializable {
 
     private List<Message> messages;
 
+    //if this response was accepted but then the transaction was canceled,
+    // save the cancel reason here so it can be displayed
+    private String canceledReason;
+
     public String getRequestId() {
         return requestId;
     }
@@ -160,6 +164,14 @@ public class Response implements Serializable {
 
     public List<Message> getMessages() {
         return this.messages;
+    }
+
+    public String getCanceledReason() {
+        return canceledReason;
+    }
+
+    public void setCanceledReason(String canceledReason) {
+        this.canceledReason = canceledReason;
     }
 
     public void addMessage(Message message) {

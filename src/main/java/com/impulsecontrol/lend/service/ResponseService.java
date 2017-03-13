@@ -316,9 +316,9 @@ public class ResponseService {
     }
 
     private void acceptResponse(Response response, Request request) {
+        openTransaction(request.getId(), response.getId());
         response.setResponseStatus(Response.Status.ACCEPTED);
         request.setStatus(Request.Status.TRANSACTION_PENDING);
-        openTransaction(request.getId(), response.getId());
         BasicDBObject query = new BasicDBObject();
         query.append("requestId", request.getId());
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
@@ -388,6 +388,14 @@ public class ResponseService {
     }
 
     private void openTransaction(String requestId, String responseId) {
+        BasicDBObject qry = new BasicDBObject("requestId", requestId);
+        qry.put("canceled", false);
+        Transaction t = transactionCollection.findOne(qry);
+        if (t != null) {
+            LOGGER.error("Tried to open another transaction for request [" + requestId + "] with response [" +
+                    responseId + "] but was unable to do so because open transaction [" + t.getId() + "] already exists");
+            throw new InternalServerException("An offer has already been accepted for this transaction");
+        }
         Transaction transaction = new Transaction();
         transaction.setRequestId(requestId);
         transaction.setResponseId(responseId);
@@ -470,6 +478,7 @@ public class ResponseService {
                     userDto = new UserDto(seller);
                     d.seller = userDto;
                 });
+                query.put("canceled", false);
                 Transaction transaction = transactionCollection.findOne(query);
                 dto.responses = dtos;
                 if (transaction != null) {
