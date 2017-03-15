@@ -83,6 +83,10 @@ public class Transaction implements Serializable {
 
     private String stripeChargeId;
 
+    private String sellerId;
+
+    private String buyerId;
+
     @ObjectId
     @JsonProperty("_id")
     public String getId() {
@@ -261,6 +265,22 @@ public class Transaction implements Serializable {
 
     public void setCanceled(boolean canceled) {
         this.canceled = canceled;
+    }
+
+    public String getSellerId() {
+        return sellerId;
+    }
+
+    public void setSellerId(String sellerId) {
+        this.sellerId = sellerId;
+    }
+
+    public String getBuyerId() {
+        return buyerId;
+    }
+
+    public void setBuyerId(String buyerId) {
+        this.buyerId = buyerId;
     }
 
     /**

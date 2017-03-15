@@ -76,9 +76,11 @@ public class RequestService {
         query.put("status", Request.Status.OPEN.name());
         DBCursor userRequests  = requestCollection.find(query);
         List<Request> userRs = userRequests.toArray();
+        int openTs = responseService.getOpenTransactions(user);
+        int totalOpen = openTs + userRs.size();
         String msg = "User [" + user.getFirstName() + ":" + user.getId() + "] has [" +
-                userRequests.size() + "] open requests";
-        if (userRs.size() < NearbyUtils.MAX_OPEN_REQUESTS) {
+                userRequests.size() + "] open requests and [" + openTs + "] open transactions.";
+        if (userRs.size() < NearbyUtils.MAX_OPEN_REQUESTS && (totalOpen < 10)) {
             LOGGER.info(msg);
             return true;
         } else {

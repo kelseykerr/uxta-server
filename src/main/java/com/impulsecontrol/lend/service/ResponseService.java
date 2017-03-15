@@ -8,8 +8,10 @@ import com.impulsecontrol.lend.dto.RequestDto;
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.dto.TransactionDto;
 import com.impulsecontrol.lend.dto.UserDto;
-import com.impulsecontrol.lend.exception.*;
+import com.impulsecontrol.lend.exception.BadRequestException;
 import com.impulsecontrol.lend.exception.IllegalArgumentException;
+import com.impulsecontrol.lend.exception.InternalServerException;
+import com.impulsecontrol.lend.exception.UnauthorizedException;
 import com.impulsecontrol.lend.firebase.CcsServer;
 import com.impulsecontrol.lend.firebase.FirebaseUtils;
 import com.impulsecontrol.lend.model.HistoryComparator;
@@ -18,6 +20,7 @@ import com.impulsecontrol.lend.model.Request;
 import com.impulsecontrol.lend.model.Response;
 import com.impulsecontrol.lend.model.Transaction;
 import com.impulsecontrol.lend.model.User;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.types.ObjectId;
@@ -29,10 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Currency;
 import java.util.Date;
 import java.util.List;
 
@@ -316,7 +317,7 @@ public class ResponseService {
     }
 
     private void acceptResponse(Response response, Request request) {
-        openTransaction(request.getId(), response.getId());
+        openTransaction(request.getId(), response.getId(), response.getSellerId(), request.getUser().getId());
         response.setResponseStatus(Response.Status.ACCEPTED);
         request.setStatus(Request.Status.TRANSACTION_PENDING);
         BasicDBObject query = new BasicDBObject();
@@ -387,7 +388,7 @@ public class ResponseService {
 
     }
 
-    private void openTransaction(String requestId, String responseId) {
+    private void openTransaction(String requestId, String responseId, String sellerId, String buyerId) {
         BasicDBObject qry = new BasicDBObject("requestId", requestId);
         qry.put("canceled", false);
         Transaction t = transactionCollection.findOne(qry);
@@ -399,6 +400,8 @@ public class ResponseService {
         Transaction transaction = new Transaction();
         transaction.setRequestId(requestId);
         transaction.setResponseId(responseId);
+        transaction.setSellerId(sellerId);
+        transaction.setBuyerId(buyerId);
         transactionCollection.insert(transaction);
     }
 
@@ -533,10 +536,10 @@ public class ResponseService {
                     dto.transaction = new TransactionDto(transaction, true);
                     if (getTransactions) {
                         if (!getOpen && (request.getStatus().equals(Request.Status.PROCESSING_PAYMENT) ||
-                        request.getStatus().equals(Request.Status.TRANSACTION_PENDING))) {
+                                request.getStatus().equals(Request.Status.TRANSACTION_PENDING))) {
                             return;
                         } else if (!getClosed && (request.getStatus().equals(Request.Status.CLOSED) ||
-                        request.getStatus().equals(Request.Status.FULFILLED))) {
+                                request.getStatus().equals(Request.Status.FULFILLED))) {
                             return;
                         }
                         historyDtos.add(dto);
@@ -562,15 +565,33 @@ public class ResponseService {
         query.put("responseStatus", Response.Status.PENDING);
         DBCursor userRequests  = requestCollection.find(query);
         List<Request> userRs = userRequests.toArray();
+        int openTransactions = getOpenTransactions(user);
         String msg = "User [" + user.getFirstName() + ":" + user.getId() + "] has [" +
-                userRequests.size() + "] pending offers";
-        if (userRs.size() < NearbyUtils.MAX_OPEN_RESPONSES) {
+                userRequests.size() + "] pending offers and [" + openTransactions + "] open transactions";
+        int totalResponseAndTransactions = userRs.size() + openTransactions;
+        if (userRs.size() < NearbyUtils.MAX_OPEN_RESPONSES && (totalResponseAndTransactions < 10)) {
             LOGGER.info(msg);
             return true;
         } else {
             LOGGER.info("Cannot make offer: " + msg);
             return false;
         }
+    }
+
+    public int getOpenTransactions(User user) {
+        BasicDBObject query = new BasicDBObject();
+        BasicDBList or = new BasicDBList();
+        BasicDBObject buyerQuery = new BasicDBObject("buyerId", user.getId());
+        or.add(buyerQuery);
+        BasicDBObject sellerQuery = new BasicDBObject("sellerId", user.getId());
+        or.add(sellerQuery);
+        query.put("$or", or);
+        BasicDBObject notSetQuery = new BasicDBObject("$exists", false);
+        query.put("finalPrice", notSetQuery);
+        query.put("canceled", false);
+        DBCursor transactions  = transactionCollection.find(query);
+        List<Request> ts = transactions.toArray();
+        return ts != null ? ts.size() : 0;
     }
 
     public void alertRespondersOfClosedRequest(Request request) {
