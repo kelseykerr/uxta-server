@@ -1,4 +1,4 @@
-import com.impulsecontrol.lend.NearbyUtils;
+import com.iuxta.nearby.NearbyUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
