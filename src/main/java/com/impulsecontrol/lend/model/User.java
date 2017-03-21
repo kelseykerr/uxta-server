@@ -93,6 +93,8 @@ public class User implements Serializable, Principal {
 
     private String stripePublishableKey;
 
+    private String userAgent;
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -368,5 +370,13 @@ public class User implements Serializable, Principal {
 
     public void setPaymentSetup(Boolean paymentSetup) {
         this.paymentSetup = paymentSetup;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
     }
 }

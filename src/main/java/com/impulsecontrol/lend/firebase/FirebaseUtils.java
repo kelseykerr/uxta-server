@@ -3,6 +3,7 @@ package com.impulsecontrol.lend.firebase;
 import com.impulsecontrol.lend.dto.ResponseDto;
 import com.impulsecontrol.lend.exception.InternalServerException;
 import com.impulsecontrol.lend.model.User;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,16 @@ public class FirebaseUtils {
         cancelled_transaction, payment_confirmed
     }
 
-    public static void sendFcmMessage(User recipient, ResponseDto dto, JSONObject notification, CcsServer ccsServer) {
+    /**
+     * We will send all android users "data messages" and all iOS users "notifications". Android will construct
+     * a notification if the app is running in the background, and show a snackbar message if it's in the foreground
+     *
+     * @param recipient
+     * @param dto
+     * @param dataMessage
+     * @param ccsServer
+     */
+    public static void sendFcmMessage(User recipient, ResponseDto dto, JSONObject dataMessage, CcsServer ccsServer) {
         if (recipient.getFcmRegistrationId() == null) {
             String msg = "could not send notification/message to [" + recipient.getFirstName() + "] " +
                     "because they have not allowed messages.";
@@ -29,16 +39,25 @@ public class FirebaseUtils {
         String messageId = CcsServer.nextMessageId();
         JSONObject payload = new JSONObject();
 
-        /*//TODO: rethink this, should we send messages separately?
+        /*//TODO: rethink this, send users in-app messages?
         if (hasMessage(dto)) {
             payload.put("message", dto.messages.get(0).getContent());
         }*/
-        // we will currently send everything as a message and the client can construct the notification when needed
-
         LOGGER.info("attempting to send message/notification to user [" + recipient.getName() + "] with fcm token [" +
                 recipient.getFcmRegistrationId() + "].");
-        String jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, notification,
-                payload, null, null, null);
+        // if the user is using an ios device, send a notification instead of a data message
+        boolean sendNotification = StringUtils.isNotBlank(recipient.getUserAgent()) &&
+                !recipient.getUserAgent().toLowerCase().contains("android");
+        String jsonMessage = null;
+        if (sendNotification) {
+            payload.put("body", dataMessage.get("message"));
+            payload.put("title", dataMessage.get("title"));
+            jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, dataMessage,
+                    payload, null, null, null);
+        } else {
+            jsonMessage = CcsServer.createJsonMessage(recipient.getFcmRegistrationId(), messageId, dataMessage,
+                    payload, null, null, null);
+        }
         try {
             Boolean sent = ccsServer.sendDownstreamMessage(jsonMessage);
             if (sent) {
