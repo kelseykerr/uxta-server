@@ -47,6 +47,8 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
 
     private String fbAuthToken;
 
+    private String googleClientId;
+
     private static HttpTransport httpTransport;
 
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
@@ -55,14 +57,15 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
     GoogleIdTokenVerifier verifier;
 
 
-    public NearbyAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken) {
+    public NearbyAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken, String googleClientId) {
         this.userCollection = userCollection;
         this.fbAuthToken = fbAuthToken;
+        this.googleClientId = googleClientId;
         try {
             this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             verifier = new GoogleIdTokenVerifier.Builder(httpTransport, JSON_FACTORY)
                     //TODO: put client id in configs
-                    .setAudience(Collections.singletonList("491459641376-npvugv8od8v8j0a45asbsmem6r4qelhq.apps.googleusercontent.com"))
+                    .setAudience(Collections.singletonList(this.googleClientId + ".apps.googleusercontent.com"))
                             // Or, if multiple clients access the backend:
                             //.setAudience(Arrays.asList(CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3))
                     .build();

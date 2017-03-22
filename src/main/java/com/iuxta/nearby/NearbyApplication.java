@@ -94,7 +94,7 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,
                 transactionCollection, ccsServer, stripeService));
         environment.jersey().register(new StripeResource(stripeService));
-        NearbyAuthenticator authenticator = new NearbyAuthenticator(userCollection, config.fbAccessToken);
+        NearbyAuthenticator authenticator = new NearbyAuthenticator(userCollection, config.fbAccessToken, config.googleClientId);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)
                 .setAuthorizer(new NearbyAuthorizer())

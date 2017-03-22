@@ -27,6 +27,10 @@ public class NearbyConfiguration extends Configuration {
     @NotEmpty
     public String fbAccessToken;
 
+    @JsonProperty
+    @NotEmpty
+    public String googleClientId;
+
     @JsonProperty("swagger")
     public SwaggerBundleConfiguration swaggerBundleConfiguration;
 
