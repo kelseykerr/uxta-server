@@ -66,15 +66,8 @@ public class User implements Serializable, Principal {
 
     private String dateOfBirth;
 
-    // the user must accept the tos before getting a braintree account and being able to make requests/responses
+    // the user must accept the tos before getting a stripe account and being able to make requests/responses
     private Boolean tosAccepted;
-
-    private String paymentMethodNonce;
-
-    // is a payment method entered in the customers braintree account?
-    private Boolean paymentSetup;
-
-    private Boolean removedMerchantDestination;
 
     private String pictureUrl;
 
@@ -284,30 +277,6 @@ public class User implements Serializable, Principal {
         this.tosAccepted = tosAccepted;
     }
 
-    public String getPaymentMethodNonce() {
-        return paymentMethodNonce;
-    }
-
-    public void setPaymentMethodNonce(String paymentMethodNonce) {
-        this.paymentMethodNonce = paymentMethodNonce;
-    }
-
-    public Boolean isPaymentSetup() {
-        return paymentSetup;
-    }
-
-    public void setPaymentSetup(boolean paymentSetup) {
-        this.paymentSetup = paymentSetup;
-    }
-
-    public Boolean getRemovedMerchantDestination() {
-        return removedMerchantDestination;
-    }
-
-    public void setRemovedMerchantDestination(Boolean removedMerchantDestination) {
-        this.removedMerchantDestination = removedMerchantDestination;
-    }
-
     public String getPictureUrl() {
         return pictureUrl;
     }
@@ -362,14 +331,6 @@ public class User implements Serializable, Principal {
 
     public void setStripePublishableKey(String stripePublishableKey) {
         this.stripePublishableKey = stripePublishableKey;
-    }
-
-    public Boolean getPaymentSetup() {
-        return paymentSetup;
-    }
-
-    public void setPaymentSetup(Boolean paymentSetup) {
-        this.paymentSetup = paymentSetup;
     }
 
     public String getUserAgent() {

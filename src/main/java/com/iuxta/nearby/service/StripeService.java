@@ -377,8 +377,8 @@ public class StripeService {
 
 
     public void handleWebhookResponse(String signature, String payload) {
-        LOGGER.info("braintree webhook signature: " + signature);
-        LOGGER.info("braintree webhook payload: " + payload);
+        LOGGER.info("webhook signature: " + signature);
+        LOGGER.info("webhook payload: " + payload);
 
         /*if (signature != null && payload != null) {
             WebhookNotification notification = gateway.webhookNotification().parse(signature, payload);

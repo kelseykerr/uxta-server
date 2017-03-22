@@ -281,7 +281,7 @@ public class UserResource {
     @Path("/{id}/payments")
     @Timed
     @ApiOperation(
-            value = "gets the user's braintree customer & merchant acct info if present"
+            value = "gets the user's customer & managed acct info if present"
     )
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",

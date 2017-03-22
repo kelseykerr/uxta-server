@@ -227,7 +227,6 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         newUser.setEmail(email);
         newUser.setPictureUrl(pictureUrl);
         newUser.setTosAccepted(false);
-        newUser.setPaymentSetup(false);
         newUser.setAuthMethod(NearbyUtils.GOOGLE_AUTH_METHOD);
         //TODO: check for error
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
@@ -262,7 +261,6 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             //do nothing
         }
         newUser.setTosAccepted(false);
-        newUser.setPaymentSetup(false);
         //TODO: check for error
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
         newUser = insertedUser.getSavedObject();
