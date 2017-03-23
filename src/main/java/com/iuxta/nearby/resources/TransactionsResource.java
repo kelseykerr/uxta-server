@@ -242,7 +242,7 @@ public class TransactionsResource {
                     " transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to this transaction!");
         }
-        transactionService.createExchangeOverride(transaction, dto, isSeller, request.getRental());
+        transactionService.createExchangeOverride(transaction, dto, isSeller, request.getRental(), request, response, principal);
         return new TransactionDto(transaction, isSeller);
     }
 

@@ -148,7 +148,8 @@ public class TransactionService {
         }
     }
 
-    public void createExchangeOverride(Transaction transaction, TransactionDto dto, Boolean isSeller, Boolean isRental) {
+    public void createExchangeOverride(Transaction transaction, TransactionDto dto, Boolean isSeller, Boolean isRental,
+                                       Request request, Response response, User user) {
         if (Boolean.FALSE.equals(isSeller) && Boolean.FALSE.equals(isRental)) {
             LOGGER.error("Buyer tried to create a return override for transaction [" + transaction.getId() +
                     "] for a non-rental item.");
@@ -166,12 +167,26 @@ public class TransactionService {
         if (isSeller) {
             override.sellerAccepted = true;
             transaction.setExchangeOverride(override);
+            //send a notification to the buyer (requester)
+            JSONObject notification = new JSONObject();
+            notification.put("title", "Exchange Override");
+            String msg = user.getFirstName() + " submitted an exchange override. Please confirm the item was exchanged.";
+            notification.put("message", msg);
+            notification.put("type", FirebaseUtils.NotificationTypes.exchange_confirmed.name());
+            FirebaseUtils.sendFcmMessage(request.getUser(), null, notification, ccsServer);
         } else {
             override.buyerAccepted = true;
             transaction.setReturnOverride(override);
+            //send a notification to the buyer (requester)
+            JSONObject notification = new JSONObject();
+            notification.put("title", "Return Override");
+            String msg = user.getFirstName() + " submitted a return override. Please confirm the item was returned.";
+            notification.put("message", msg);
+            notification.put("type", FirebaseUtils.NotificationTypes.exchange_confirmed.name());
+            User seller = userCollection.findOneById(response.getSellerId());
+            FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
         }
         transactionCollection.save(transaction);
-        //TODO: send notification to person who has to confirm override
     }
 
     public void respondToExchangeOverride(Transaction transaction, TransactionDto dto, Response response,
