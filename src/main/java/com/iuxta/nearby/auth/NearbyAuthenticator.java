@@ -64,11 +64,11 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         try {
             this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             verifier = new GoogleIdTokenVerifier.Builder(httpTransport, JSON_FACTORY)
-                    //TODO: put client id in configs
                     .setAudience(Collections.singletonList(this.googleClientId + ".apps.googleusercontent.com"))
                             // Or, if multiple clients access the backend:
                             //.setAudience(Arrays.asList(CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3))
                     .build();
+            LOGGER.info("Successfully set up google http transport for authentication!");
         } catch (Exception e) {
             String err = "could not set up http transport for google auth: " + e.getMessage();
             LOGGER.error(err);
@@ -87,6 +87,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         } else {
             try {
                 if (credentials.getMethod().equals(NearbyUtils.GOOGLE_AUTH_METHOD)) {
+                    LOGGER.info("attempting to authenticate with google");
                     GoogleIdToken idToken = verifier.verify(credentials.getToken());
                     if (idToken != null) {
                         GoogleIdToken.Payload payload = idToken.getPayload();
@@ -122,6 +123,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
                         throw new AuthenticationException("could not authenticate: " + "invalid google auth token");
                     }
                 } else {
+                    LOGGER.info("attempting to authenticate with facebook");
                     URIBuilder builder = new URIBuilder("https://graph.facebook.com/debug_token")
                             .addParameter("input_token", credentials.getToken())
                             .addParameter("access_token", fbAuthToken);
