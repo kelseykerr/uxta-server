@@ -12,7 +12,7 @@ server:
   rootPath: /api/*
 
 swagger:
-  resourcePackage: com.iuxta.nearbyresources
+  resourcePackage: com.iuxta.nearby.resources
   swaggerViewConfiguration:
       showAuth: false
 
