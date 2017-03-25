@@ -88,6 +88,8 @@ public class User implements Serializable, Principal {
 
     private String userAgent;
 
+    private Date createdDate;
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -339,5 +341,13 @@ public class User implements Serializable, Principal {
 
     public void setUserAgent(String userAgent) {
         this.userAgent = userAgent;
+    }
+
+    public Date getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Date createdDate) {
+        this.createdDate = createdDate;
     }
 }

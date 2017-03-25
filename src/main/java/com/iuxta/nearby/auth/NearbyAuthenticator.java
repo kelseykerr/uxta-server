@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Optional;
 
 /**
@@ -225,6 +226,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         String givenName = (String) payload.get("given_name");
 
         User newUser = new User();
+        newUser.setCreatedDate(new Date());
         newUser.setName(name);
         newUser.setFirstName(givenName);
         newUser.setLastName(familyName);
@@ -254,6 +256,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         String userName = (String) userInfo.get("name");
         String[] names = userName.split(" ");
         User newUser = new User();
+        newUser.setCreatedDate(new Date());
         newUser.setName(userName);
         newUser.setFirstName(names[0]);
         newUser.setLastName(names[names.length - 1]);
