@@ -12,12 +12,7 @@ public class NearbyConfiguration extends Configuration {
 
     @JsonProperty
     @NotEmpty
-    public String mongohost;
-
-    @JsonProperty
-    @Min(1)
-    @Max(65535)
-    public int mongoport;
+    public String mongoUri;
 
     @JsonProperty
     @NotEmpty

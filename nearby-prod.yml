@@ -1,6 +1,5 @@
-mongohost: 172.31.30.85
-mongoport: 27017
-mongodb: nearby-stripe
+mongoUri: mongodb://nearby-prod-server:ocrbWl7m2wH47zKR@cluster0-shard-00-00-rdvis.mongodb.net:27017,cluster0-shard-00-01-rdvis.mongodb.net:27017,cluster0-shard-00-02-rdvis.mongodb.net:27017/nearby-prod?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin
+mongodb: nearby-prod
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
 fcmServer: gcm.googleapis.com
 googleClientId: 491459641376-npvugv8od8v8j0a45asbsmem6r4qelhq

@@ -9,6 +9,7 @@ import com.iuxta.nearby.model.Request;
 import com.iuxta.nearby.model.Response;
 import com.iuxta.nearby.model.Transaction;
 import com.iuxta.nearby.model.User;
+import com.iuxta.nearby.resources.HealthResource;
 import com.iuxta.nearby.resources.StripeResource;
 import com.iuxta.nearby.resources.CategoriesResource;
 import com.iuxta.nearby.resources.RequestsResource;
@@ -22,6 +23,7 @@ import com.iuxta.nearby.service.UserService;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
+import com.mongodb.MongoClientURI;
 import io.dropwizard.Application;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
@@ -55,7 +57,10 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
 
     @Override
     public void run(NearbyConfiguration config, Environment environment) throws Exception {
-        Mongo mongo = new Mongo(config.mongohost, config.mongoport);
+        //Mongo mongo = new Mongo(config.mongohost, config.mongoport);
+        MongoClientURI mongoClientURI = new MongoClientURI(config.mongoUri);
+        Mongo.Holder holder = new Mongo.Holder();
+        Mongo mongo = holder.connect(mongoClientURI);
 
         MongoManaged mongoManaged = new MongoManaged(mongo);
         environment.lifecycle().manage(mongoManaged);
@@ -100,6 +105,7 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
                 .setAuthorizer(new NearbyAuthorizer())
                 .setRealm("SUPER SECRET STUFF")
                 .buildAuthFilter()));
+        environment.jersey().register(new HealthResource());
         environment.jersey().register(new CategoriesResource(categoryCollection));
         environment.jersey().register(RolesAllowedDynamicFeature.class);
         environment.jersey().register(new AuthValueFactoryProvider.Binder(User.class));

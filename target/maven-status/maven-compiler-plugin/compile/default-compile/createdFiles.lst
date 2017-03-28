@@ -57,6 +57,7 @@ com/iuxta/nearby/exception/CredentialExpiredException.class
 com/iuxta/nearby/NearbyUtils.class
 com/iuxta/nearby/dto/PaymentDto.class
 com/iuxta/nearby/service/TransactionService.class
+com/iuxta/nearby/resources/HealthResource.class
 com/iuxta/nearby/firebase/CcsServer$5.class
 com/iuxta/nearby/auth/NearbyAuthorizer.class
 com/iuxta/nearby/resources/StripeResource.class
