@@ -5,5 +5,4 @@
 /bower_components
 .idea
 nearby.iml
-/target
-target
+*/target/**
