@@ -6,3 +6,5 @@
 .idea
 nearby.iml
 */target/**
+target/**
+target/
