@@ -3,7 +3,7 @@ mongodb: nearby-alpha
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
 fcmServer: gcm.googleapis.com
 googleClientId: 491459641376-npvugv8od8v8j0a45asbsmem6r4qelhq
-fcmPort: 5235
+fcmPort: 5236
 fcmApiKey: AAAAcm1HACA:APA91bGAKheMc_MifCRMI4_sZSzhQ92vJ2SDJk00n_4DiGWBkCXmcabvxbdvhC49_RK1XxkOZxfAMRhHWTke9mB-fluOGAmyM3nHUrHWbbJ8M62-Q_2iVRvvlgSXy17GU4gTp4Yyvydo8-5juIWR4q4p4R6QQuc0lw
 fcmSenderId: 491459641376
 
