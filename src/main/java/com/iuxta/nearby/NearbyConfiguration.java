@@ -7,6 +7,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import java.util.List;
 
 public class NearbyConfiguration extends Configuration {
 
@@ -24,7 +25,7 @@ public class NearbyConfiguration extends Configuration {
 
     @JsonProperty
     @NotEmpty
-    public String googleClientId;
+    public List<String> googleClientIds;
 
     @JsonProperty("swagger")
     public SwaggerBundleConfiguration swaggerBundleConfiguration;

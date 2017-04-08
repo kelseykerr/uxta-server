@@ -33,6 +33,7 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -48,7 +49,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
 
     private String fbAuthToken;
 
-    private String googleClientId;
+    private List<String> googleClientIds;
 
     private static HttpTransport httpTransport;
 
@@ -58,16 +59,15 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
     GoogleIdTokenVerifier verifier;
 
 
-    public NearbyAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken, String googleClientId) {
+    public NearbyAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken, List<String> googleClientIds) {
         this.userCollection = userCollection;
         this.fbAuthToken = fbAuthToken;
-        this.googleClientId = googleClientId;
+        this.googleClientIds = googleClientIds;
         try {
             this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             verifier = new GoogleIdTokenVerifier.Builder(httpTransport, JSON_FACTORY)
-                    .setAudience(Collections.singletonList(this.googleClientId + ".apps.googleusercontent.com"))
-                            // Or, if multiple clients access the backend:
-                            //.setAudience(Arrays.asList(CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3))
+                    //.setAudience(Collections.singletonList(this.googleClientId + ""))
+                    .setAudience(googleClientIds)
                     .build();
             LOGGER.info("Successfully set up google http transport for authentication!");
         } catch (Exception e) {
@@ -89,6 +89,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             try {
                 if (credentials.getMethod().equals(NearbyUtils.GOOGLE_AUTH_METHOD)) {
                     LOGGER.info("attempting to authenticate with google");
+                    LOGGER.info("Google Auth token [" + credentials.getToken() + "]");
                     GoogleIdToken idToken = verifier.verify(credentials.getToken());
                     if (idToken != null) {
                         GoogleIdToken.Payload payload = idToken.getPayload();
