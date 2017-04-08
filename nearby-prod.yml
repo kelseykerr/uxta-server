@@ -2,7 +2,9 @@ mongoUri: mongodb://nearby-prod-server:ocrbWl7m2wH47zKR@cluster0-shard-00-00-rdv
 mongodb: nearby-prod
 fbAccessToken: 1744217135822361|t4sO1xGNtqvgz1bq9JW5MTHoMt4
 fcmServer: gcm.googleapis.com
-googleClientId: 491459641376-npvugv8od8v8j0a45asbsmem6r4qelhq
+googleClientIds:
+  - 491459641376-npvugv8od8v8j0a45asbsmem6r4qelhq.apps.googleusercontent.com
+  - 491459641376-stml3jthmd8kj1krh4qov87954t405b3.apps.googleusercontent.com
 fcmPort: 5235
 fcmApiKey: AAAAcm1HACA:APA91bGAKheMc_MifCRMI4_sZSzhQ92vJ2SDJk00n_4DiGWBkCXmcabvxbdvhC49_RK1XxkOZxfAMRhHWTke9mB-fluOGAmyM3nHUrHWbbJ8M62-Q_2iVRvvlgSXy17GU4gTp4Yyvydo8-5juIWR4q4p4R6QQuc0lw
 fcmSenderId: 491459641376
