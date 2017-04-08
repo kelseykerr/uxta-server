@@ -104,8 +104,8 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
                             String email = payload.getEmail();
                             boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
                             if (email != null && emailVerified) {
-                                searchById = new BasicDBObject("email", email);
-                                user = userCollection.findOne(searchById);
+                                DBObject searchByEmail = new BasicDBObject("email", email);
+                                user = userCollection.findOne(searchByEmail);
                             }
                             if (user == null) {
                                 user = createNewGoogleUser(payload);
@@ -139,8 +139,8 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
                     if (user == null) {
                         String email = getUserEmail(userId);
                         if (email != null) {
-                            searchById = new BasicDBObject("email", email);
-                            user = userCollection.findOne(searchById);
+                            DBObject searchByEmail = new BasicDBObject("email", email);
+                            user = userCollection.findOne(searchByEmail);
                         }
                         if (user == null) {
                             User newUser = createNewFacebookUser(userId);
@@ -201,21 +201,32 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
     private User updateGoogleUser(User user, GoogleIdToken.Payload payload) {
         LOGGER.info("updating google user [" + user.getEmail() + "]");
         String name = (String) payload.get("name");
+        LOGGER.info("fetched google user [" + user.getEmail() + "]'s name: " + name);
         String pictureUrl = (String) payload.get("picture");
+        LOGGER.info("fetched google user [" + user.getEmail() + "]'s picture: " + pictureUrl);
         String familyName = (String) payload.get("family_name");
+        LOGGER.info("fetched google user [" + user.getEmail() + "]'s family name: " + familyName);
         String givenName = (String) payload.get("given_name");
-
-        if (!user.getName().equals(name) || user.getPictureUrl() == null || !user.getPictureUrl().equals(pictureUrl)
-                || !user.getLastName().equals(familyName) || !user.getLastName().equals(givenName)) {
+        LOGGER.info("fetched google user [" + user.getEmail() + "]'s given name: " + givenName);
+        boolean updatedName = name != null && !user.getName().equals(name);
+        if (updatedName) {
             user.setName(name);
-            user.setPictureUrl(pictureUrl);
-            user.setLastName(familyName);
-            user.setFirstName(givenName);
-            userCollection.save(user);
-            return user;
-        } else {
-            return user;
         }
+        boolean updatedPicture = user.getPictureUrl() == null || (pictureUrl != null && !user.getPictureUrl().equals(pictureUrl));
+        if (updatedPicture) {
+            user.setPictureUrl(pictureUrl);
+        }
+        boolean updatedLastname = familyName != null && !user.getLastName().equals(familyName);
+        if (updatedLastname) {
+            user.setLastName(familyName);
+        }
+        boolean updatedFirstname = givenName != null && !user.getFirstName().equals(givenName);
+        if (updatedFirstname) {
+            user.setFirstName(givenName);
+        }
+        userCollection.save(user);
+        LOGGER.info("successfully wrote google user ["  + user.getEmail() + "]'s info to the database");
+        return user;
     }
 
     private User createNewGoogleUser(GoogleIdToken.Payload payload) {
