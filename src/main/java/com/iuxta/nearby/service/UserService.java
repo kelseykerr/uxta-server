@@ -60,6 +60,7 @@ public class UserService {
             user.setTimeTosAccepted(new Date());
             user.setTosAcceptIp(dto.tosAcceptIp);
         }
+        user.setPictureUrl(dto.pictureUrl);
         return user;
     }
 
