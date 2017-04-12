@@ -488,28 +488,28 @@ public class StripeService {
         if (user.getFirstName().isEmpty()) {
             errs.add("first name");
         }
-        if (user.getLastName().isEmpty()) {
+        if (StringUtils.isBlank(user.getLastName())) {
             errs.add("last name");
         }
-        if (user.getEmail().isEmpty()) {
+        if (StringUtils.isBlank(user.getEmail())) {
             errs.add("email");
         }
-        if (user.getPhone().isEmpty()) {
+        if (StringUtils.isBlank(user.getPhone())) {
             errs.add("phone");
         }
-        if (user.getDateOfBirth().isEmpty()) {
+        if (StringUtils.isBlank(user.getDateOfBirth())) {
             errs.add("date of birth");
         }
-        if (user.getAddress().isEmpty()) {
+        if (StringUtils.isBlank(user.getAddress())) {
             errs.add("street address");
         }
-        if (user.getCity().isEmpty()) {
+        if (StringUtils.isBlank(user.getCity())) {
             errs.add("city");
         }
-        if (user.getState().isEmpty()) {
+        if (StringUtils.isBlank(user.getState())) {
             errs.add("state");
         }
-        if (user.getZip().isEmpty()) {
+        if (StringUtils.isBlank(user.getZip())) {
             errs.add("zip");
         }
         if (errs.size() > 0) {
