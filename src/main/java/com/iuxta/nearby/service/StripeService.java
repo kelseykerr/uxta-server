@@ -249,6 +249,9 @@ public class StripeService {
 
     public boolean canAcceptTransfers(User user) {
         try {
+            if (StringUtils.isBlank(user.getStripeManagedAccountId())) {
+                return false;
+            }
             Account account = Account.retrieve(user.getStripeManagedAccountId(), getRequestOptions());
             return account.getTransfersEnabled();
         } catch (Exception e) {
@@ -483,7 +486,7 @@ public class StripeService {
     }
 
     public void verifyAllParametersPresent(User user) {
-        String error = "Cannot add fund destination because ";
+        String error = "Cannot add payment info because ";
         List<String> errs = new ArrayList<>();
         if (user.getFirstName().isEmpty()) {
             errs.add("first name");
