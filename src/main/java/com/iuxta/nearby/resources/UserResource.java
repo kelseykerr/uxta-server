@@ -172,7 +172,10 @@ public class UserResource {
             requestCollection.save(r);
         });
         userRequests.close();
-        return UserDto.getMyUserDto(updatedUser);
+        UserDto dto =  UserDto.getMyUserDto(updatedUser);
+        dto.canRespond = principal.getStripeManagedAccountId() != null && stripeService.canAcceptTransfers(principal);
+        dto.canRequest = principal.getStripeCustomerId() != null && stripeService.hasCustomerAccount(principal);
+        return dto;
     }
 
     @GET
