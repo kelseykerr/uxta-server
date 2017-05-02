@@ -8,6 +8,8 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.iuxta.nearby.NearbyUtils;
 import com.iuxta.nearby.exception.InternalServerException;
+import com.iuxta.nearby.firebase.CcsServer;
+import com.iuxta.nearby.firebase.FirebaseUtils;
 import com.iuxta.nearby.model.User;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -55,14 +57,17 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
 
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
+    private CcsServer ccsServer;
+
 
     GoogleIdTokenVerifier verifier;
 
 
-    public NearbyAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken, List<String> googleClientIds) {
+    public NearbyAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken, List<String> googleClientIds, CcsServer ccsServer) {
         this.userCollection = userCollection;
         this.fbAuthToken = fbAuthToken;
         this.googleClientIds = googleClientIds;
+        this.ccsServer = ccsServer;
         try {
             this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             verifier = new GoogleIdTokenVerifier.Builder(httpTransport, JSON_FACTORY)
@@ -109,6 +114,17 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
                             }
                             if (user == null) {
                                 user = createNewGoogleUser(payload);
+                                DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
+                                User kelsey = userCollection.findOne(findKelsey);
+                                if (kelsey != null) {
+                                    JSONObject notification = new JSONObject();
+                                    notification.put("title", "New User Signed Up!");
+                                    String body = "User [" + user.getName() + "] signed up!";
+                                    notification.put("message", body);
+                                    notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
+                                    FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
+
+                                }
                                 return Optional.of(user);
                             }
                         }
@@ -144,6 +160,17 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
                         }
                         if (user == null) {
                             User newUser = createNewFacebookUser(userId);
+                            DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
+                            User kelsey = userCollection.findOne(findKelsey);
+                            if (kelsey != null) {
+                                JSONObject notification = new JSONObject();
+                                notification.put("title", "New User Signed Up!");
+                                String body = "User [" + user.getName() + "] signed up!";
+                                notification.put("message", body);
+                                notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
+                                FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
+
+                            }
                             return Optional.of(newUser);
                         }
                     }
