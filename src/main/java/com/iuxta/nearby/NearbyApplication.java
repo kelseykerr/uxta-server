@@ -27,6 +27,8 @@ import com.mongodb.MongoClientURI;
 import io.dropwizard.Application;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
+import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
+import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.federecio.dropwizard.swagger.SwaggerBundle;
@@ -42,8 +44,10 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
 
     @Override
     public void initialize(Bootstrap<NearbyConfiguration> bootstrap) {
+        bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(
+                bootstrap.getConfigurationSourceProvider(),
+                new EnvironmentVariableSubstitutor(false)));
         bootstrap.addBundle(new SwaggerBundle<NearbyConfiguration>() {
-
             @Override
             protected SwaggerBundleConfiguration getSwaggerBundleConfiguration(NearbyConfiguration configuration) {
                 SwaggerBundleConfiguration sbc = configuration.swaggerBundleConfiguration;
