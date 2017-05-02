@@ -147,11 +147,11 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
 
             String userId = extractUserId(httpResp);
             JSONObject fbInfo = getFbProfile(userId);
-            String email;
+            String email = null;
             try {
                 email = (String) fbInfo.get("email");
             } catch (JSONException e) {
-                return null; //do nothing
+                //do nothing
             }
             User user = searchForExistingUser(userId, email);
             if (user == null) {
