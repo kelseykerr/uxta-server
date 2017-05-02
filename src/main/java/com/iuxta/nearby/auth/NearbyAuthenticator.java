@@ -15,6 +15,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -33,7 +34,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -51,8 +51,6 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
 
     private String fbAuthToken;
 
-    private List<String> googleClientIds;
-
     private static HttpTransport httpTransport;
 
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
@@ -66,12 +64,10 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
     public NearbyAuthenticator(JacksonDBCollection<User, String> userCollection, String fbAuthToken, List<String> googleClientIds, CcsServer ccsServer) {
         this.userCollection = userCollection;
         this.fbAuthToken = fbAuthToken;
-        this.googleClientIds = googleClientIds;
         this.ccsServer = ccsServer;
         try {
             this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             verifier = new GoogleIdTokenVerifier.Builder(httpTransport, JSON_FACTORY)
-                    //.setAudience(Collections.singletonList(this.googleClientId + ""))
                     .setAudience(googleClientIds)
                     .build();
             LOGGER.info("Successfully set up google http transport for authentication!");
@@ -88,102 +84,119 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
 
     public Optional<User> authenticate(Credentials credentials) throws AuthenticationException {
         if (credentials.getToken().isEmpty()) {
-            throw new AuthenticationException("Invalid credentials");
+            throw new AuthenticationException("Invalid credentials - token was not present");
 
         } else {
-            try {
-                if (credentials.getMethod().equals(NearbyUtils.GOOGLE_AUTH_METHOD)) {
-                    LOGGER.info("attempting to authenticate with google");
-                    LOGGER.info("Google Auth token [" + credentials.getToken() + "]");
-                    GoogleIdToken idToken = verifier.verify(credentials.getToken());
-                    if (idToken != null) {
-                        GoogleIdToken.Payload payload = idToken.getPayload();
-
-                        // Print user identifier
-                        String userId = payload.getSubject();
-                        LOGGER.info("Google User ID: " + userId);
-
-                        DBObject searchById = new BasicDBObject("userId", userId);
-                        User user = userCollection.findOne(searchById);
-                        if (user == null) {
-                            String email = payload.getEmail();
-                            boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
-                            if (email != null && emailVerified) {
-                                DBObject searchByEmail = new BasicDBObject("email", email);
-                                user = userCollection.findOne(searchByEmail);
-                            }
-                            if (user == null) {
-                                user = createNewGoogleUser(payload);
-                                DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
-                                User kelsey = userCollection.findOne(findKelsey);
-                                if (kelsey != null) {
-                                    JSONObject notification = new JSONObject();
-                                    notification.put("title", "New User Signed Up!");
-                                    String body = "User [" + user.getName() + "] signed up!";
-                                    notification.put("message", body);
-                                    notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
-                                    FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
-
-                                }
-                                return Optional.of(user);
-                            }
-                        }
-                        updateGoogleUser(user, payload);
-                        LOGGER.info("finished updating google user [" + user.getEmail() + "]");
-                        if (user.getTosAccepted() == null) {
-                            user.setTosAccepted(false);
-                        }
-                        user.setAuthMethod(NearbyUtils.GOOGLE_AUTH_METHOD);
-                        userCollection.save(user);
-                        return Optional.of(user);
-
-                    } else {
-                        throw new AuthenticationException("could not authenticate: " + "invalid google auth token");
-                    }
-                } else {
-                    LOGGER.info("attempting to authenticate with facebook");
-                    URIBuilder builder = new URIBuilder("https://graph.facebook.com/debug_token")
-                            .addParameter("input_token", credentials.getToken())
-                            .addParameter("access_token", fbAuthToken);
-
-                    HttpGet httpGet = new HttpGet(builder.toString());
-                    CloseableHttpResponse httpResp = client.execute(httpGet);
-
-                    String userId = extractUserId(httpResp);
-                    DBObject searchById = new BasicDBObject("userId", userId);
-                    User user = userCollection.findOne(searchById);
-                    if (user == null) {
-                        String email = getUserEmail(userId);
-                        if (email != null) {
-                            DBObject searchByEmail = new BasicDBObject("email", email);
-                            user = userCollection.findOne(searchByEmail);
-                        }
-                        if (user == null) {
-                            User newUser = createNewFacebookUser(userId);
-                            DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
-                            User kelsey = userCollection.findOne(findKelsey);
-                            if (kelsey != null) {
-                                JSONObject notification = new JSONObject();
-                                notification.put("title", "New User Signed Up!");
-                                String body = "User [" + user.getName() + "] signed up!";
-                                notification.put("message", body);
-                                notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
-                                FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
-
-                            }
-                            return Optional.of(newUser);
-                        }
-                    }
-                    if (user.getTosAccepted() == null) {
-                        user.setTosAccepted(false);
-                    }
-                    user.setAuthMethod(NearbyUtils.FB_AUTH_METHOD);
-                    userCollection.save(user);
-                    return Optional.of(user);
-                }
-            } catch (Exception e) {
-                throw new AuthenticationException("could not authenticate: " + e.getMessage());
+            if (credentials.getMethod().equals(NearbyUtils.GOOGLE_AUTH_METHOD)) {
+                User user = doGoogleAuth(credentials);
+                return Optional.of(user);
+            } else {
+                User user = doFacebookAuth(credentials);
+                return Optional.of(user);
             }
+
+        }
+    }
+
+    private User doGoogleAuth(Credentials credentials) throws AuthenticationException {
+        LOGGER.info("attempting to authenticate with google");
+        LOGGER.info("Google Auth token [" + credentials.getToken() + "]");
+        GoogleIdToken idToken;
+        try {
+            idToken = verifier.verify(credentials.getToken());
+        } catch (Exception e) {
+            String error = "Unable to verify token [" + credentials.getToken() + "] with google, got error: " + e.getMessage();
+            LOGGER.error(error);
+            throw new AuthenticationException(error);
+        }
+        if (idToken != null) {
+            GoogleIdToken.Payload payload = idToken.getPayload();
+
+            // Print user identifier
+            String userId = payload.getSubject();
+            LOGGER.info("Google User ID: " + userId);
+            User user = searchForExistingUser(userId, payload.getEmail());
+            if (user == null) {
+                user = createNewGoogleUser(payload);
+                sendKelseyNotificationOfNewUser(user.getName());
+                return user;
+            }
+            //should we do this?? I think not - let's call google for the profile pic
+            //updateGoogleUser(user, payload);
+            if (user.getTosAccepted() == null) {
+                user.setTosAccepted(false);
+            }
+            LOGGER.info("finished updating google user [" + user.getEmail() + "]");
+            user.setAuthMethod(NearbyUtils.GOOGLE_AUTH_METHOD);
+            userCollection.save(user);
+            return user;
+
+        } else {
+            throw new AuthenticationException("could not authenticate: " + "invalid google auth token");
+        }
+    }
+
+    private User doFacebookAuth(Credentials credentials) throws AuthenticationException {
+        LOGGER.info("attempting to authenticate with facebook");
+        try {
+            URIBuilder builder = new URIBuilder("https://graph.facebook.com/debug_token")
+                    .addParameter("input_token", credentials.getToken())
+                    .addParameter("access_token", fbAuthToken);
+
+            HttpGet httpGet = new HttpGet(builder.toString());
+            CloseableHttpResponse httpResp = client.execute(httpGet);
+
+            String userId = extractUserId(httpResp);
+            JSONObject fbInfo = getFbProfile(userId);
+            String email;
+            try {
+                email = (String) fbInfo.get("email");
+            } catch (JSONException e) {
+                return null; //do nothing
+            }
+            User user = searchForExistingUser(userId, email);
+            if (user == null) {
+                User newUser = createNewFacebookUser(userId);
+                sendKelseyNotificationOfNewUser(newUser.getName());
+                return newUser;
+            }
+            if (user.getTosAccepted() == null) {
+                user.setTosAccepted(false);
+            }
+            user.setAuthMethod(NearbyUtils.FB_AUTH_METHOD);
+            userCollection.save(user);
+            return user;
+        } catch (URISyntaxException e) {
+            String message = "Could not construct uri, got error: " + e.getMessage();
+            LOGGER.error(message);
+            throw new AuthenticationException(message);
+        } catch (IOException e) {
+            String message = "Received an error authenticating with facebook: " + e.getMessage();
+            LOGGER.error(message);
+            throw new AuthenticationException(message);
+        }
+    }
+
+    private User searchForExistingUser(String userId, String email) {
+        DBObject searchById = new BasicDBObject("userId", userId);
+        User user = userCollection.findOne(searchById);
+        if (user == null && StringUtils.isNotBlank(email)) {
+            DBObject searchByEmail = new BasicDBObject("email", email);
+            user = userCollection.findOne(searchByEmail);
+        }
+        return user;
+    }
+
+    private void sendKelseyNotificationOfNewUser(String username) {
+        DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
+        User kelsey = userCollection.findOne(findKelsey);
+        if (kelsey != null) {
+            JSONObject notification = new JSONObject();
+            notification.put("title", "New User Signed Up!");
+            String body = "User [" + username + "] signed up!";
+            notification.put("message", body);
+            notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
+            FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
         }
     }
 
@@ -204,28 +217,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         return (String) userObj.get("user_id");
     }
 
-    private String getUserEmail(String userId) throws IOException, URISyntaxException {
-        URIBuilder builder = new URIBuilder("https://graph.facebook.com/" + userId)
-                .addParameter("access_token", fbAuthToken);
-        HttpGet httpGet = new HttpGet(builder.toString());
-        HttpResponse httpResp = client.execute(httpGet);
-        BufferedReader rd = new BufferedReader(new InputStreamReader(httpResp.getEntity().getContent()));
-        StringBuilder result = new StringBuilder();
-        String line;
-        while ((line = rd.readLine()) != null) {
-            result.append(line);
-        }
-        JSONObject userInfo = new JSONObject(result.toString());
-        try {
-            String email = (String) userInfo.get("email");
-            return email;
-        } catch (JSONException e) {
-            //do nothing
-            return null;
-        }
-    }
-
-    private User updateGoogleUser(User user, GoogleIdToken.Payload payload) {
+    /*private User updateGoogleUser(User user, GoogleIdToken.Payload payload) {
         LOGGER.info("updating google user [" + user.getEmail() + "]");
         String name = (String) payload.get("name");
         LOGGER.info("fetched google user [" + user.getEmail() + "]'s name: " + name);
@@ -251,10 +243,13 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         if (updatedFirstname) {
             user.setFirstName(givenName);
         }
+        if (user.getTosAccepted() == null) {
+            user.setTosAccepted(false);
+        }
         userCollection.save(user);
-        LOGGER.info("successfully wrote google user ["  + user.getEmail() + "]'s info to the database");
+        LOGGER.info("successfully wrote google user [" + user.getEmail() + "]'s info to the database");
         return user;
-    }
+    }*/
 
     private User createNewGoogleUser(GoogleIdToken.Payload payload) {
         // Get profile information from payload
@@ -278,6 +273,21 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
         newUser = insertedUser.getSavedObject();
         return newUser;
+    }
+
+    private JSONObject getFbProfile(String userId) throws IOException, URISyntaxException {
+        URIBuilder builder = new URIBuilder("https://graph.facebook.com/" + userId)
+                .addParameter("access_token", fbAuthToken);
+        HttpGet httpGet = new HttpGet(builder.toString());
+        HttpResponse httpResp = client.execute(httpGet);
+        BufferedReader rd = new BufferedReader(new InputStreamReader(httpResp.getEntity().getContent()));
+        StringBuilder result = new StringBuilder();
+        String line;
+        while ((line = rd.readLine()) != null) {
+            result.append(line);
+        }
+        JSONObject userInfo = new JSONObject(result.toString());
+        return userInfo;
     }
 
     private User createNewFacebookUser(String userId) throws IOException, URISyntaxException {
@@ -314,19 +324,4 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         return newUser;
     }
 
-    public JacksonDBCollection<User, String> getUserCollection() {
-        return userCollection;
-    }
-
-    public void setUserCollection(JacksonDBCollection<User, String> userCollection) {
-        this.userCollection = userCollection;
-    }
-
-    public String getFbAuthToken() {
-        return fbAuthToken;
-    }
-
-    public void setFbAuthToken(String fbAuthToken) {
-        this.fbAuthToken = fbAuthToken;
-    }
 }
