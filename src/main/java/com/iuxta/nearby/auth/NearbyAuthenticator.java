@@ -85,14 +85,13 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
     public Optional<User> authenticate(Credentials credentials) throws AuthenticationException {
         if (credentials.getToken().isEmpty()) {
             throw new AuthenticationException("Invalid credentials - token was not present");
-
         } else {
             if (credentials.getMethod().equals(NearbyUtils.GOOGLE_AUTH_METHOD)) {
                 User user = doGoogleAuth(credentials);
-                return Optional.of(user);
+                return Optional.ofNullable(user);
             } else {
                 User user = doFacebookAuth(credentials);
-                return Optional.of(user);
+                return Optional.ofNullable(user);
             }
 
         }
