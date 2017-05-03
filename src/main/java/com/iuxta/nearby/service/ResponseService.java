@@ -103,7 +103,9 @@ public class ResponseService {
             //do nothing
         }
         String title = "New Offer";
-        String body = seller.getFirstName() + " offered their " + request.getItemName() + " for $" + dto.offerPrice;
+        BigDecimal price = BigDecimal.valueOf(dto.offerPrice);
+        price = price.setScale(NearbyUtils.USD.getDefaultFractionDigits(), NearbyUtils.DEFAULT_ROUNDING);
+        String body = seller.getFirstName() + " offered their " + request.getItemName() + " for $" + price;
         if (!dto.priceType.toLowerCase().equals(Response.PriceType.FLAT.toString().toLowerCase())) {
             body += (dto.priceType.toLowerCase().equals(Response.PriceType.PER_DAY.toString().toLowerCase())) ?
                     " per day" : " per hour";
@@ -150,6 +152,8 @@ public class ResponseService {
         response.setExchangeTime(dto.exchangeTime);
         response.setReturnLocation(dto.returnLocation);
         response.setReturnTime(dto.returnTime);
+        response.setDescription(dto.description);
+        response.setMessagesEnabled(dto.messagesEnabled);
         try {
             Response.PriceType priceType = Response.PriceType.valueOf(dto.priceType.toUpperCase());
             response.setPriceType(priceType);
@@ -174,8 +178,10 @@ public class ResponseService {
                 !response.getPriceType().toString().toLowerCase().equals(dto.priceType.toLowerCase()) : dto.priceType != null;
         boolean offerPrice = response.getOfferPrice() != null ?
                 response.getOfferPrice().compareTo(dto.offerPrice) != 0 : dto.priceType != null;
+        boolean description = response.getDescription() != null ?
+                !response.getDescription().equals(dto.description) : dto.description != null;
 
-        return exchangeLocation || exchangeTime || returnLocation || returnTime || priceType || offerPrice;
+        return exchangeLocation || exchangeTime || returnLocation || returnTime || priceType || offerPrice || description;
     }
 
     public Response updateResponse(ResponseDto dto, Response response, Request request, String userId) {
@@ -479,6 +485,9 @@ public class ResponseService {
                         return;
                     }
                     userDto = new UserDto(seller);
+                    if (d.messagesEnabled) {
+                        userDto.phone = seller.getPhone();
+                    }
                     d.seller = userDto;
                 });
                 query.put("canceled", false);

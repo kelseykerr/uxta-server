@@ -24,6 +24,14 @@ public class Response implements Serializable {
 
     private Date responseTime;
 
+    private String description;
+
+    /**
+     * true if the seller wants to allow the buyer to message them with questions
+     * (we will display a "message user" button to the buyer)
+     */
+    private Boolean messagesEnabled;
+
     /**
      * should be initially set by the seller
      */
@@ -65,6 +73,14 @@ public class Response implements Serializable {
     //if this response was accepted but then the transaction was canceled,
     // save the cancel reason here so it can be displayed
     private String canceledReason;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     public String getRequestId() {
         return requestId;
@@ -179,6 +195,14 @@ public class Response implements Serializable {
             this.messages = new ArrayList<>();
         }
         messages.add(message);
+    }
+
+    public Boolean getMessagesEnabled() {
+        return messagesEnabled;
+    }
+
+    public void setMessagesEnabled(Boolean messagesEnabled) {
+        this.messagesEnabled = messagesEnabled;
     }
 
     @ObjectId
