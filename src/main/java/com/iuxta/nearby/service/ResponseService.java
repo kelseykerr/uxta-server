@@ -485,7 +485,7 @@ public class ResponseService {
                         return;
                     }
                     userDto = new UserDto(seller);
-                    if (d.messagesEnabled) {
+                    if (d.messagesEnabled != null && d.messagesEnabled) {
                         userDto.phone = seller.getPhone();
                     }
                     d.seller = userDto;
