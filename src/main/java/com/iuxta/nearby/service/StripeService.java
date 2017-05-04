@@ -150,7 +150,7 @@ public class StripeService {
             price = price.setScale(2, RoundingMode.HALF_UP);
             Double finalPrice =  price.doubleValue();
             // we take 5% + $0.30 - Stripe gets 3.5% +  $0.30
-            Double fee = (finalPrice * .05) + 0.30;
+            Double fee = (finalPrice * .07) + 0.30;
             BigDecimal bdFee = new BigDecimal(fee);
             bdFee = bdFee.setScale(2, RoundingMode.HALF_UP);
             fee = bdFee.doubleValue();
