@@ -4,11 +4,7 @@ import com.iuxta.nearby.auth.CredentialAuthFilter;
 import com.iuxta.nearby.auth.NearbyAuthenticator;
 import com.iuxta.nearby.auth.NearbyAuthorizer;
 import com.iuxta.nearby.firebase.CcsServer;
-import com.iuxta.nearby.model.Category;
-import com.iuxta.nearby.model.Request;
-import com.iuxta.nearby.model.Response;
-import com.iuxta.nearby.model.Transaction;
-import com.iuxta.nearby.model.User;
+import com.iuxta.nearby.model.*;
 import com.iuxta.nearby.resources.HealthResource;
 import com.iuxta.nearby.resources.StripeResource;
 import com.iuxta.nearby.resources.CategoriesResource;
@@ -85,6 +81,12 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         JacksonDBCollection<Transaction, String> transactionCollection =
                 JacksonDBCollection.wrap(db.getCollection("transaction"), Transaction.class, String.class);
 
+        JacksonDBCollection<NearbyAvailableLocations, String> locationsCollection =
+                JacksonDBCollection.wrap(db.getCollection("nearbyAvailableLocations"), NearbyAvailableLocations.class, String.class);
+
+        JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection =
+                JacksonDBCollection.wrap(db.getCollection("unavailableSearches"), UnavailableSearches.class, String.class);
+
         // cloud connection server
         CcsServer ccsServer = new CcsServer(config.fcmServer, config.fcmPort, "not sure",
                 config.fcmApiKey, config.fcmSenderId);
@@ -97,7 +99,7 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         StripeService stripeService = new StripeService(config.stripeSecretKey, config.stripePublishableKey, userCollection, ccsServer);
         UserService userService = new UserService(stripeService);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
-        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService);
+        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, locationsCollection, unavailableSearchesCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService, stripeService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection, stripeService));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,

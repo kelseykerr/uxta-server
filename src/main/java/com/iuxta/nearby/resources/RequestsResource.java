@@ -137,6 +137,9 @@ public class RequestsResource {
                     dataType = "string",
                     paramType = "header")})
     public RequestDto createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
+        if (dto.latitude != null && dto.longitude != null) {
+            requestService.checkLocationIsAvailable(dto.latitude, dto.longitude);
+        }
         if (!stripeService.hasCustomerAccount(principal)) {
             LOGGER.error("User [" + principal.getId() + "] tried to make a request without adding a valid payment method");
             throw new NotAllowedException("Cannot create request because you have not added a valid payment method to your account");

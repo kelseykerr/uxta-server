@@ -3,13 +3,11 @@ package com.iuxta.nearby.service;
 import com.iuxta.nearby.NearbyUtils;
 import com.iuxta.nearby.dto.RequestDto;
 import com.iuxta.nearby.exception.BadRequestException;
+import com.iuxta.nearby.exception.LocationNotAvailableException;
 import com.iuxta.nearby.exception.NotFoundException;
 import com.iuxta.nearby.firebase.CcsServer;
 import com.iuxta.nearby.firebase.FirebaseUtils;
-import com.iuxta.nearby.model.Category;
-import com.iuxta.nearby.model.GeoJsonPoint;
-import com.iuxta.nearby.model.Request;
-import com.iuxta.nearby.model.User;
+import com.iuxta.nearby.model.*;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +15,7 @@ import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
+import org.mongojack.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +32,8 @@ public class RequestService {
     private JacksonDBCollection<Category, String> categoriesCollection;
     private JacksonDBCollection<Request, String> requestCollection;
     private JacksonDBCollection<User, String> userCollection;
+    private JacksonDBCollection<NearbyAvailableLocations, String> availableLocationsCollection;
+    JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection;
     private CcsServer ccsServer;
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestService.class);
     static final long ONE_MINUTE_IN_MILLIS=60000;
@@ -46,12 +47,16 @@ public class RequestService {
                           JacksonDBCollection<Request, String> requestsCollection,
                           CcsServer ccsServer,
                           JacksonDBCollection<User, String> userCollection,
-                          ResponseService responseService) {
+                          ResponseService responseService,
+                          JacksonDBCollection<NearbyAvailableLocations, String> locationsCollection,
+                          JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection) {
         this.categoriesCollection = categoriesCollection;
         this.requestCollection = requestsCollection;
         this.userCollection = userCollection;
         this.ccsServer = ccsServer;
         this.responseService = responseService;
+        this.availableLocationsCollection = locationsCollection;
+        this.unavailableSearchesCollection = unavailableSearchesCollection;
     }
 
     public Request transformRequestDto(RequestDto dto, User user) {
@@ -207,8 +212,24 @@ public class RequestService {
         return query;
     }
 
+    public void checkLocationIsAvailable(Double latitude, Double longitude) {
+        //must be within 10 miles
+        BasicDBObject query = getLocationQuery(latitude, longitude, 10D);
+        DBCursor availableLocations = availableLocationsCollection.find(query);
+        List<NearbyAvailableLocations> locations = availableLocations.toArray();
+        availableLocations.close();
+        if (locations.size() == 0) {
+            UnavailableSearches search = new UnavailableSearches();
+            GeoJsonPoint loc = new GeoJsonPoint(longitude, latitude);
+            search.setLocation(loc);
+            unavailableSearchesCollection.insert(search);
+            throw new LocationNotAvailableException("Nearby is not available in this location yet");
+        }
+    }
+
     public List<Request> findRequests(Integer offset, Integer limit, Double latitude, Double longitude, Double radius, Boolean expired,
                                       Boolean includeMine, String searchTerm, String sort, User principal) {
+        checkLocationIsAvailable(latitude, longitude);
         BasicDBObject query = getLocationQuery(latitude, longitude, radius);
         offset = (offset != null ? offset : 0);
         limit = (limit == null || limit > NearbyUtils.MAX_LIMIT) ? NearbyUtils.DEFAULT_LIMIT : limit;
