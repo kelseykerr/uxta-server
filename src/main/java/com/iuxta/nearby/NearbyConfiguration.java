@@ -35,9 +35,7 @@ public class NearbyConfiguration extends Configuration {
     public String fcmServer;
 
     @JsonProperty
-    @Min(5235)
-    @Max(5236)
-    public int fcmPort;
+    public String fcmPort;
 
     @JsonProperty
     @NotEmpty
