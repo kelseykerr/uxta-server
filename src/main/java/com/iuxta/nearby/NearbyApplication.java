@@ -88,7 +88,11 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
                 JacksonDBCollection.wrap(db.getCollection("unavailableSearches"), UnavailableSearches.class, String.class);
 
         // cloud connection server
-        CcsServer ccsServer = new CcsServer(config.fcmServer, config.fcmPort, "not sure",
+        int fcmPort = Integer.parseInt(config.fcmPort);
+        if (fcmPort != 5235 && fcmPort != 5236) {
+            fcmPort = 5236;
+        }
+        CcsServer ccsServer = new CcsServer(config.fcmServer, fcmPort, "not sure",
                 config.fcmApiKey, config.fcmSenderId);
         ccsServer.connect();
 
