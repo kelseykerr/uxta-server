@@ -175,7 +175,7 @@ public class RequestService {
             if (size > 1) {
                 body += singleNearbyRequest ?
                         ("There are also " + size + " new requests near your home.") :
-                        multipleNearbyRequests ? ( "and " + size + " requests near your home") :
+                        multipleNearbyRequests ? ( " and " + size + " new requests near your home!") :
                                 ("There are " + size + " new requests near your home");
                 newRequests = true;
             } else if (requestsNearHome.size() == 1) {
