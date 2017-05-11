@@ -134,7 +134,7 @@ public class ResponseService {
     }
 
     public void ensureValidOffferPrice(Double offerPrice) {
-        if (offerPrice.equals(0)) {
+        if (offerPrice.equals(0) || offerPrice.equals(0.0)) {
             return;
         } else if (offerPrice < NearbyUtils.MINIMUM_OFFER_PRICE) {
             String msg = "Cannot create offer because offer price must be greater than $0.50 or $0.00";
