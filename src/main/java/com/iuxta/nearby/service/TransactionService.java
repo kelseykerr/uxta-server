@@ -124,6 +124,9 @@ public class TransactionService {
     private void calculatePrice(Transaction transaction, Response response) {
         if (response.getPriceType().equals(Response.PriceType.FLAT)) {
             transaction.setCalculatedPrice(response.getOfferPrice());
+            if (response.getOfferPrice().equals(0) || response.getOfferPrice().equals(0.0)) {
+                transaction.setFinalPrice(response.getOfferPrice());
+            }
         } else {
             long secs = (new Date().getTime() - transaction.getExchangeTime().getTime()) / 1000;
             long hours = secs / 3600;
@@ -203,6 +206,7 @@ public class TransactionService {
             if (dto.returnOverride.sellerAccepted) {
                 transaction.setReturnTime(transaction.getReturnOverride().time);
                 transaction.setReturned(true);
+                calculatePrice(transaction, response);
             } else {
                 transaction.getReturnOverride().declined = true;
                 dto.returnOverride.declined = true;
@@ -213,7 +217,9 @@ public class TransactionService {
             if (dto.exchangeOverride.buyerAccepted) {
                 transaction.setExchangeTime(transaction.getExchangeOverride().time);
                 transaction.setExchanged(true);
-                calculatePrice(transaction, response);
+                if (isRental) {
+                    calculatePrice(transaction, response);
+                }
             } else {
                 transaction.getExchangeOverride().declined = true;
                 dto.exchangeOverride.declined = true;
