@@ -543,7 +543,7 @@ public class ResponseService {
                 Transaction transaction = null;
                 //only look for a transaction if the response is accepted, otherwise the transaction may not belong to the response
                 if (r.getResponseStatus().equals(Response.Status.ACCEPTED)) {
-                    transactionCollection.findOne(qry);
+                    transaction = transactionCollection.findOne(qry);
                 }
                 if (transaction != null) {
                     dto.transaction = new TransactionDto(transaction, true);
