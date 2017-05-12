@@ -61,7 +61,7 @@ public class TransactionsResource {
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
         this.transactionCollection = transactionCollection;
-        this.transactionService = new TransactionService(transactionCollection, userCollection, ccsServer);
+        this.transactionService = new TransactionService(transactionCollection, userCollection, ccsServer, requestCollection);
         this.ccsServer = ccsServer;
         this.stripeService = stripeService;
     }
@@ -279,7 +279,7 @@ public class TransactionsResource {
                     " transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to this transaction!");
         }
-        transactionService.respondToExchangeOverride(transaction, dto, response, isSeller, request.getRental());
+        transactionService.respondToExchangeOverride(transaction, dto, response, isSeller, request.getRental(), principal, request);
         return new TransactionDto(transaction, isSeller);
     }
 
