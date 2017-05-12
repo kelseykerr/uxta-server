@@ -540,7 +540,11 @@ public class ResponseService {
                 dto.request = new RequestDto(request);
                 dto.responses = Collections.singletonList(new ResponseDto(r));
                 BasicDBObject qry = new BasicDBObject("responseId", r.getId());
-                Transaction transaction = transactionCollection.findOne(qry);
+                Transaction transaction = null;
+                //only look for a transaction if the response is accepted, otherwise the transaction may not belong to the response
+                if (r.getResponseStatus().equals(Response.Status.ACCEPTED)) {
+                    transactionCollection.findOne(qry);
+                }
                 if (transaction != null) {
                     dto.transaction = new TransactionDto(transaction, true);
                     if (getTransactions) {

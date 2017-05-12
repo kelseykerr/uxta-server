@@ -32,8 +32,10 @@ public class HistoryComparator implements Comparator<HistoryDto> {
      */
     public int compare(HistoryDto h1, HistoryDto h2) {
         // is the transaction open? if so, put in at the beginning
-        boolean h1Transaction = h1.request != null && h1.request.status != null && h1.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
-        boolean h2Transaction = h2.request != null && h2.request.status != null && h2.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
+        boolean h1CanHaveTransaction = canHaveTransaction(h1);
+        boolean h2CanHaveTransaction = canHaveTransaction(h2);
+        boolean h1Transaction = h1.request != null && h1CanHaveTransaction && h1.request.status != null && h1.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
+        boolean h2Transaction = h2.request != null && h2CanHaveTransaction && h2.request.status != null && h2.request.status.equalsIgnoreCase(Request.Status.TRANSACTION_PENDING.toString());
         boolean h1IsOpen = isOpen(h1);
         boolean h2IsOpen = isOpen(h2);
         if (h1Transaction && !h2Transaction) {
@@ -73,6 +75,14 @@ public class HistoryComparator implements Comparator<HistoryDto> {
         } else { // user is buyer..check if the offer is pending, otherwise it's closed and will go at the bottom
                 // or it's accepted and it's a transaction and will go at the top
             return dto.responses.get(0).responseStatus.toLowerCase().equals(Response.Status.PENDING.toString().toLowerCase());
+        }
+    }
+
+    private boolean canHaveTransaction(HistoryDto dto) {
+        if (!dto.request.user.id.equals(userId)) {
+            return dto.responses.get(0).responseStatus.toLowerCase().equals(Response.Status.ACCEPTED.toString().toLowerCase());
+        } else {
+            return true;
         }
     }
 }
