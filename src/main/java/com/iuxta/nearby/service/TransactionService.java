@@ -191,11 +191,6 @@ public class TransactionService {
 
     public void respondToExchangeOverride(Transaction transaction, TransactionDto dto, Response response,
                                           Boolean isSeller, Boolean isRental) {
-        if (!isSeller && !isRental) {
-            LOGGER.error("Buyer tried to respond to a return override for transaction [" + transaction.getId() +
-                    "] for a non-rental item.");
-            throw new BadRequestException("Cannot update override for a non-rental item");
-        }
         // should not happen
         if (isSeller ? (transaction.getReturnOverride() == null || transaction.getReturnOverride().time == null) :
                 (transaction.getExchangeOverride() == null || transaction.getExchangeOverride().time == null)) {
