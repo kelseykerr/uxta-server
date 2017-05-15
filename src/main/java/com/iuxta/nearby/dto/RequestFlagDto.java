@@ -1,10 +1,8 @@
 package com.iuxta.nearby.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.iuxta.nearby.model.Request;
 import com.iuxta.nearby.model.RequestFlag;
 
-import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;

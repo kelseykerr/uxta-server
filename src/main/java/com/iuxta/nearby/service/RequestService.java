@@ -353,8 +353,7 @@ public class RequestService {
     private BasicDBObject setAppropriateQuery(BasicDBObject query) {
         BasicDBObject notTrueQuery = new BasicDBObject();
         notTrueQuery.append("$ne", true);
-        BasicDBObject notInappropriateQuery = new BasicDBObject();
-        query.put("inappropriate", notInappropriateQuery);
+        query.put("inappropriate", notTrueQuery);
         return query;
     }
 
