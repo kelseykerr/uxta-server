@@ -5,17 +5,8 @@ import com.iuxta.nearby.auth.NearbyAuthenticator;
 import com.iuxta.nearby.auth.NearbyAuthorizer;
 import com.iuxta.nearby.firebase.CcsServer;
 import com.iuxta.nearby.model.*;
-import com.iuxta.nearby.resources.HealthResource;
-import com.iuxta.nearby.resources.StripeResource;
-import com.iuxta.nearby.resources.CategoriesResource;
-import com.iuxta.nearby.resources.RequestsResource;
-import com.iuxta.nearby.resources.ResponsesResource;
-import com.iuxta.nearby.resources.TransactionsResource;
-import com.iuxta.nearby.resources.UserResource;
-import com.iuxta.nearby.service.StripeService;
-import com.iuxta.nearby.service.RequestService;
-import com.iuxta.nearby.service.ResponseService;
-import com.iuxta.nearby.service.UserService;
+import com.iuxta.nearby.resources.*;
+import com.iuxta.nearby.service.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
@@ -87,6 +78,9 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection =
                 JacksonDBCollection.wrap(db.getCollection("unavailableSearches"), UnavailableSearches.class, String.class);
 
+        JacksonDBCollection<RequestFlag, String> requestFlagCollection =
+                JacksonDBCollection.wrap(db.getCollection("requestFlag"), RequestFlag.class, String.class);
+
         // cloud connection server
         int fcmPort = Integer.parseInt(config.fcmPort);
         if (fcmPort != 5235 && fcmPort != 5236) {
@@ -102,6 +96,7 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
                 transactionCollection, ccsServer);
         StripeService stripeService = new StripeService(config.stripeSecretKey, config.stripePublishableKey, userCollection, ccsServer);
         UserService userService = new UserService(stripeService);
+        RequestFlagService requestFlagService = new RequestFlagService(requestCollection, requestFlagCollection, userCollection, ccsServer);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
         RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, locationsCollection, unavailableSearchesCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService, stripeService));
@@ -109,6 +104,7 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,
                 transactionCollection, ccsServer, stripeService));
         environment.jersey().register(new StripeResource(stripeService));
+        environment.jersey().register(new RequestFlagResource(requestFlagService));
         NearbyAuthenticator authenticator = new NearbyAuthenticator(userCollection, config.fbAccessToken, config.googleClientIds, ccsServer);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)

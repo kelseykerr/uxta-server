@@ -42,6 +42,8 @@ public class Request implements Serializable {
 
     private String fulfilledByUserId;
 
+    private Boolean inappropriate = false;
+
     public Request() {
 
     }
@@ -161,4 +163,11 @@ public class Request implements Serializable {
         OPEN, CLOSED, TRANSACTION_PENDING, PROCESSING_PAYMENT, FULFILLED
     }
 
+    public Boolean getInappropriate() {
+        return inappropriate;
+    }
+
+    public void setInappropriate(Boolean inappropriate) {
+        this.inappropriate = inappropriate;
+    }
 }

@@ -15,7 +15,6 @@ import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
-import org.mongojack.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +64,7 @@ public class RequestService {
         request.setPostDate(dto.postDate != null ? dto.postDate : new Date());
         populateRequest(request, dto);
         request.setStatus(Request.Status.OPEN);
+        request.setInappropriate(false);
         return request;
     }
 
@@ -146,6 +146,7 @@ public class RequestService {
                 throw new BadRequestException(msg);
             }
             BasicDBObject query = getLocationQuery(latitude, longitude, user.getNotificationRadius());
+            setAppropriateQuery(query);
             setNotExpiredQuery(query);
             addNotMineQuery(query, user.getUserId());
             addLast15MinsQuery(query);
@@ -166,6 +167,7 @@ public class RequestService {
         if (user.getHomeLocationNotifications()) {
             BasicDBObject query = getLocationQuery(user.getHomeLocation().getCoordinates()[1],
                     user.getHomeLocation().getCoordinates()[0], user.getNotificationRadius());
+            setAppropriateQuery(query);
             setNotExpiredQuery(query);
             addNotMineQuery(query, user.getUserId());
             addLast15MinsQuery(query);
@@ -233,6 +235,7 @@ public class RequestService {
         BasicDBObject query = getLocationQuery(latitude, longitude, radius);
         offset = (offset != null ? offset : 0);
         limit = (limit == null || limit > NearbyUtils.MAX_LIMIT) ? NearbyUtils.DEFAULT_LIMIT : limit;
+        setAppropriateQuery(query);
 
         if (expired != null && expired) {
             BasicDBObject expiredQuery = new BasicDBObject();
@@ -345,6 +348,14 @@ public class RequestService {
         BasicDBObject noExpireDateQuery = new BasicDBObject();
         noExpireDateQuery.append("expireDate", notSetQuery);
         return noExpireDateQuery;
+    }
+
+    private BasicDBObject setAppropriateQuery(BasicDBObject query) {
+        BasicDBObject notTrueQuery = new BasicDBObject();
+        notTrueQuery.append("$ne", true);
+        BasicDBObject notInappropriateQuery = new BasicDBObject();
+        query.put("inappropriate", notInappropriateQuery);
+        return query;
     }
 
     private void addLast15MinsQuery(BasicDBObject query) {

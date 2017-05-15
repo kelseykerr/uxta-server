@@ -1,5 +1,6 @@
 package com.iuxta.nearby.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
@@ -12,6 +13,7 @@ import java.util.List;
 /**
  * Created by kerrk on 9/2/16.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Response implements Serializable {
 
     private String id;

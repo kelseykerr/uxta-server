@@ -42,6 +42,8 @@ public class RequestDto {
 
     public String status;
 
+    public Boolean inappropriate;
+
     public RequestDto() {
 
     }
@@ -66,6 +68,7 @@ public class RequestDto {
             this.type = request.getType().toString();
         }
         this.status = request.getStatus() != null ? request.getStatus().toString() : null;
+        this.inappropriate = request.getInappropriate() != null ? request.getInappropriate() : false;
     }
 
     public static List<RequestDto> transform(List<Request> requests) {
