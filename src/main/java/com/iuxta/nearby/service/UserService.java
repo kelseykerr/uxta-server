@@ -2,10 +2,18 @@ package com.iuxta.nearby.service;
 
 import com.iuxta.nearby.dto.PaymentDto;
 import com.iuxta.nearby.dto.UserDto;
+import com.iuxta.nearby.dto.UserFlagDto;
 import com.iuxta.nearby.exception.InternalServerException;
-import com.iuxta.nearby.model.GeoJsonPoint;
-import com.iuxta.nearby.model.User;
+import com.iuxta.nearby.exception.NotFoundException;
+import com.iuxta.nearby.firebase.CcsServer;
+import com.iuxta.nearby.firebase.FirebaseUtils;
+import com.iuxta.nearby.model.*;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
+import org.mongojack.JacksonDBCollection;
+import org.mongojack.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -19,7 +27,9 @@ import javax.xml.xpath.XPathFactory;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by kerrk on 8/19/16.
@@ -29,9 +39,15 @@ public class UserService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
     private StripeService stripeService;
+    private JacksonDBCollection<User, String> userCollection;
+    private JacksonDBCollection<UserFlag, String> userFlagCollection;
+    private CcsServer ccsServer;
 
-    public UserService(StripeService stripeService) {
+    public UserService(StripeService stripeService, JacksonDBCollection<User, String> userCollection, JacksonDBCollection<UserFlag, String> userFlagCollection, CcsServer ccsServer) {
         this.stripeService = stripeService;
+        this.userCollection = userCollection;
+        this.userFlagCollection = userFlagCollection;
+        this.ccsServer = ccsServer;
     }
 
 
@@ -126,5 +142,51 @@ public class UserService {
 
     public PaymentDto getUserPaymentInfo(User user) {
         return stripeService.getPaymentDetails(user);
+    }
+
+    public UserFlag blockUser(User user, UserFlagDto dto, String flaggedUser) {
+        User blockedUser = userCollection.findOneById(flaggedUser);
+        if (blockedUser == null) {
+            String msg = "Unable to block user [" + flaggedUser + "] because user was not found.";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
+        }
+        //add each user to the other's blocked users
+        addBlockedUser(user, flaggedUser);
+        addBlockedUser(blockedUser, user.getId());
+        //add a flag to the database
+        UserFlag userFlag = new UserFlag();
+        userFlag.setReportedDate(new Date());
+        userFlag.setReporterId(user.getId());
+        userFlag.setUserId(flaggedUser);
+        userFlag.setReporterNotes(dto.reporterNotes);
+        userFlag.setStatus(UserFlag.Status.PENDING);
+        sendAdminFlagNotification(blockedUser);
+        WriteResult<UserFlag, String> newFlag = userFlagCollection.insert(userFlag);
+        userFlag = newFlag.getSavedObject();
+        return userFlag;
+    }
+
+    public void addBlockedUser(User user, String userToBlock) {
+        List<String> blockedUsers = user.getBlockedUsers();
+        if (blockedUsers == null) {
+            blockedUsers = new ArrayList<String>();
+        }
+        blockedUsers.add(userToBlock);
+        user.setBlockedUsers(blockedUsers);
+        userCollection.save(user);
+    }
+
+    private void sendAdminFlagNotification(User user) {
+        DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
+        User kelsey = userCollection.findOne(findKelsey);
+        if (kelsey != null) {
+            JSONObject notification = new JSONObject();
+            notification.put("title", "User has been flagged!");
+            String body = "User [" + user.getId() + " - " + user.getName() + "] has been flagged! Review ASAP!";
+            notification.put("message", body);
+            notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
+            FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
+        }
     }
 }

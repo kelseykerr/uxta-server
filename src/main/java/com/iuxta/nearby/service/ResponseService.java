@@ -3,23 +3,12 @@ package com.iuxta.nearby.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iuxta.nearby.NearbyUtils;
-import com.iuxta.nearby.dto.HistoryDto;
-import com.iuxta.nearby.dto.RequestDto;
-import com.iuxta.nearby.dto.ResponseDto;
-import com.iuxta.nearby.dto.TransactionDto;
-import com.iuxta.nearby.dto.UserDto;
-import com.iuxta.nearby.exception.BadRequestException;
+import com.iuxta.nearby.dto.*;
+import com.iuxta.nearby.exception.*;
 import com.iuxta.nearby.exception.IllegalArgumentException;
-import com.iuxta.nearby.exception.InternalServerException;
-import com.iuxta.nearby.exception.UnauthorizedException;
 import com.iuxta.nearby.firebase.CcsServer;
 import com.iuxta.nearby.firebase.FirebaseUtils;
-import com.iuxta.nearby.model.HistoryComparator;
-import com.iuxta.nearby.model.Message;
-import com.iuxta.nearby.model.Request;
-import com.iuxta.nearby.model.Response;
-import com.iuxta.nearby.model.Transaction;
-import com.iuxta.nearby.model.User;
+import com.iuxta.nearby.model.*;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -48,6 +37,7 @@ public class ResponseService {
     private JacksonDBCollection<Response, String> responseCollection;
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<Transaction, String> transactionCollection;
+    private JacksonDBCollection<ResponseFlag, String> responseFlagCollection;
     private CcsServer ccsServer;
 
     public ResponseService() {
@@ -58,11 +48,13 @@ public class ResponseService {
                            JacksonDBCollection<Response, String> responseCollection,
                            JacksonDBCollection<User, String> userCollection,
                            JacksonDBCollection<Transaction, String> transactionCollection,
+                           JacksonDBCollection<ResponseFlag, String> responseFlagCollection,
                            CcsServer ccsServer) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
         this.transactionCollection = transactionCollection;
+        this.responseFlagCollection = responseFlagCollection;
         this.ccsServer = ccsServer;
     }
 
@@ -87,6 +79,7 @@ public class ResponseService {
         response.setRequestId(request.getId());
         response.setSellerId(seller.getId());
         response.setBuyerStatus(Response.BuyerStatus.OPEN);
+        response.setInappropriate(false);
         populateResponse(response, dto);
         if (hasMessage(dto)) {
             Message message = new Message();
@@ -457,6 +450,10 @@ public class ResponseService {
             userRequests.close();
             requests.forEach(r -> {
                 BasicDBObject query = new BasicDBObject("requestId", r.getId());
+                //don't return the inappropriate offers
+                BasicDBObject notTrueQuery = new BasicDBObject();
+                notTrueQuery.append("$ne", true);
+                query.put("inappropriate", notTrueQuery);
                 DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
                 List<Response> responses = requestResponses.toArray();
                 requestResponses.close();
@@ -638,5 +635,44 @@ public class ResponseService {
                 LOGGER.error(msg);
             }
         });
+    }
+
+    public ResponseFlag flagResponse(User user, ResponseFlagDto dto, Response response) {
+        canCreateNewFlag(response.getId());
+        ResponseFlag flag = new ResponseFlag();
+        flag.setResponseId(response.getId());
+        flag.setReporterId(user.getId());
+        flag.setReporterNotes(dto.reporterNotes);
+        flag.setStatus(RequestFlag.Status.PENDING);
+        flag.setReportedDate(new Date());
+        sendAdminFlagNotification(response);
+        WriteResult<ResponseFlag, String> newFlag = responseFlagCollection.insert(flag);
+        flag = newFlag.getSavedObject();
+        return flag;
+    }
+
+    public void canCreateNewFlag(String responseId) {
+        //if the user created a flag that is pending review, they cannot create a new flag
+        BasicDBObject query = new BasicDBObject();
+        query.put("responseId", responseId);
+        query.put("status", RequestFlag.Status.PENDING.toString());
+        DBCursor requestFlags  = responseFlagCollection.find(query);
+        List<RequestFlag> flags = requestFlags.toArray();
+        if (flags.size() > 0) {
+            throw new NotAllowedException("You have already flagged this response & we will review in soon. Thanks!");
+        }
+    }
+
+    private void sendAdminFlagNotification(Response response) {
+        DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
+        User kelsey = userCollection.findOne(findKelsey);
+        if (kelsey != null) {
+            JSONObject notification = new JSONObject();
+            notification.put("title", "Response has been flagged!");
+            String body = "Response [" + response.getId() + " - " + response.getDescription() + "] has been flagged! Review ASAP!";
+            notification.put("message", body);
+            notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
+            FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
+        }
     }
 }

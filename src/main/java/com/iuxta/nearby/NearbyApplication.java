@@ -81,6 +81,12 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         JacksonDBCollection<RequestFlag, String> requestFlagCollection =
                 JacksonDBCollection.wrap(db.getCollection("requestFlag"), RequestFlag.class, String.class);
 
+        JacksonDBCollection<UserFlag, String> userFlagCollection =
+                JacksonDBCollection.wrap(db.getCollection("userFlag"), UserFlag.class, String.class);
+
+        JacksonDBCollection<ResponseFlag, String> responseFlagCollection =
+                JacksonDBCollection.wrap(db.getCollection("responseFlag"), ResponseFlag.class, String.class);
+
         // cloud connection server
         int fcmPort = Integer.parseInt(config.fcmPort);
         if (fcmPort != 5235 && fcmPort != 5236) {
@@ -93,9 +99,9 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         requestCollection.createIndex(new BasicDBObject("location", "2dsphere"));
         environment.healthChecks().register("mongo healthcheck", new MongoHealthCheck(mongo));
         ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection,
-                transactionCollection, ccsServer);
+                transactionCollection, responseFlagCollection, ccsServer);
         StripeService stripeService = new StripeService(config.stripeSecretKey, config.stripePublishableKey, userCollection, ccsServer);
-        UserService userService = new UserService(stripeService);
+        UserService userService = new UserService(stripeService, userCollection, userFlagCollection, ccsServer);
         RequestFlagService requestFlagService = new RequestFlagService(requestCollection, requestFlagCollection, userCollection, ccsServer);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
         RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, locationsCollection, unavailableSearchesCollection);

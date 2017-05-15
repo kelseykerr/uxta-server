@@ -77,6 +77,8 @@ public class ResponseDto {
 
     public String description;
 
+    public Boolean inappropriate;
+
     public ResponseDto() {
 
     }
@@ -99,6 +101,7 @@ public class ResponseDto {
         this.canceledReason = r.getCanceledReason();
         this.messagesEnabled = r.getMessagesEnabled();
         this.description = r.getDescription();
+        this.inappropriate = r.getInappropriate();
     }
 
     public static List<ResponseDto> transform(List<Response> responses) {

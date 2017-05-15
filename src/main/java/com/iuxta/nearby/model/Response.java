@@ -76,6 +76,8 @@ public class Response implements Serializable {
     // save the cancel reason here so it can be displayed
     private String canceledReason;
 
+    private Boolean inappropriate = false;
+
     public String getDescription() {
         return description;
     }
@@ -250,5 +252,13 @@ public class Response implements Serializable {
      */
     public static enum Status {
         PENDING, ACCEPTED, CLOSED
+    }
+
+    public Boolean getInappropriate() {
+        return inappropriate;
+    }
+
+    public void setInappropriate(Boolean inappropriate) {
+        this.inappropriate = inappropriate;
     }
 }

@@ -2,12 +2,14 @@ package com.iuxta.nearby.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.iuxta.nearby.dto.ResponseDto;
+import com.iuxta.nearby.dto.ResponseFlagDto;
 import com.iuxta.nearby.dto.UserDto;
 import com.iuxta.nearby.exception.NotAllowedException;
 import com.iuxta.nearby.exception.NotFoundException;
 import com.iuxta.nearby.exception.UnauthorizedException;
 import com.iuxta.nearby.model.Request;
 import com.iuxta.nearby.model.Response;
+import com.iuxta.nearby.model.ResponseFlag;
 import com.iuxta.nearby.model.User;
 import com.iuxta.nearby.service.StripeService;
 import com.iuxta.nearby.service.ResponseService;
@@ -235,6 +237,11 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotFoundException(msg);
         }
+        if (response.getInappropriate()) {
+         String msg = "Unable to update this response. It has been marked as inappropriate and has been hidden.";
+            LOGGER.error(msg);
+            throw new NotAllowedException(msg);
+        }
         Request request = requestCollection.findOneById(requestId);
         if (request == null) {
             String msg = "could not find request [" + requestId + "]";
@@ -248,5 +255,43 @@ public class ResponsesResource {
         }
         responseService.updateResponse(dto, response, request, principal.getId());
         return new ResponseDto(response);
+    }
+
+    @POST
+    @Timed
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(value = MediaType.APPLICATION_JSON)
+    @Path("/{responseId}/flags")
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")})
+    public ResponseFlagDto flagResponse(@Auth @ApiParam(hidden = true) User principal,
+                                        @PathParam("requestId") String requestId,
+                                        @PathParam("responseId") String responseId,
+                                        @Valid ResponseFlagDto dto) {
+        Response response = responseCollection.findOneById(responseId);
+        if (response == null) {
+            String msg = "unable to update response [" + responseId + "] because the response was not found";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
+        }
+        Request request = requestCollection.findOneById(requestId);
+        if (request == null) {
+            String msg = "could not find request [" + requestId + "]";
+            LOGGER.error(msg);
+            throw new NotFoundException(msg);
+        }
+        if (!response.getSellerId().equals(principal.getId()) && !request.getUser().getId().equals(principal.getId())) {
+            LOGGER.error("user [" + principal.getId() + "] attempted to flag response [" +
+                    response.getId() + "].");
+            throw new UnauthorizedException("you do not have access to this response");
+        }
+        ResponseFlag flag = responseService.flagResponse(principal, dto, response);
+        return new ResponseFlagDto(flag);
     }
 }

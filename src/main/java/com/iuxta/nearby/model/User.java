@@ -90,6 +90,8 @@ public class User implements Serializable, Principal {
 
     private Date createdDate;
 
+    private List<String> blockedUsers;
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -349,5 +351,13 @@ public class User implements Serializable, Principal {
 
     public void setCreatedDate(Date createdDate) {
         this.createdDate = createdDate;
+    }
+
+    public List<String> getBlockedUsers() {
+        return blockedUsers;
+    }
+
+    public void setBlockedUsers(List<String> blockedUsers) {
+        this.blockedUsers = blockedUsers;
     }
 }

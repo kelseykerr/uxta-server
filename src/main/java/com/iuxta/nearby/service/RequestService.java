@@ -147,6 +147,7 @@ public class RequestService {
             }
             BasicDBObject query = getLocationQuery(latitude, longitude, user.getNotificationRadius());
             setAppropriateQuery(query);
+            setNotBlockedQuery(query, user);
             setNotExpiredQuery(query);
             addNotMineQuery(query, user.getUserId());
             addLast15MinsQuery(query);
@@ -168,6 +169,7 @@ public class RequestService {
             BasicDBObject query = getLocationQuery(user.getHomeLocation().getCoordinates()[1],
                     user.getHomeLocation().getCoordinates()[0], user.getNotificationRadius());
             setAppropriateQuery(query);
+            setNotBlockedQuery(query, user);
             setNotExpiredQuery(query);
             addNotMineQuery(query, user.getUserId());
             addLast15MinsQuery(query);
@@ -236,6 +238,7 @@ public class RequestService {
         offset = (offset != null ? offset : 0);
         limit = (limit == null || limit > NearbyUtils.MAX_LIMIT) ? NearbyUtils.DEFAULT_LIMIT : limit;
         setAppropriateQuery(query);
+        setNotBlockedQuery(query, principal);
 
         if (expired != null && expired) {
             BasicDBObject expiredQuery = new BasicDBObject();
@@ -354,6 +357,14 @@ public class RequestService {
         BasicDBObject notTrueQuery = new BasicDBObject();
         notTrueQuery.append("$ne", true);
         query.put("inappropriate", notTrueQuery);
+        return query;
+    }
+
+    private BasicDBObject setNotBlockedQuery(BasicDBObject query, User principal) {
+        BasicDBObject blockedUserIdsQuery = new BasicDBObject();
+        List<ObjectId> blockedIds = principal.getBlockedUsers().stream().map(r -> new ObjectId(r)).collect(Collectors.toList());
+        blockedUserIdsQuery.put("$nin", blockedIds);
+        query.put("user._id", blockedUserIdsQuery);
         return query;
     }
 

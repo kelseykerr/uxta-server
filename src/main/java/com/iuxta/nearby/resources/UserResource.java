@@ -1,13 +1,11 @@
 package com.iuxta.nearby.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.iuxta.nearby.dto.HistoryDto;
-import com.iuxta.nearby.dto.PaymentDto;
-import com.iuxta.nearby.dto.RequestDto;
-import com.iuxta.nearby.dto.UserDto;
+import com.iuxta.nearby.dto.*;
 import com.iuxta.nearby.exception.UnauthorizedException;
 import com.iuxta.nearby.model.Request;
 import com.iuxta.nearby.model.User;
+import com.iuxta.nearby.model.UserFlag;
 import com.iuxta.nearby.service.ResponseService;
 import com.iuxta.nearby.service.StripeService;
 import com.iuxta.nearby.service.UserService;
@@ -307,5 +305,28 @@ public class UserResource {
             throw new UnauthorizedException(msg);
         }
         return userService.getUserPaymentInfo(principal);
+    }
+
+    @POST
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Path("/{id}/flags")
+    @Timed
+    @ApiOperation(
+            value = "flags/blocks the user"
+    )
+    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
+            value = "the authentication token received from facebook",
+            dataType = "string",
+            paramType = "header"),
+            @ApiImplicitParam(name = "x-auth-method",
+                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
+                    dataType = "string",
+                    paramType = "header")
+    })
+    public UserFlagDto blockUser(@Auth @ApiParam(hidden = true) User principal, @PathParam("id")
+    @ApiParam(value = "the user to block") String flaggedUser, @Valid UserFlagDto flagDto) {
+
+        UserFlag userFlag = userService.blockUser(principal, flagDto, flaggedUser);
+        return new UserFlagDto(userFlag);
     }
 }
