@@ -40,15 +40,21 @@ public class UserService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
     private StripeService stripeService;
+    private ResponseService responseService;
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<UserFlag, String> userFlagCollection;
     private CcsServer ccsServer;
 
-    public UserService(StripeService stripeService, JacksonDBCollection<User, String> userCollection, JacksonDBCollection<UserFlag, String> userFlagCollection, CcsServer ccsServer) {
+    public UserService(StripeService stripeService,
+                       ResponseService responseService,
+                       JacksonDBCollection<User, String> userCollection,
+                       JacksonDBCollection<UserFlag, String> userFlagCollection,
+                       CcsServer ccsServer) {
         this.stripeService = stripeService;
         this.userCollection = userCollection;
         this.userFlagCollection = userFlagCollection;
         this.ccsServer = ccsServer;
+        this.responseService = responseService;
     }
 
 
@@ -163,8 +169,9 @@ public class UserService {
         userFlag.setReporterNotes(dto.reporterNotes);
         userFlag.setStatus(UserFlag.Status.PENDING);
         sendAdminFlagNotification(blockedUser);
-        WriteResult<UserFlag, String> newFlag = userFlagCollection.insert(userFlag);
-        userFlag = newFlag.getSavedObject();
+        WriteResult newFlag = userFlagCollection.insert(userFlag);
+        userFlag = (UserFlag) newFlag.getSavedObject();
+        responseService.closeResponsesFromBlockedUsers(user, blockedUser);
         return userFlag;
     }
 

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by kerrk on 9/3/16.
@@ -454,6 +455,11 @@ public class ResponseService {
                 BasicDBObject notTrueQuery = new BasicDBObject();
                 notTrueQuery.append("$ne", true);
                 query.put("inappropriate", notTrueQuery);
+                if (user.getBlockedUsers() != null && user.getBlockedUsers().size() > 0) {
+                    BasicDBObject blockedUserIdsQuery = new BasicDBObject();
+                    blockedUserIdsQuery.put("$nin", user.getBlockedUsers());
+                    query.put("sellerId", blockedUserIdsQuery);
+                }
                 DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
                 List<Response> responses = requestResponses.toArray();
                 requestResponses.close();
@@ -504,7 +510,7 @@ public class ResponseService {
         }
 
         if (getOffers || getTransactions) {
-            List<HistoryDto> userOffers = getMyOfferHistory(user.getId(), getOffers, getTransactions, getOpen, getClosed);
+            List<HistoryDto> userOffers = getMyOfferHistory(user, getOffers, getTransactions, getOpen, getClosed);
             historyDtos.addAll(userOffers);
         }
         Collections.sort(historyDtos, new HistoryComparator(user.getId()));
@@ -515,9 +521,9 @@ public class ResponseService {
         }
     }
 
-    public List<HistoryDto> getMyOfferHistory(String userId, final boolean getOffers, final boolean getTransactions,
+    public List<HistoryDto> getMyOfferHistory(User user, final boolean getOffers, final boolean getTransactions,
                                               final boolean getOpen, final boolean getClosed) {
-        BasicDBObject query = new BasicDBObject("sellerId", userId);
+        BasicDBObject query = new BasicDBObject("sellerId", user.getId());
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
         List<Response> responses = requestResponses.toArray();
         requestResponses.close();
@@ -528,6 +534,14 @@ public class ResponseService {
             if (request == null) {
                 //TODO: log an error here, but probably don't need to throw an exception...this really shouldn't happen
             } else {
+                if (user.getBlockedUsers() != null && user.getBlockedUsers().size() > 0) {
+                    for (String blocked:user.getBlockedUsers()) {
+                        if (blocked.equals(request.getUser().getId())) {
+                            return; //don't show this offer because they have blocked this user
+                        }
+                    }
+                }
+
                 if (!getClosed && r.getResponseStatus().equals(Response.Status.CLOSED)) {
                     return;
                 } else if (!getOpen && r.getResponseStatus().equals(Response.Status.PENDING)) {
@@ -646,8 +660,8 @@ public class ResponseService {
         flag.setStatus(RequestFlag.Status.PENDING);
         flag.setReportedDate(new Date());
         sendAdminFlagNotification(response);
-        WriteResult<ResponseFlag, String> newFlag = responseFlagCollection.insert(flag);
-        flag = newFlag.getSavedObject();
+        WriteResult newFlag = responseFlagCollection.insert(flag);
+        flag = (ResponseFlag) newFlag.getSavedObject();
         return flag;
     }
 
@@ -658,6 +672,7 @@ public class ResponseService {
         query.put("status", RequestFlag.Status.PENDING.toString());
         DBCursor requestFlags  = responseFlagCollection.find(query);
         List<RequestFlag> flags = requestFlags.toArray();
+        requestFlags.close();
         if (flags.size() > 0) {
             throw new NotAllowedException("You have already flagged this response & we will review in soon. Thanks!");
         }
@@ -667,6 +682,7 @@ public class ResponseService {
         DBObject findAdmins = new BasicDBObject("admin", true);
         DBCursor cursor = userCollection.find(findAdmins);
         List<User> admins = cursor.toArray();
+        cursor.close();
         if (admins != null && admins.size() > 0) {
             JSONObject notification = new JSONObject();
             notification.put("title", "Response has been flagged!");
@@ -677,5 +693,34 @@ public class ResponseService {
                 FirebaseUtils.sendFcmMessage(admin, null, notification, ccsServer);
             }
         }
+    }
+
+    public void closeResponsesFromBlockedUsers(User user1, User user2) {
+        closeUserResponses(user1, user2);
+        closeUserResponses(user2, user1);
+    }
+
+    private void closeUserResponses(User user1, User user2) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("user.userId", user1.getId());
+        query.put("status", Request.Status.OPEN.toString());
+        DBCursor requestCursor  = requestCollection.find(query);
+        List<Request> requests = requestCursor.toArray();
+        requestCursor.close();
+        for (Request request:requests) {
+            query = new BasicDBObject();
+            query.put("sellerId", user2.getId());
+            query.put("responseStatus", Response.Status.PENDING.toString());
+            query.put("requestId", request.getId());
+            DBCursor responseCursor  = responseCollection.find(query);
+            List<Response> responses = responseCursor.toArray();
+            responseCursor.close();
+            for (Response response:responses) {
+                response.setSellerStatus(Response.SellerStatus.WITHDRAWN);
+                response.setResponseStatus(Response.Status.CLOSED);
+                responseCollection.save(response);
+            }
+        }
+
     }
 }

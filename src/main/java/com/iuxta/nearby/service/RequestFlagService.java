@@ -44,12 +44,14 @@ public class RequestFlagService {
     public void canCreateNewFlag(User user, String requestId) {
         //if the user created a flag that is pending review, they cannot create a new flag
         BasicDBObject query = new BasicDBObject();
-        query.put("reporterId", user.getUserId());
+        query.put("reporterId", user.getId());
         query.put("requestId", requestId);
         query.put("status", RequestFlag.Status.PENDING.toString());
         DBCursor requestFlags  = requestFlagCollection.find(query);
         List<RequestFlag> flags = requestFlags.toArray();
+        requestFlags.close();
         if (flags.size() > 0) {
+            LOGGER.error("User [" + user.getId() + " attempted to re-flag request [" + requestId + "]");
             throw new NotAllowedException("You have already flagged this request & we will review in soon. Thanks!");
         }
     }
@@ -69,8 +71,8 @@ public class RequestFlagService {
         flag.setStatus(RequestFlag.Status.PENDING);
         flag.setReportedDate(new Date());
         sendAdminFlagNotification(request);
-        WriteResult<RequestFlag, String> newFlag = requestFlagCollection.insert(flag);
-        flag = newFlag.getSavedObject();
+        WriteResult newFlag = requestFlagCollection.insert(flag);
+        flag = (RequestFlag) newFlag.getSavedObject();
         return flag;
     }
 

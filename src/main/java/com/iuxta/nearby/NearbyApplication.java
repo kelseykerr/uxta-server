@@ -101,7 +101,7 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection,
                 transactionCollection, responseFlagCollection, ccsServer);
         StripeService stripeService = new StripeService(config.stripeSecretKey, config.stripePublishableKey, userCollection, ccsServer);
-        UserService userService = new UserService(stripeService, userCollection, userFlagCollection, ccsServer);
+        UserService userService = new UserService(stripeService, responseService, userCollection, userFlagCollection, ccsServer);
         RequestFlagService requestFlagService = new RequestFlagService(requestCollection, requestFlagCollection, userCollection, ccsServer);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
         RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, locationsCollection, unavailableSearchesCollection);
