@@ -92,6 +92,8 @@ public class User implements Serializable, Principal {
 
     private List<String> blockedUsers;
 
+    private Boolean admin;
+
     public User() {}
 
     public User(String firstName, String lastName, String userId) {
@@ -355,6 +357,10 @@ public class User implements Serializable, Principal {
 
     public List<String> getBlockedUsers() {
         return blockedUsers;
+    }
+
+    public Boolean getAdmin() {
+        return admin;
     }
 
     public void setBlockedUsers(List<String> blockedUsers) {

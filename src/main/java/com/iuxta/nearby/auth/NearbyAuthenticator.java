@@ -25,6 +25,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
 import org.slf4j.Logger;
@@ -117,7 +118,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             User user = searchForExistingUser(userId, payload.getEmail());
             if (user == null) {
                 user = createNewGoogleUser(payload);
-                sendKelseyNotificationOfNewUser(user.getName());
+                sendAdminsNotificationOfNewUser(user.getName());
                 return user;
             }
             //should we do this?? I think not - let's call google for the profile pic
@@ -156,7 +157,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             User user = searchForExistingUser(userId, email);
             if (user == null) {
                 User newUser = createNewFacebookUser(userId);
-                sendKelseyNotificationOfNewUser(newUser.getName());
+                sendAdminsNotificationOfNewUser(newUser.getName());
                 return newUser;
             }
             if (user.getTosAccepted() == null) {
@@ -186,17 +187,19 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         return user;
     }
 
-    private void sendKelseyNotificationOfNewUser(String username) {
-        DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
-        User kelsey = userCollection.findOne(findKelsey);
-        if (kelsey != null) {
+    private void sendAdminsNotificationOfNewUser(String username) {
+        DBObject findAdmins = new BasicDBObject("admin", true);
+        DBCursor cursor = userCollection.find(findAdmins);
+        List<User> admins = cursor.toArray();
+        if (admins != null && admins.size() > 0) {
             JSONObject notification = new JSONObject();
             notification.put("title", "New User Signed Up!");
             String body = "User [" + username + "] signed up!";
             notification.put("message", body);
             notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
-            FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
-        }
+            for (User admin:admins) {
+                FirebaseUtils.sendFcmMessage(admin, null, notification, ccsServer);
+            }        }
     }
 
     private String extractUserId(CloseableHttpResponse httpResp) throws AuthenticationException, IOException {

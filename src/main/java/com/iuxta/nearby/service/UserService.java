@@ -12,6 +12,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
+import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
 import org.slf4j.Logger;
@@ -178,15 +179,17 @@ public class UserService {
     }
 
     private void sendAdminFlagNotification(User user) {
-        DBObject findKelsey = new BasicDBObject("email", "kerr.kelsey@gmail.com");
-        User kelsey = userCollection.findOne(findKelsey);
-        if (kelsey != null) {
+        DBObject findAdmins = new BasicDBObject("admin", true);
+        DBCursor cursor = userCollection.find(findAdmins);
+        List<User> admins = cursor.toArray();
+        if (admins != null && admins.size() > 0) {
             JSONObject notification = new JSONObject();
             notification.put("title", "User has been flagged!");
             String body = "User [" + user.getId() + " - " + user.getName() + "] has been flagged! Review ASAP!";
             notification.put("message", body);
             notification.put("type", FirebaseUtils.NotificationTypes.new_user_notification.name());
-            FirebaseUtils.sendFcmMessage(kelsey, null, notification, ccsServer);
-        }
+            for (User admin:admins) {
+                FirebaseUtils.sendFcmMessage(admin, null, notification, ccsServer);
+            }        }
     }
 }
