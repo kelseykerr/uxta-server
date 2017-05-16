@@ -1,4 +1,5 @@
 package com.iuxta.nearby.model;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
 
@@ -13,6 +14,7 @@ import java.util.List;
 /**
  * Created by kerrk on 7/5/16.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class User implements Serializable, Principal {
 
     @ObjectId
@@ -361,6 +363,10 @@ public class User implements Serializable, Principal {
 
     public Boolean getAdmin() {
         return admin;
+    }
+
+    public void setAdmin(Boolean admin) {
+        this.admin = admin;
     }
 
     public void setBlockedUsers(List<String> blockedUsers) {

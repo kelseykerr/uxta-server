@@ -361,6 +361,9 @@ public class RequestService {
     }
 
     private BasicDBObject setNotBlockedQuery(BasicDBObject query, User principal) {
+        if (principal.getBlockedUsers() == null) {
+            return query;
+        }
         BasicDBObject blockedUserIdsQuery = new BasicDBObject();
         List<ObjectId> blockedIds = principal.getBlockedUsers().stream().map(r -> new ObjectId(r)).collect(Collectors.toList());
         blockedUserIdsQuery.put("$nin", blockedIds);
