@@ -115,14 +115,12 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             // Print user identifier
             String userId = payload.getSubject();
             LOGGER.info("Google User ID: " + userId);
-            User user = searchForExistingUser(userId, payload.getEmail());
+            User user = searchForExistingUser(userId);
             if (user == null) {
                 user = createNewGoogleUser(payload);
                 sendAdminsNotificationOfNewUser(user.getName());
                 return user;
             }
-            //should we do this?? I think not - let's call google for the profile pic
-            //updateGoogleUser(user, payload);
             if (user.getTosAccepted() == null) {
                 user.setTosAccepted(false);
             }
@@ -147,14 +145,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             CloseableHttpResponse httpResp = client.execute(httpGet);
 
             String userId = extractUserId(httpResp);
-            JSONObject fbInfo = getFbProfile(userId);
-            String email = null;
-            try {
-                email = (String) fbInfo.get("email");
-            } catch (JSONException e) {
-                //do nothing
-            }
-            User user = searchForExistingUser(userId, email);
+            User user = searchForExistingUser(userId);
             if (user == null) {
                 User newUser = createNewFacebookUser(userId);
                 sendAdminsNotificationOfNewUser(newUser.getName());
@@ -177,13 +168,9 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         }
     }
 
-    private User searchForExistingUser(String userId, String email) {
+    private User searchForExistingUser(String userId) {
         DBObject searchById = new BasicDBObject("userId", userId);
         User user = userCollection.findOne(searchById);
-        if (user == null && StringUtils.isNotBlank(email)) {
-            DBObject searchByEmail = new BasicDBObject("email", email);
-            user = userCollection.findOne(searchByEmail);
-        }
         return user;
     }
 
