@@ -330,6 +330,7 @@ public class ResponseService {
                 " has been closed because the user accepted another offer or closed the request. Thanks for your offer!";
         //TODO: think about doing this asynchronously
         responses.forEach(r -> {
+            LOGGER.info("closing other responses, comparing [" +r.getId() + "] to accepted response id [" + response.getId()+ "]");
             if (!r.getId().equals(response.getId())) {
                 try {
                     r.setBuyerStatus(Response.BuyerStatus.CLOSED);
@@ -340,11 +341,11 @@ public class ResponseService {
                     notification.put("message", body);
                     notification.put("type", FirebaseUtils.NotificationTypes.offer_closed.name());
                     ObjectMapper mapper = new ObjectMapper();
-                    String responseJson = mapper.writeValueAsString(new ResponseDto(response));
+                    String responseJson = mapper.writeValueAsString(new ResponseDto(r));
                     notification.put("response", responseJson);
                     String requestJson = mapper.writeValueAsString(new RequestDto(request));
                     notification.put("request", requestJson);
-                    User recipient = userCollection.findOneById(response.getSellerId());
+                    User recipient = userCollection.findOneById(r.getSellerId());
                     FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
                 } catch (JsonProcessingException e) {
                     String msg = "Could not convert object to json string, got error: " + e.getMessage();
