@@ -121,7 +121,12 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
                 sendAdminsNotificationOfNewUser(user.getName());
                 return user;
             }
-            if (user.getTosAccepted() == null) {
+            if (StringUtils.isNotBlank(credentials.getIp()) && (user.getTosAccepted() == null || !user.getTosAccepted())) {
+                user.setTosAccepted(true);
+                Date date = new Date();
+                user.setTimeTosAccepted(date);
+                user.setTosAcceptIp(credentials.getIp());
+            } else if (user.getTosAccepted() == null) {
                 user.setTosAccepted(false);
             }
             LOGGER.info("finished updating google user [" + user.getEmail() + "]");
@@ -151,7 +156,12 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
                 sendAdminsNotificationOfNewUser(newUser.getName());
                 return newUser;
             }
-            if (user.getTosAccepted() == null) {
+            if (StringUtils.isNotBlank(credentials.getIp()) && (user.getTosAccepted() == null || !user.getTosAccepted())) {
+                user.setTosAccepted(true);
+                Date date = new Date();
+                user.setTimeTosAccepted(date);
+                user.setTosAcceptIp(credentials.getIp());
+            } else if (user.getTosAccepted() == null) {
                 user.setTosAccepted(false);
             }
             user.setAuthMethod(NearbyUtils.FB_AUTH_METHOD);
@@ -258,6 +268,8 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         newUser.setPictureUrl(pictureUrl);
         if (StringUtils.isNotBlank(ip)) {
             newUser.setTosAccepted(true);
+            Date date = new Date();
+            newUser.setTimeTosAccepted(date);
             newUser.setTosAcceptIp(ip);
         } else {
             newUser.setTosAccepted(false);
@@ -313,6 +325,8 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         }
         if (StringUtils.isNotBlank(ip)) {
             newUser.setTosAccepted(true);
+            Date date = new Date();
+            newUser.setTimeTosAccepted(date);
             newUser.setTosAcceptIp(ip);
         } else {
             newUser.setTosAccepted(false);
