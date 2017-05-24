@@ -117,7 +117,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             LOGGER.info("Google User ID: " + userId);
             User user = searchForExistingUser(userId);
             if (user == null) {
-                user = createNewGoogleUser(payload);
+                user = createNewGoogleUser(payload, credentials.getIp());
                 sendAdminsNotificationOfNewUser(user.getName());
                 return user;
             }
@@ -147,7 +147,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             String userId = extractUserId(httpResp);
             User user = searchForExistingUser(userId);
             if (user == null) {
-                User newUser = createNewFacebookUser(userId);
+                User newUser = createNewFacebookUser(userId, credentials.getIp());
                 sendAdminsNotificationOfNewUser(newUser.getName());
                 return newUser;
             }
@@ -240,7 +240,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         return user;
     }*/
 
-    private User createNewGoogleUser(GoogleIdToken.Payload payload) {
+    private User createNewGoogleUser(GoogleIdToken.Payload payload, String ip) {
         // Get profile information from payload
         String email = payload.getEmail();
         String name = (String) payload.get("name");
@@ -256,7 +256,12 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         newUser.setUserId(payload.getSubject());
         newUser.setEmail(email);
         newUser.setPictureUrl(pictureUrl);
-        newUser.setTosAccepted(false);
+        if (StringUtils.isNotBlank(ip)) {
+            newUser.setTosAccepted(true);
+            newUser.setTosAcceptIp(ip);
+        } else {
+            newUser.setTosAccepted(false);
+        }
         newUser.setAuthMethod(NearbyUtils.GOOGLE_AUTH_METHOD);
         //TODO: check for error
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
@@ -279,7 +284,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         return userInfo;
     }
 
-    private User createNewFacebookUser(String userId) throws IOException, URISyntaxException {
+    private User createNewFacebookUser(String userId, String ip) throws IOException, URISyntaxException {
         URIBuilder builder = new URIBuilder("https://graph.facebook.com/" + userId)
                 .addParameter("access_token", fbAuthToken);
         HttpGet httpGet = new HttpGet(builder.toString());
@@ -306,8 +311,12 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         } catch (JSONException e) {
             //do nothing
         }
-        newUser.setTosAccepted(false);
-        //TODO: check for error
+        if (StringUtils.isNotBlank(ip)) {
+            newUser.setTosAccepted(true);
+            newUser.setTosAcceptIp(ip);
+        } else {
+            newUser.setTosAccepted(false);
+        }
         WriteResult<User, String> insertedUser = userCollection.insert(newUser);
         newUser = insertedUser.getSavedObject();
         return newUser;

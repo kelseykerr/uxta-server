@@ -8,9 +8,12 @@ public class Credentials {
 
     private final String method;
 
-    public Credentials(String token, String method) {
+    private final String ip;
+
+    public Credentials(String token, String method, String ip) {
         this.token = token;
         this.method = method;
+        this.ip = ip;
     }
 
     public String getToken() {
@@ -19,5 +22,9 @@ public class Credentials {
 
     public String getMethod() {
         return method;
+    }
+
+    public String getIp() {
+        return ip;
     }
 }

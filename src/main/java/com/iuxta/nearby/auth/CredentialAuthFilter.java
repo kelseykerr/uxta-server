@@ -20,24 +20,26 @@ public class CredentialAuthFilter<P extends Principal> extends AuthFilter<Creden
 
     public static final String METHOD_HEADER = "x-auth-method";
 
+    public static final String IP_HEADER = "x-auth-ip";
+
     private CredentialAuthFilter() {
     }
 
     public void filter(ContainerRequestContext requestContext) throws IOException {
 
         Credentials credentials = this.getCredentials((String)requestContext.getHeaders().getFirst(CUSTOM_HEADER),
-                (String)requestContext.getHeaders().getFirst(METHOD_HEADER));
+                (String)requestContext.getHeaders().getFirst(METHOD_HEADER), (String)requestContext.getHeaders().getFirst(IP_HEADER));
         if(!this.authenticate(requestContext, credentials, "BASIC")) {
             throw new WebApplicationException(this.unauthorizedHandler.buildResponse(this.prefix, this.realm));
         }
     }
 
     @Nullable
-    private Credentials getCredentials(String header, String method) {
+    private Credentials getCredentials(String header, String method, String ip) {
         if(header == null) {
             return null;
         } else {
-            return new Credentials(header,method == null ? NearbyUtils.FB_AUTH_METHOD : method);
+            return new Credentials(header,method == null ? NearbyUtils.FB_AUTH_METHOD : method, ip);
         }
     }
 
