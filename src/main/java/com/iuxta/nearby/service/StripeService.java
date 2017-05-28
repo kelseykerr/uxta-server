@@ -8,6 +8,7 @@ import com.iuxta.nearby.firebase.CcsServer;
 import com.iuxta.nearby.model.Transaction;
 import com.iuxta.nearby.model.User;
 import com.iuxta.nearby.exception.InternalServerException;
+import com.stripe.Stripe;
 import com.stripe.exception.APIConnectionException;
 import com.stripe.exception.AuthenticationException;
 import com.stripe.exception.CardException;
@@ -194,7 +195,8 @@ public class StripeService {
     public void createStripeManagedAccount(User user, UserDto userDto) {
         try {
             Map<String, Object> accountParams = updateStripeAccountParams(userDto);
-
+            //country cannot be changed at a later date
+            accountParams.put("country", "US");
             Map<String, Object> tosAcceptanceParams = new HashMap<String, Object>();
             int dateAccepted = (int) (user.getTimeTosAccepted().getTime()/1000);
             LOGGER.info("date accepted: " + dateAccepted);
@@ -280,7 +282,6 @@ public class StripeService {
     private Map<String, Object> updateStripeAccountParams(UserDto userDto) {
         Map<String, Object> accountParams = new HashMap<String, Object>();
         //right now we will assume everyone using our app is in the US
-        accountParams.put("country", "US");
         accountParams.put("email", userDto.email);
         Map<String, Object> legalEntityParams = new HashMap<String, Object>();
         legalEntityParams.put("first_name", userDto.firstName);
@@ -295,6 +296,8 @@ public class StripeService {
         addressParams.put("state", userDto.state);
 
         legalEntityParams.put("address", addressParams);
+        legalEntityParams.put("personal_address", addressParams);
+
 
         Map<String, Object> dobParams = new HashMap<String, Object>();
         String[] dobValues = userDto.dateOfBirth.split("-");
