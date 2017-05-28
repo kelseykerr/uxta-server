@@ -182,7 +182,7 @@ public class StripeService {
         try {
             Account account = Account.retrieve(user.getStripeManagedAccountId(), getRequestOptions());
             Map<String, Object> accountParams = updateStripeAccountParams(userDto);
-            account.update(accountParams);
+            account.update(accountParams, getRequestOptions());
         } catch (Exception e) {
             String msg = "Could not update Stripe managed account, got error: " + e.getMessage();
             LOGGER.error(msg);
@@ -201,7 +201,7 @@ public class StripeService {
 
             tosAcceptanceParams.put("date", dateAccepted);
             tosAcceptanceParams.put("ip", user.getTosAcceptIp());
-
+            accountParams.put("managed", true);
             accountParams.put("tos_acceptance", tosAcceptanceParams);
             Account act = Account.create(accountParams, getRequestOptions());
             user.setStripeManagedAccountId(act.getId());
@@ -282,7 +282,6 @@ public class StripeService {
         //right now we will assume everyone using our app is in the US
         accountParams.put("country", "US");
         accountParams.put("email", userDto.email);
-        accountParams.put("managed", true);
         Map<String, Object> legalEntityParams = new HashMap<String, Object>();
         legalEntityParams.put("first_name", userDto.firstName);
         legalEntityParams.put("last_name", userDto.lastName);
@@ -295,7 +294,7 @@ public class StripeService {
         addressParams.put("postal_code", userDto.zip);
         addressParams.put("state", userDto.state);
 
-        legalEntityParams.put("personal_address", addressParams);
+        legalEntityParams.put("address", addressParams);
 
         Map<String, Object> dobParams = new HashMap<String, Object>();
         String[] dobValues = userDto.dateOfBirth.split("-");

@@ -84,6 +84,13 @@ public class UserService {
             user.setTosAcceptIp(dto.tosAcceptIp);
         }
         user.setPictureUrl(dto.pictureUrl);
+        if (StringUtils.isNotBlank(user.getStripeManagedAccountId())) {
+            try {
+                stripeService.updateStripeManagedAccount(user, dto);
+            } catch (Exception e){
+                LOGGER.error("Error when attempting to update Stripe managed account from PUT /users/me: " + e.getMessage());
+            }
+        }
         return user;
     }
 
