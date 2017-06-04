@@ -61,7 +61,7 @@ public class ResponseService {
         this.ccsServer = ccsServer;
     }
 
-    public Response transformResponseDto(ResponseDto dto, Request request, User seller) {
+    public Response transformResponseDto(ResponseDto dto, Request request, User responder) {
         if (request.getStatus() != Request.Status.OPEN) {
             String msg = "Cannot create this offer because the request was recently fulfilled or closed.";
             LOGGER.info(msg);
@@ -86,18 +86,24 @@ public class ResponseService {
             response.setRequestToBuyOrRent(true);
         } else {
             response.setRequestId(request.getId());
+            response.setRequestToBuyOrRent(false);
         }
         response.setResponseTime(new Date());
-        response.setSellerStatus(Response.SellerStatus.ACCEPTED);
+        if (request.getType().equals(Request.Type.loaning) || request.getType().equals(Request.Type.selling)) {
+            response.setBuyerStatus(Response.BuyerStatus.ACCEPTED);
+            response.setSellerStatus(Response.SellerStatus.OFFERED);
+        } else {
+            response.setSellerStatus(Response.SellerStatus.ACCEPTED);
+            response.setBuyerStatus(Response.BuyerStatus.OPEN);
+        }
         response.setResponseStatus(Response.Status.PENDING);
-        response.setSellerId(seller.getId());
-        response.setBuyerStatus(Response.BuyerStatus.OPEN);
+        response.setResponderId(responder.getId());
         response.setInappropriate(false);
         populateResponse(response, dto);
         if (hasMessage(dto)) {
             Message message = new Message();
             message.setTimeSent(new Date());
-            message.setSenderId(seller.getId());
+            message.setSenderId(responder.getId());
             message.setContent(dto.messages.get(0).getContent());
             response.addMessage(message);
         }
@@ -111,7 +117,12 @@ public class ResponseService {
         String title = "New Offer";
         BigDecimal price = BigDecimal.valueOf(dto.offerPrice);
         price = price.setScale(NearbyUtils.USD.getDefaultFractionDigits(), NearbyUtils.DEFAULT_ROUNDING);
-        String body = seller.getFirstName() + " offered their " + request.getItemName() + " for $" + price;
+        String body = "";
+        if (request.getType().equals(Request.Type.loaning) || request.getType().equals(Request.Type.selling)) {
+            body = responder.getFirstName() + " offered their " + request.getItemName() + " for $" + price;
+        } else {
+            body = responder.getFirstName() + " requested to " +  (request.getType().equals(Request.Type.loaning) ? "borrow " : "buy ") + "your " + request.getItemName() + " for $" + price;
+        }
         if (!dto.priceType.toLowerCase().equals(Response.PriceType.FLAT.toString().toLowerCase())) {
             body += (dto.priceType.toLowerCase().equals(Response.PriceType.PER_DAY.toString().toLowerCase())) ?
                     " per day" : " per hour";
@@ -203,7 +214,12 @@ public class ResponseService {
             response.setBuyerStatus(Response.BuyerStatus.CLOSED);
             response.setResponseStatus(Response.Status.CLOSED);
             responseCollection.save(response);
-            String msg = "Cannot update this offer because the request was recently closed.";
+            String msg = "";
+            if (request.getType().equals(Request.Type.loaning) || request.getType().equals(Request.Type.selling)) {
+                msg = "Cannot update this response because the offer was recently closed.";
+            } else {
+                msg = "Cannot update this offer because the request was recently closed.";
+            }
             LOGGER.info(msg);
             throw new BadRequestException(msg);
         }
@@ -212,14 +228,23 @@ public class ResponseService {
         }
         boolean updated = populateResponse(response, dto);
         if (request.getUser().getId().equals(userId)) {
-            if (updated) {
+            if (updated && response.getOfferToBuyOrRent()) {
+                response.setBuyerStatus(Response.BuyerStatus.OPEN);
+            } else {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
-            LOGGER.info("updating buyer status");
-            updateBuyerStatus(response, dto, request, updated);
+            if (response.getOfferToBuyOrRent()) {
+                LOGGER.info("updating seller status");
+                updateSellerStatus(response, dto, request);
+            } else {
+                LOGGER.info("updating buyer status");
+                updateBuyerStatus(response, dto, request, updated);
+            }
         } else {
-            if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED)) {
+            if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED) && !response.getOfferToBuyOrRent()) {
                 response.setBuyerStatus(Response.BuyerStatus.OPEN);
+            } else if (updated && response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED) && response.getOfferToBuyOrRent()) {
+                response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
             updateSellerStatus(response, dto, request);
         }
@@ -288,7 +313,7 @@ public class ResponseService {
     public void sendUpdateToBuyer(Request request, Response response, String msg) {
         try {
             JSONObject notification = new JSONObject();
-            User seller = userCollection.findOneById(response.getSellerId());
+            User seller = userCollection.findOneById(response.getResponderId());
             notification.put("title", msg != null ? msg : seller.getFirstName() + " updated their offer");
             notification.put("message", msg != null ? msg : seller.getFirstName() + " updated their offer for a " + request.getItemName());
             notification.put("type", FirebaseUtils.NotificationTypes.response_update.name());
@@ -318,7 +343,7 @@ public class ResponseService {
             notification.put("response", responseJson);
             String requestJson = mapper.writeValueAsString(new RequestDto(request));
             notification.put("request", requestJson);
-            User recipient = userCollection.findOneById(response.getSellerId());
+            User recipient = userCollection.findOneById(response.getResponderId());
             FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
         } catch (JsonProcessingException e) {
             String err = "Could not send update to seller for response [" + response.getId() + "], " +
@@ -329,7 +354,7 @@ public class ResponseService {
     }
 
     private void acceptResponse(Response response, Request request) {
-        openTransaction(request.getId(), response.getId(), response.getSellerId(), request.getUser().getId());
+        openTransaction(request.getId(), response.getId(), response.getResponderId(), request.getUser().getId());
         response.setResponseStatus(Response.Status.ACCEPTED);
         request.setStatus(Request.Status.TRANSACTION_PENDING);
         BasicDBObject query = new BasicDBObject();
@@ -357,7 +382,7 @@ public class ResponseService {
                     notification.put("response", responseJson);
                     String requestJson = mapper.writeValueAsString(new RequestDto(request));
                     notification.put("request", requestJson);
-                    User recipient = userCollection.findOneById(r.getSellerId());
+                    User recipient = userCollection.findOneById(r.getResponderId());
                     FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
                 } catch (JsonProcessingException e) {
                     String msg = "Could not convert object to json string, got error: " + e.getMessage();
@@ -368,7 +393,7 @@ public class ResponseService {
         //let seller know the response has been accepted
         JSONObject notification = new JSONObject();
 
-        User recipient = userCollection.findOneById(response.getSellerId());
+        User recipient = userCollection.findOneById(response.getResponderId());
         String priceType = response.getPriceType().equals(Response.PriceType.FLAT) ? "" :
                 response.getPriceType().equals(Response.PriceType.PER_DAY) ? " per day " : " per hour ";
 
@@ -462,7 +487,13 @@ public class ResponseService {
             //requests includes responses to sale items
             List<HistoryDto> responseDtos = getResponsesToListings(user, getRequests, getTransactions, addOpen, addClosed);
             historyDtos.addAll(responseDtos);
-            DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
+            BasicDBObject query = new BasicDBObject();
+            query.put("user._id", new ObjectId(user.getId()));
+            BasicDBObject inQuery = new BasicDBObject();
+            List<String> requestTypes = Stream.of("buying", "renting").collect(Collectors.toList());
+            inQuery.put("$in", requestTypes);
+            query.put("type", inQuery);
+            DBCursor userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
             List<Request> requests = userRequests.toArray();
             userRequests.close();
             historyDtos.addAll(getRequestOffers(user, getRequests, getRequests, addOpen, addClosed, requests));
@@ -496,7 +527,7 @@ public class ResponseService {
                     UserDto userDto = new UserDto();
                     if (seller == null) {
                         for (Response response : responses) {
-                            if (response.getSellerId().equals(d.sellerId)) {
+                            if (response.getResponderId().equals(d.sellerId)) {
                                 response.setResponseStatus(Response.Status.CLOSED);
                                 responseCollection.save(response);
                                 d.sellerStatus = r.getStatus().toString();
@@ -621,6 +652,9 @@ public class ResponseService {
         historyDtos.addAll(getRequestOffers(user, getOffers, getTransactions, getOpen, getClosed, offerRequests));
 
         BasicDBObject query = new BasicDBObject("sellerId", user.getId());
+        //is the response really a request to rent or buy something? if so, don't include it in "offers"
+        query.put("isRequestToBuyOrRent", false);
+
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
         List<Response> responses = requestResponses.toArray();
         requestResponses.close();
@@ -710,7 +744,7 @@ public class ResponseService {
                 UserDto userDto = new UserDto();
                 if (seller == null) {
                     for (Response response : responses) {
-                        if (response.getSellerId().equals(d.sellerId)) {
+                        if (response.getResponderId().equals(d.sellerId)) {
                             response.setResponseStatus(Response.Status.CLOSED);
                             responseCollection.save(response);
                             d.sellerStatus = r.getStatus().toString();
@@ -806,7 +840,7 @@ public class ResponseService {
                 notification.put("response", responseJson);
                 String requestJson = mapper.writeValueAsString(new RequestDto(request));
                 notification.put("request", requestJson);
-                User recipient = userCollection.findOneById(r.getSellerId());
+                User recipient = userCollection.findOneById(r.getResponderId());
                 FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
             } catch (JsonProcessingException e) {
                 String msg = "Could not convert object to json string, got error: " + e.getMessage();

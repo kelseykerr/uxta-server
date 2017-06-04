@@ -96,12 +96,12 @@ public class Response implements Serializable {
         this.requestId = requestId;
     }
 
-    public String getSellerId() {
+    public String getResponderId() {
         return responderId;
     }
 
-    public void setSellerId(String sellerId) {
-        this.responderId = sellerId;
+    public void setResponderId(String responderId) {
+        this.responderId = responderId;
     }
 
     public Date getResponseTime() {

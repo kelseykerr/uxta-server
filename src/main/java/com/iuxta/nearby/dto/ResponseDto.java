@@ -88,7 +88,7 @@ public class ResponseDto {
     public ResponseDto(Response r) {
         this.id = r.getId();
         this.requestId = r.getRequestId();
-        this.sellerId = r.getSellerId();
+        this.sellerId = r.getResponderId();
         this.responseTime = r.getResponseTime();
         this.offerPrice = r.getOfferPrice();
         this.exchangeLocation = r.getExchangeLocation();

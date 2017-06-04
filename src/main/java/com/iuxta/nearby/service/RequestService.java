@@ -22,6 +22,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by kerrk on 7/27/16.
@@ -379,26 +380,34 @@ public class RequestService {
     }
 
     private BasicDBObject setRequestingQuery(BasicDBObject query) {
-        BasicDBList or = new BasicDBList();
+        /*BasicDBList or = new BasicDBList();
         BasicDBObject buying = new BasicDBObject();
         buying.append("$eq", "buying");
         or.put("type", buying);
         BasicDBObject renting = new BasicDBObject();
         renting.append("$eq", "renting");
         or.put("type", renting);
-        query.put("$or", or);
+        query.put("$or", or);*/
+        BasicDBObject inQuery = new BasicDBObject();
+        List<String> types = Stream.of("buying", "renting").collect(Collectors.toList());
+        inQuery.put("$in", types);
+        query.put("type", inQuery);
         return query;
     }
 
     private BasicDBObject setOffersQuery(BasicDBObject query) {
-        BasicDBList or = new BasicDBList();
+        /*BasicDBList or = new BasicDBList();
         BasicDBObject selling = new BasicDBObject();
         selling.append("$eq", "selling");
         or.put("type", selling);
         BasicDBObject loaning = new BasicDBObject();
         loaning.append("$eq", "loaning");
         or.put("type", loaning);
-        query.put("$or", or);
+        query.put("$or", or);*/
+        BasicDBObject inQuery = new BasicDBObject();
+        List<String> types = Stream.of("loaning", "selling").collect(Collectors.toList());
+        inQuery.put("$in", types);
+        query.put("type", inQuery);
         return query;
     }
 

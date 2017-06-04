@@ -71,6 +71,7 @@ public class RequestDto {
         }
         this.status = request.getStatus() != null ? request.getStatus().toString() : null;
         this.inappropriate = request.getInappropriate() != null ? request.getInappropriate() : false;
+        this.type = request.getType() != null ? request.getType().toString() : "renting";
     }
 
     public static List<RequestDto> transform(List<Request> requests) {

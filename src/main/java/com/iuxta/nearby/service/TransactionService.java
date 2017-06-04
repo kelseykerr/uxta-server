@@ -73,7 +73,7 @@ public class TransactionService {
                 transaction.setReturned(true);
                 transaction.setReturnTime(currentDate);
                 transaction.setReturned(true);
-                User seller = userCollection.findOneById(response.getSellerId());
+                User seller = userCollection.findOneById(response.getResponderId());
                 calculatePrice(transaction, response, request, seller);
                 JSONObject notification = new JSONObject();
                 notification.put("title", "Exchange Confirmed");
@@ -100,7 +100,7 @@ public class TransactionService {
         }
         if (normalizeCode(transaction.getExchangeCode()).equals(normalizeCode(code))) {
             if (transaction.getExchangeCodeExpireDate().after(new Date())) {
-                User seller = userCollection.findOneById(response.getSellerId());
+                User seller = userCollection.findOneById(response.getResponderId());
                 if (!request.getRental()) {
                     calculatePrice(transaction, response, request, seller);
                 }
@@ -149,7 +149,7 @@ public class TransactionService {
 
     public String generateCode(Transaction transaction, Request request, Response response, String userId) {
         // if the user is the seller, generate the initial exchange code
-        if (response.getSellerId().equals(userId)) {
+        if (response.getResponderId().equals(userId)) {
             return generateExchangeCode(transaction);
             // if the user is the buyer, generate the return code
         } else if (request.getUser().getId().equals(userId)) {
@@ -196,7 +196,7 @@ public class TransactionService {
             String msg = user.getFirstName() + " submitted a return override. Please confirm the item was returned.";
             notification.put("message", msg);
             notification.put("type", FirebaseUtils.NotificationTypes.exchange_confirmed.name());
-            User seller = userCollection.findOneById(response.getSellerId());
+            User seller = userCollection.findOneById(response.getResponderId());
             FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
         }
         transactionCollection.save(transaction);
@@ -228,7 +228,7 @@ public class TransactionService {
                 transaction.setExchangeTime(transaction.getExchangeOverride().time);
                 transaction.setExchanged(true);
                 if (isRental) {
-                    User seller = userCollection.findOneById(response.getSellerId());
+                    User seller = userCollection.findOneById(response.getResponderId());
                     calculatePrice(transaction, response, request, seller);
                 }
             } else {

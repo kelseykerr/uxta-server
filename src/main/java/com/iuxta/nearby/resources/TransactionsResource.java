@@ -83,7 +83,7 @@ public class TransactionsResource {
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
         boolean isBuyer = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getSellerId().equals(principal.getId());
+        boolean isSeller = response.getResponderId().equals(principal.getId());
         if (!isBuyer && !isSeller) {
             LOGGER.error("User [" + principal.getId() + "] attempted to access transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to this transaction!");
@@ -109,7 +109,7 @@ public class TransactionsResource {
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
         boolean isRequester = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getSellerId().equals(principal.getId());
+        boolean isSeller = response.getResponderId().equals(principal.getId());
         if (!isRequester && !isSeller) {
             LOGGER.error("User [" + principal.getId() + "] tried to close transaction ["
                     + transactionId + "]");
@@ -136,7 +136,7 @@ public class TransactionsResource {
         notification.put("type", FirebaseUtils.NotificationTypes.cancelled_transaction.name());
         notification.put("reason", transaction.getCanceledReason());
         if (isRequester) {
-            User seller = userCollection.findOneById(response.getSellerId());
+            User seller = userCollection.findOneById(response.getResponderId());
             notification.put("message", seller.getFirstName() + " cancelled your transaction for a " + request.getItemName() + ".");
             FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
         } else {
@@ -196,7 +196,7 @@ public class TransactionsResource {
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
         boolean isBuyer = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getSellerId().equals(principal.getId());
+        boolean isSeller = response.getResponderId().equals(principal.getId());
         if (isSeller) {
             transactionService.enterReturnCode(transaction, response, request, code);
         } else if (isBuyer) {
@@ -236,7 +236,7 @@ public class TransactionsResource {
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
         boolean isBuyer = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getSellerId().equals(principal.getId());
+        boolean isSeller = response.getResponderId().equals(principal.getId());
         if (!isBuyer && !isSeller) {
             LOGGER.error("User [" + principal.getId() + "] attempted to create an exchange override for " +
                     " transaction [" + transactionId + "]");
@@ -273,7 +273,7 @@ public class TransactionsResource {
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
         boolean isBuyer = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getSellerId().equals(principal.getId());
+        boolean isSeller = response.getResponderId().equals(principal.getId());
         if (!isBuyer && !isSeller) {
             LOGGER.error("User [" + principal.getId() + "] attempted to respond to an exchange override for " +
                     " transaction [" + transactionId + "]");
@@ -308,7 +308,7 @@ public class TransactionsResource {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
-        if (!response.getSellerId().equals(principal.getId())) {
+        if (!response.getResponderId().equals(principal.getId())) {
             LOGGER.error("User [" + principal.getId() + "] attempted to verify price for" +
                     " transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to verify the price for this transaction!");

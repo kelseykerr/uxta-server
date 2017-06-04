@@ -189,7 +189,7 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotFoundException(msg);
         }
-        if (response.getSellerId().equals(principal.getId())) {
+        if (response.getResponderId().equals(principal.getId())) {
             Request request = requestCollection.findOneById(requestId);
             if (request == null) {
                 String msg = "unable to return response for request [" + requestId + "], " +
@@ -204,7 +204,7 @@ public class ResponsesResource {
             }
         }
         ResponseDto responseDto = new ResponseDto(response);
-        User seller = userCollection.findOneById(response.getSellerId());
+        User seller = userCollection.findOneById(response.getResponderId());
         UserDto userDto = new UserDto();
         userDto.userId = seller.getId();
         userDto.lastName = seller.getLastName();
@@ -248,7 +248,7 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotFoundException(msg);
         }
-        if (!response.getSellerId().equals(principal.getId()) && !request.getUser().getId().equals(principal.getId())) {
+        if (!response.getResponderId().equals(principal.getId()) && !request.getUser().getId().equals(principal.getId())) {
             LOGGER.error("user [" + principal.getId() + "] attempted to update response [" +
                     response.getId() + "].");
             throw new UnauthorizedException("you do not have access to this response");
@@ -286,7 +286,7 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotFoundException(msg);
         }
-        if (!response.getSellerId().equals(principal.getId()) && !request.getUser().getId().equals(principal.getId())) {
+        if (!response.getResponderId().equals(principal.getId()) && !request.getUser().getId().equals(principal.getId())) {
             LOGGER.error("user [" + principal.getId() + "] attempted to flag response [" +
                     response.getId() + "].");
             throw new UnauthorizedException("you do not have access to this response");
