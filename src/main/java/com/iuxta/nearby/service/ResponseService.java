@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by kerrk on 9/3/16.
@@ -458,10 +459,14 @@ public class ResponseService {
         final boolean addClosed = getClosed;
         List<HistoryDto> historyDtos = new ArrayList<>();
         if (getRequests || getTransactions) {
+            //requests includes responses to sale items
+            List<HistoryDto> responseDtos = getResponsesToListings(user, getRequests, getTransactions, addOpen, addClosed);
+            historyDtos.addAll(responseDtos);
             DBCursor userRequests = requestCollection.find(searchByUser).sort(new BasicDBObject("postDate", -1));
             List<Request> requests = userRequests.toArray();
             userRequests.close();
-            requests.forEach(r -> {
+            historyDtos.addAll(getRequestOffers(user, getRequests, getRequests, addOpen, addClosed, requests));
+            /*requests.forEach(r -> {
                 BasicDBObject query = new BasicDBObject("requestId", r.getId());
                 //don't return the inappropriate offers
                 BasicDBObject notTrueQuery = new BasicDBObject();
@@ -518,7 +523,7 @@ public class ResponseService {
                         historyDtos.add(dto);
                     }
                 }
-            });
+            });*/
         }
 
         if (getOffers || getTransactions) {
@@ -533,16 +538,99 @@ public class ResponseService {
         }
     }
 
+    public List<HistoryDto> getResponsesToListings(User user, final boolean getRequests, final boolean getTransactions,
+                                                   final boolean getOpen, final boolean getClosed) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("responderId", user.getId());
+        query.put("isRequestToBuyOrRent", true);
+        DBCursor responses  = responseCollection.find(query);
+        List<Response> responseRequests = responses.toArray();
+        responses.close();
+        List<HistoryDto> historyDtos = new ArrayList<>();
+        responseRequests.forEach(r -> {
+            HistoryDto historyDto = getResponseRequest(r, user, getRequests, getTransactions, getOpen, getClosed);
+            if (historyDto != null) {
+                historyDtos.add(historyDto);
+            }
+        });
+        return historyDtos;
+
+    }
+
+    public HistoryDto getResponseRequest(Response r, User user, final boolean getObject, final boolean getTransactions, final boolean getOpen, final boolean getClosed) {
+        Request request = requestCollection.findOneById(r.getRequestId());
+        if (request == null) {
+            return null;
+            //TODO: log an error here, but probably don't need to throw an exception...this really shouldn't happen
+        } else {
+            if (user.getBlockedUsers() != null && user.getBlockedUsers().size() > 0) {
+                for (String blocked : user.getBlockedUsers()) {
+                    if (blocked.equals(request.getUser().getId())) {
+                        return null; //don't show this offer because they have blocked this user
+                    }
+                }
+            }
+
+            if (!getClosed && r.getResponseStatus().equals(Response.Status.CLOSED)) {
+                return null;
+            } else if (!getOpen && r.getResponseStatus().equals(Response.Status.PENDING)) {
+                return null;
+            }
+            HistoryDto dto = new HistoryDto();
+            dto.request = new RequestDto(request);
+            dto.responses = Collections.singletonList(new ResponseDto(r));
+            BasicDBObject qry = new BasicDBObject("responseId", r.getId());
+            Transaction transaction = null;
+            //only look for a transaction if the response is accepted, otherwise the transaction may not belong to the response
+            if (r.getResponseStatus().equals(Response.Status.ACCEPTED)) {
+                transaction = transactionCollection.findOne(qry);
+            }
+            if (transaction != null) {
+                dto.transaction = new TransactionDto(transaction, true);
+                if (getTransactions) {
+                    if (!getOpen && (request.getStatus().equals(Request.Status.PROCESSING_PAYMENT) ||
+                            request.getStatus().equals(Request.Status.TRANSACTION_PENDING))) {
+                        return null;
+                    } else if (!getClosed && (request.getStatus().equals(Request.Status.CLOSED) ||
+                            request.getStatus().equals(Request.Status.FULFILLED))) {
+                        return null;
+                    }
+                    return dto;
+                }
+            } else if (getObject) {
+                return dto;
+            }
+            return null;
+        }
+    }
+
     public List<HistoryDto> getMyOfferHistory(User user, final boolean getOffers, final boolean getTransactions,
                                               final boolean getOpen, final boolean getClosed) {
+        List<HistoryDto> historyDtos = new ArrayList<>();
+
+        //includes requests that are of type "selling" or "loaning"
+        BasicDBObject requestQuery = new BasicDBObject();
+        requestQuery.put("user._id", new ObjectId(user.getId()));
+        BasicDBObject inQuery = new BasicDBObject();
+        List<String> types = Stream.of("selling", "loaning").collect(Collectors.toList());
+        inQuery.put("$in", types);
+        requestQuery.put("type", inQuery);
+        DBCursor requests  = requestCollection.find(requestQuery);
+        List<Request> offerRequests = requests.toArray();
+        requests.close();
+        historyDtos.addAll(getRequestOffers(user, getOffers, getTransactions, getOpen, getClosed, offerRequests));
+
         BasicDBObject query = new BasicDBObject("sellerId", user.getId());
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
         List<Response> responses = requestResponses.toArray();
         requestResponses.close();
-        List<HistoryDto> historyDtos = new ArrayList<>();
         // for each offer, get the corresponding request
         responses.forEach(r -> {
-            Request request = requestCollection.findOneById(r.getRequestId());
+            HistoryDto historyDto = getResponseRequest(r, user, getOffers, getTransactions, getOpen, getClosed);
+            if (historyDto != null) {
+                historyDtos.add(historyDto);
+            }
+            /*Request request = requestCollection.findOneById(r.getRequestId());
             if (request == null) {
                 //TODO: log an error here, but probably don't need to throw an exception...this really shouldn't happen
             } else {
@@ -584,6 +672,70 @@ public class ResponseService {
                     historyDtos.add(dto);
                 }
 
+            }*/
+        });
+        return historyDtos;
+    }
+
+    public List<HistoryDto> getRequestOffers(User user, final boolean getObjects, final boolean getTransactions,
+                                             final boolean getOpen, final boolean getClosed, List<Request> requests) {
+        List<HistoryDto> historyDtos = new ArrayList<>();
+        requests.forEach(r -> {
+            BasicDBObject query = new BasicDBObject("requestId", r.getId());
+            //don't return the inappropriate offers
+            BasicDBObject notTrueQuery = new BasicDBObject();
+            notTrueQuery.append("$ne", true);
+            query.put("inappropriate", notTrueQuery);
+            if (user.getBlockedUsers() != null && user.getBlockedUsers().size() > 0) {
+                BasicDBObject blockedUserIdsQuery = new BasicDBObject();
+                blockedUserIdsQuery.put("$nin", user.getBlockedUsers());
+                query.put("sellerId", blockedUserIdsQuery);
+            }
+            DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
+            List<Response> responses = requestResponses.toArray();
+            requestResponses.close();
+            HistoryDto dto = new HistoryDto();
+            dto.request = new RequestDto(r);
+            if (!getOpen && (r.getStatus().equals(Request.Status.OPEN) ||
+                    r.getStatus().equals(Request.Status.PROCESSING_PAYMENT) ||
+                    r.getStatus().equals(Request.Status.TRANSACTION_PENDING))) {
+                return;
+            } else if (!getClosed && (r.getStatus().equals(Request.Status.CLOSED) ||
+                    r.getStatus().equals(Request.Status.FULFILLED))) {
+                return;
+            }
+            List<ResponseDto> dtos = ResponseDto.transform(responses);
+            dtos.forEach(d -> {
+                User seller = userCollection.findOneById(d.sellerId);
+                UserDto userDto = new UserDto();
+                if (seller == null) {
+                    for (Response response : responses) {
+                        if (response.getSellerId().equals(d.sellerId)) {
+                            response.setResponseStatus(Response.Status.CLOSED);
+                            responseCollection.save(response);
+                            d.sellerStatus = r.getStatus().toString();
+                        }
+                    }
+                    return;
+                }
+                userDto = new UserDto(seller);
+                if (d.messagesEnabled != null && d.messagesEnabled) {
+                    userDto.phone = seller.getPhone();
+                }
+                d.seller = userDto;
+            });
+            query.put("canceled", false);
+            Transaction transaction = transactionCollection.findOne(query);
+            dto.responses = dtos;
+            if (transaction != null) {
+                dto.transaction = new TransactionDto(transaction, false);
+                if (getTransactions) {
+                    historyDtos.add(dto);
+                }
+            } else {
+                if (getObjects) {
+                    historyDtos.add(dto);
+                }
             }
         });
         return historyDtos;

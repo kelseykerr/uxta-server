@@ -108,14 +108,15 @@ public class RequestsResource {
                                         @QueryParam("searchTerm") String searchTerm,
                                         @QueryParam("sort") String sort,
                                         @QueryParam("offset") Integer offset,
-                                        @QueryParam("limit") Integer limit) {
+                                        @QueryParam("limit") Integer limit,
+                                        @QueryParam("type") String type) {
         if (longitude == null || latitude == null || radius == null) {
             String msg = "query parameters [radius], [longitude] and [latitude] are required.";
             LOGGER.error(msg);
             throw new BadRequestException(msg);
         }
         List<Request> requests = requestService.findRequests(offset, limit, latitude, longitude, radius, expired, includeMine,
-                searchTerm, sort, principal);
+                searchTerm, sort, principal, type);
         return RequestDto.transform(requests);
     }
 
