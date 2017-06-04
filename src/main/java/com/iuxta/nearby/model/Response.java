@@ -22,11 +22,13 @@ public class Response implements Serializable {
     private String requestId;
 
     @NotNull
-    private String sellerId;
+    private String responderId;
 
     private Date responseTime;
 
     private String description;
+
+    private Boolean isRequestToBuyOrRent;
 
     /**
      * true if the seller wants to allow the buyer to message them with questions
@@ -35,7 +37,7 @@ public class Response implements Serializable {
     private Boolean messagesEnabled;
 
     /**
-     * should be initially set by the seller
+     * should be initially set by the responder
      */
     private Double offerPrice;
 
@@ -95,11 +97,11 @@ public class Response implements Serializable {
     }
 
     public String getSellerId() {
-        return sellerId;
+        return responderId;
     }
 
     public void setSellerId(String sellerId) {
-        this.sellerId = sellerId;
+        this.responderId = sellerId;
     }
 
     public Date getResponseTime() {
@@ -260,5 +262,13 @@ public class Response implements Serializable {
 
     public void setInappropriate(Boolean inappropriate) {
         this.inappropriate = inappropriate;
+    }
+
+    public Boolean getOfferToBuyOrRent() {
+        return isRequestToBuyOrRent;
+    }
+
+    public void setRequestToBuyOrRent(Boolean requestToBuyOrRent) {
+        isRequestToBuyOrRent = requestToBuyOrRent;
     }
 }

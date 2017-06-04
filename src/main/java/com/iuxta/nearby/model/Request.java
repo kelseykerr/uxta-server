@@ -149,7 +149,7 @@ public class Request implements Serializable {
     }
 
     public static enum Type {
-        item, service
+        renting, buying, selling, loaning
     }
 
     /**

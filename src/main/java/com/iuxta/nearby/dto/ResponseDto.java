@@ -79,6 +79,8 @@ public class ResponseDto {
 
     public Boolean inappropriate;
 
+    public Boolean isOfferToBuyOrRent;
+
     public ResponseDto() {
 
     }
@@ -102,6 +104,7 @@ public class ResponseDto {
         this.messagesEnabled = r.getMessagesEnabled();
         this.description = r.getDescription();
         this.inappropriate = r.getInappropriate();
+        this.isOfferToBuyOrRent = r.getOfferToBuyOrRent();
     }
 
     public static List<ResponseDto> transform(List<Response> responses) {

@@ -12,6 +12,7 @@ import com.iuxta.nearby.model.*;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.apache.commons.lang3.SerializationUtils;
 import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
@@ -72,12 +73,22 @@ public class ResponseService {
             LOGGER.info(msg);
             throw new BadRequestException(msg);
         }
-        ensureValidOffferPrice(dto.offerPrice);
         Response response = new Response();
+        ensureValidOffferPrice(dto.offerPrice);
+        if (request.getType() != null && request.getType().equals(Request.Type.loaning)) {
+            Request requestDuplicate = SerializationUtils.clone(request);
+            requestDuplicate.setId(null);
+            requestCollection.save(requestDuplicate);
+            response.setRequestToBuyOrRent(true);
+            response.setRequestId(requestDuplicate.getId());
+        } else if (request.getType() != null && request.getType().equals(Request.Type.selling)) {
+            response.setRequestToBuyOrRent(true);
+        } else {
+            response.setRequestId(request.getId());
+        }
         response.setResponseTime(new Date());
         response.setSellerStatus(Response.SellerStatus.ACCEPTED);
         response.setResponseStatus(Response.Status.PENDING);
-        response.setRequestId(request.getId());
         response.setSellerId(seller.getId());
         response.setBuyerStatus(Response.BuyerStatus.OPEN);
         response.setInappropriate(false);

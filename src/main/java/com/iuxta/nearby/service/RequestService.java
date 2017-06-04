@@ -151,6 +151,7 @@ public class RequestService {
             setNotExpiredQuery(query);
             addNotMineQuery(query, user.getUserId());
             addLast15MinsQuery(query);
+            setRequestingQuery(query);
             DBCursor userRequests = requestCollection.find(query);
             List<Request> requestsNearby = userRequests.toArray();
             if (requestsNearby.size() > 1) {
@@ -217,8 +218,8 @@ public class RequestService {
     }
 
     public void checkLocationIsAvailable(Double latitude, Double longitude) {
-        //must be within 10 miles
-        BasicDBObject query = getLocationQuery(latitude, longitude, 10D);
+        //must be within 15 miles
+        BasicDBObject query = getLocationQuery(latitude, longitude, 15D);
         DBCursor availableLocations = availableLocationsCollection.find(query);
         List<NearbyAvailableLocations> locations = availableLocations.toArray();
         availableLocations.close();
@@ -232,7 +233,7 @@ public class RequestService {
     }
 
     public List<Request> findRequests(Integer offset, Integer limit, Double latitude, Double longitude, Double radius, Boolean expired,
-                                      Boolean includeMine, String searchTerm, String sort, User principal) {
+                                      Boolean includeMine, String searchTerm, String sort, User principal, String type) {
         checkLocationIsAvailable(latitude, longitude);
         BasicDBObject query = getLocationQuery(latitude, longitude, radius);
         offset = (offset != null ? offset : 0);
@@ -252,6 +253,12 @@ public class RequestService {
             BasicDBObject notMineQuery = new BasicDBObject();
             notMineQuery.append("$ne", principal.getUserId());
             query.put("user.userId", notMineQuery);
+        }
+
+        if (StringUtils.isNotBlank(type) && type.equalsIgnoreCase("requests")) {
+            setRequestingQuery(query);
+        } else if (StringUtils.isNotBlank(type) && type.equalsIgnoreCase("offers")) {
+            setOffersQuery(query);
         }
 
         query.put("status", "OPEN");
@@ -368,6 +375,30 @@ public class RequestService {
         List<ObjectId> blockedIds = principal.getBlockedUsers().stream().map(r -> new ObjectId(r)).collect(Collectors.toList());
         blockedUserIdsQuery.put("$nin", blockedIds);
         query.put("user._id", blockedUserIdsQuery);
+        return query;
+    }
+
+    private BasicDBObject setRequestingQuery(BasicDBObject query) {
+        BasicDBList or = new BasicDBList();
+        BasicDBObject buying = new BasicDBObject();
+        buying.append("$eq", "buying");
+        or.put("type", buying);
+        BasicDBObject renting = new BasicDBObject();
+        renting.append("$eq", "renting");
+        or.put("type", renting);
+        query.put("$or", or);
+        return query;
+    }
+
+    private BasicDBObject setOffersQuery(BasicDBObject query) {
+        BasicDBList or = new BasicDBList();
+        BasicDBObject selling = new BasicDBObject();
+        selling.append("$eq", "selling");
+        or.put("type", selling);
+        BasicDBObject loaning = new BasicDBObject();
+        loaning.append("$eq", "loaning");
+        or.put("type", loaning);
+        query.put("$or", or);
         return query;
     }
 

@@ -33,11 +33,13 @@ public class RequestDto {
 
     public CategoryDto category;
 
+    //can phase this field out since the "type" field will now tell us if we are renting, buying, etc
     @NotNull
     public Boolean rental;
 
     public String description;
 
+    @NotNull
     public String type;
 
     public String status;
