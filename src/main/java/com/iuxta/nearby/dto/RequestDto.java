@@ -46,6 +46,8 @@ public class RequestDto {
 
     public Boolean inappropriate;
 
+    public Boolean duplicate;
+
     public RequestDto() {
 
     }
@@ -72,6 +74,7 @@ public class RequestDto {
         this.status = request.getStatus() != null ? request.getStatus().toString() : null;
         this.inappropriate = request.getInappropriate() != null ? request.getInappropriate() : false;
         this.type = request.getType() != null ? request.getType().toString() : "renting";
+        this.duplicate = request.getDuplicate();
     }
 
     public static List<RequestDto> transform(List<Request> requests) {

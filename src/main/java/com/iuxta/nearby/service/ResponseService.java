@@ -701,6 +701,7 @@ public class ResponseService {
                     userDto.phone = seller.getPhone();
                 }
                 d.responder = userDto;
+                d.seller = userDto;
             });
             query.put("canceled", false);
             Transaction transaction = transactionCollection.findOne(query);

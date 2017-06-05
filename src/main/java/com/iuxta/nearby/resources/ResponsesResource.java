@@ -113,6 +113,7 @@ public class ResponsesResource {
             userDto.firstName = u.getFirstName();
             userDto.fullName = u.getName();
             r.responder = userDto;
+            r.seller = userDto;
         });
         return responsesDto;
     }
@@ -211,6 +212,7 @@ public class ResponsesResource {
         userDto.firstName = seller.getFirstName();
         userDto.fullName = seller.getName();
         responseDto.responder = userDto;
+        responseDto.seller = userDto;
         return responseDto;
     }
 

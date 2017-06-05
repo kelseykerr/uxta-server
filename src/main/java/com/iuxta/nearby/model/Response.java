@@ -21,7 +21,9 @@ public class Response implements Serializable {
     @NotNull
     private String requestId;
 
-    @NotNull
+    @Deprecated
+    private String sellerId;
+
     private String responderId;
 
     private Date responseTime;
@@ -96,12 +98,23 @@ public class Response implements Serializable {
         this.requestId = requestId;
     }
 
+    @Deprecated
+    public String getSellerId() {
+        return sellerId;
+    }
+
+    @Deprecated
+    public void setSellerId(String sellerId) {
+        this.sellerId = sellerId;
+    }
+
     public String getResponderId() {
         return responderId;
     }
 
     public void setResponderId(String responderId) {
         this.responderId = responderId;
+        this.sellerId = responderId;
     }
 
     public Date getResponseTime() {

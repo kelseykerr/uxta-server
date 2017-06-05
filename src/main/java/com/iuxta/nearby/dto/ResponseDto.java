@@ -23,10 +23,15 @@ public class ResponseDto {
     @NotNull
     public String requestId;
 
-    @NotNull
     public String responderId;
 
     public UserDto responder;
+
+    @Deprecated
+    public String sellerId;
+
+    @Deprecated
+    public UserDto seller;
 
     /**
      * set by server
@@ -89,6 +94,7 @@ public class ResponseDto {
         this.id = r.getId();
         this.requestId = r.getRequestId();
         this.responderId = r.getResponderId();
+        this.sellerId = r.getSellerId();
         this.responseTime = r.getResponseTime();
         this.offerPrice = r.getOfferPrice();
         this.exchangeLocation = r.getExchangeLocation();
