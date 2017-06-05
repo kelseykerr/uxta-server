@@ -160,7 +160,7 @@ public class TransactionsResource {
                     paramType = "header")})
     @ApiOperation(
             value = "Generate a code that can be exchanged or converted to a QR code to be scanned",
-            notes = "The seller will call this method to generate the code on the initial exchange and " +
+            notes = "The responder will call this method to generate the code on the initial exchange and " +
                     "the user will call this method to generate the code on the return. Codes expire after 3 minutes"
     )
     public String getTransactionCode(@Auth @ApiParam(hidden = true) User principal,
@@ -187,7 +187,7 @@ public class TransactionsResource {
             value = "Confirm the exchange/return has occurred by verifying the secret code either by scanning the QR " +
                     "code or manually entering the code",
             notes = "The buyer will call this method during the initial exchange by scanning or entering the exchange " +
-                    "code and the seller will call this method on return."
+                    "code and the responder will call this method on return."
     )
     public void enterTransactionCode(@Auth @ApiParam(hidden = true) User principal,
                                      @PathParam("transactionId") String transactionId,
@@ -224,7 +224,7 @@ public class TransactionsResource {
                     paramType = "header")})
     @ApiOperation(
             value = "If the users forgot to scan codes on the exchange or return, they can submit and override",
-            notes = "If the seller forgot to do the scan on the initial exchange, they can submit an override by " +
+            notes = "If the responder forgot to do the scan on the initial exchange, they can submit an override by " +
                     "filling in the exchangeTime of the exchangeOverride object in the TransactionDto. If the buyer " +
                     "forgot to scan on the return, they can submit an override by filling in the returnTime on the " +
                     "returnOverride object in the TransactionDto. Only the price field is required in the dto."
@@ -261,9 +261,9 @@ public class TransactionsResource {
                     paramType = "header")})
     @ApiOperation(
             value = "Confirm/deny the exchange/return override submitted by the other user",
-            notes = "If the seller submitted an exchange override, the buyer will confirm or deny that the exchange " +
+            notes = "If the responder submitted an exchange override, the buyer will confirm or deny that the exchange " +
                     "happened by setting the buyerAccepted field in exchangeOverride object to true or false. " +
-                    "If the buyer submitted a return override, the seller will accept or decline by setting the " +
+                    "If the buyer submitted a return override, the responder will accept or decline by setting the " +
                     "sellerStatus in the returnOverride object to true or false. "
     )
     public TransactionDto responseToExchangeOverride(@Auth @ApiParam(hidden = true) User principal,
@@ -298,8 +298,8 @@ public class TransactionsResource {
                     paramType = "header")})
     @ApiOperation(
             value = "Confirm or update the final price that will be charged to the buyer",
-            notes = "If the seller accepts the calculated price, simply leave the priceOverride field in the dto empty, " +
-                    "otherwise the seller can DECREASE the price in the priceOverride field. The user CANNOT increase " +
+            notes = "If the responder accepts the calculated price, simply leave the priceOverride field in the dto empty, " +
+                    "otherwise the responder can DECREASE the price in the priceOverride field. The user CANNOT increase " +
                     "the price. The only field considered in the dto here is the priceOverride field, all others can be empty"
     )
     public TransactionDto verifyPrice(@Auth @ApiParam(hidden = true) User principal,

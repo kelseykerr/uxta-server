@@ -236,7 +236,7 @@ public class ResponseService {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
             if (response.getIsOfferToBuyOrRent()) {
-                LOGGER.info("updating seller status");
+                LOGGER.info("updating responder status");
                 updateSellerStatus(response, dto, request);
             } else {
                 LOGGER.info("updating buyer status");
@@ -327,7 +327,7 @@ public class ResponseService {
             User recipient = userCollection.findOneById(request.getUser().getId());
             FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
         } catch (JsonProcessingException e) {
-            String err = "Could not send update to seller for response [" + response.getId() + "], " +
+            String err = "Could not send update to responder for response [" + response.getId() + "], " +
                     "got error converting object to json string: " + e.getMessage();
             LOGGER.error(err);
         }
@@ -348,7 +348,7 @@ public class ResponseService {
             User recipient = userCollection.findOneById(response.getResponderId());
             FirebaseUtils.sendFcmMessage(recipient, null, notification, ccsServer);
         } catch (JsonProcessingException e) {
-            String err = "Could not send update to seller for response [" + response.getId() + "], " +
+            String err = "Could not send update to responder for response [" + response.getId() + "], " +
                     "got error converting object to json string: " + e.getMessage();
             LOGGER.error(err);
         }
@@ -392,7 +392,7 @@ public class ResponseService {
                 }
             }
         });
-        //let seller know the response has been accepted
+        //let responder know the response has been accepted
         JSONObject notification = new JSONObject();
 
         User recipient = userCollection.findOneById(response.getResponderId());
@@ -700,7 +700,7 @@ public class ResponseService {
                 if (d.messagesEnabled != null && d.messagesEnabled) {
                     userDto.phone = seller.getPhone();
                 }
-                d.seller = userDto;
+                d.responder = userDto;
             });
             query.put("canceled", false);
             Transaction transaction = transactionCollection.findOne(query);
@@ -768,7 +768,7 @@ public class ResponseService {
         requestResponses.close();
         String title = "Offer Closed";
         String body = "Your offer to " + request.getUser().getFirstName() + " for a " + request.getItemName() +
-                " has been closed because the seller closed the request";
+                " has been closed because the responder closed the request";
         //TODO: think about doing this asynchronously
         responses.forEach(r -> {
             try {

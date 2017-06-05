@@ -26,7 +26,7 @@ public class ResponseDto {
     @NotNull
     public String responderId;
 
-    public UserDto seller;
+    public UserDto responder;
 
     /**
      * set by server

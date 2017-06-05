@@ -34,7 +34,6 @@ public class User implements Serializable, Principal {
 
     private String name;
 
-
     @Pattern(regexp = ".+@.+\\..+",
             message = "you entered an invalid email address")
     private String email;

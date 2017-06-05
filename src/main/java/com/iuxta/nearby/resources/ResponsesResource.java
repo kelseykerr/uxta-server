@@ -76,7 +76,7 @@ public class ResponsesResource {
                     paramType = "header")})
     public List<ResponseDto> getRequestResponses(@Auth @ApiParam(hidden = true) User principal,
                                                  @PathParam("requestId") String id,
-                                                 @QueryParam("seller")
+                                                 @QueryParam("responder")
                                                  @ApiParam(value = "gets responses from a certain user, set to \"me\" to view your responses to a request")
                                                  String seller) {
         Request request = requestCollection.findOneById(id);
@@ -90,7 +90,7 @@ public class ResponsesResource {
         if (!request.getUser().getId().equals(principal.getId()) && !isSellerMe) {
             String msg = "You are not authorized to get the responses for request [" + id + "]. " +
                     "You can only get all responses for your request, or you can get your responses to a request" +
-                    " by specifying the query parameter \"seller=me\"";
+                    " by specifying the query parameter \"responder=me\"";
             LOGGER.error(msg);
             throw new UnauthorizedException(msg);
         }
@@ -112,7 +112,7 @@ public class ResponsesResource {
             userDto.lastName = u.getLastName();
             userDto.firstName = u.getFirstName();
             userDto.fullName = u.getName();
-            r.seller = userDto;
+            r.responder = userDto;
         });
         return responsesDto;
     }
@@ -210,7 +210,7 @@ public class ResponsesResource {
         userDto.lastName = seller.getLastName();
         userDto.firstName = seller.getFirstName();
         userDto.fullName = seller.getName();
-        responseDto.seller = userDto;
+        responseDto.responder = userDto;
         return responseDto;
     }
 

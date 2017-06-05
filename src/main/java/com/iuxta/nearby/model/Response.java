@@ -31,7 +31,7 @@ public class Response implements Serializable {
     private Boolean isOfferToBuyOrRent;
 
     /**
-     * true if the seller wants to allow the buyer to message them with questions
+     * true if the responder wants to allow the buyer to message them with questions
      * (we will display a "message user" button to the buyer)
      */
     private Boolean messagesEnabled;
@@ -42,7 +42,7 @@ public class Response implements Serializable {
     private Double offerPrice;
 
     /**
-     * should be initially set by the seller
+     * should be initially set by the responder
      */
     private PriceType priceType;
 
@@ -230,17 +230,17 @@ public class Response implements Serializable {
     /**
      * OPEN: the request is still open, the buyer has not accepted any offers
      * CLOSED: the request is closed either because the user accepted an offer from someone else, or withdrew the request
-     * ACCEPTED: the user accepted the offer from this seller
-     * DECLINED: the user declined the offer from this seller
+     * ACCEPTED: the user accepted the offer from this responder
+     * DECLINED: the user declined the offer from this responder
      */
     public static enum BuyerStatus {
         OPEN, CLOSED, ACCEPTED, DECLINED
     }
 
     /**
-     * OFFERED: seller extended the offer
-     * ACCEPTED: the user accepted the offer and proposed a meeting & return time/location & the seller has accepted
-     * WITHDRAWN: seller withdrew the offer (couldn't agree on price, item became unavailable...)
+     * OFFERED: responder extended the offer
+     * ACCEPTED: the user accepted the offer and proposed a meeting & return time/location & the responder has accepted
+     * WITHDRAWN: responder withdrew the offer (couldn't agree on price, item became unavailable...)
      */
     public static enum SellerStatus {
         OFFERED, ACCEPTED, WITHDRAWN
@@ -248,9 +248,9 @@ public class Response implements Serializable {
 
 
     /**
-     * PENDING: the seller status is 'offered' and the buyer status is either 'open' or 'accepted'
-     * ACCEPTED: both the buy and seller status is accepted, a transaction should now exist for the request
-     * CLOSED: either the buyer declined the request, the buyer closed the request, or the seller withdrew the request
+     * PENDING: the responder status is 'offered' and the buyer status is either 'open' or 'accepted'
+     * ACCEPTED: both the buy and responder status is accepted, a transaction should now exist for the request
+     * CLOSED: either the buyer declined the request, the buyer closed the request, or the responder withdrew the request
      */
     public static enum Status {
         PENDING, ACCEPTED, CLOSED
