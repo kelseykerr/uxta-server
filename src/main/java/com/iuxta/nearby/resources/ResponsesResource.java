@@ -106,7 +106,7 @@ public class ResponsesResource {
         requestResponses.close();
         List<ResponseDto> responsesDto = ResponseDto.transform(responses);
         responsesDto.forEach(r -> {
-            User u = userCollection.findOneById(r.sellerId);
+            User u = userCollection.findOneById(r.responderId);
             UserDto userDto = new UserDto();
             userDto.userId = u.getId();
             userDto.lastName = u.getLastName();

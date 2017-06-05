@@ -241,6 +241,7 @@ public class RequestService {
         limit = (limit == null || limit > NearbyUtils.MAX_LIMIT) ? NearbyUtils.DEFAULT_LIMIT : limit;
         setAppropriateQuery(query);
         setNotBlockedQuery(query, principal);
+        query.put("duplicate", false);
 
         if (expired != null && expired) {
             BasicDBObject expiredQuery = new BasicDBObject();

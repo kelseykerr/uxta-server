@@ -24,7 +24,7 @@ public class ResponseDto {
     public String requestId;
 
     @NotNull
-    public String sellerId;
+    public String responderId;
 
     public UserDto seller;
 
@@ -88,7 +88,7 @@ public class ResponseDto {
     public ResponseDto(Response r) {
         this.id = r.getId();
         this.requestId = r.getRequestId();
-        this.sellerId = r.getResponderId();
+        this.responderId = r.getResponderId();
         this.responseTime = r.getResponseTime();
         this.offerPrice = r.getOfferPrice();
         this.exchangeLocation = r.getExchangeLocation();
@@ -104,7 +104,7 @@ public class ResponseDto {
         this.messagesEnabled = r.getMessagesEnabled();
         this.description = r.getDescription();
         this.inappropriate = r.getInappropriate();
-        this.isOfferToBuyOrRent = r.getOfferToBuyOrRent();
+        this.isOfferToBuyOrRent = r.getIsOfferToBuyOrRent();
     }
 
     public static List<ResponseDto> transform(List<Response> responses) {

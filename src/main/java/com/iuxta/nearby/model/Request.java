@@ -44,6 +44,8 @@ public class Request implements Serializable {
 
     private Boolean inappropriate = false;
 
+    private Boolean duplicate = false;
+
     public Request() {
 
     }
@@ -169,5 +171,13 @@ public class Request implements Serializable {
 
     public void setInappropriate(Boolean inappropriate) {
         this.inappropriate = inappropriate;
+    }
+
+    public Boolean getDuplicate() {
+        return duplicate;
+    }
+
+    public void setDuplicate(Boolean duplicate) {
+        this.duplicate = duplicate;
     }
 }

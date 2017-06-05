@@ -78,15 +78,17 @@ public class ResponseService {
         ensureValidOffferPrice(dto.offerPrice);
         if (request.getType() != null && request.getType().equals(Request.Type.loaning)) {
             Request requestDuplicate = SerializationUtils.clone(request);
+            requestDuplicate.setDuplicate(true);
             requestDuplicate.setId(null);
-            requestCollection.save(requestDuplicate);
-            response.setRequestToBuyOrRent(true);
+            WriteResult result = requestCollection.save(requestDuplicate);;
+            requestDuplicate = (Request) result.getSavedObject();
+            response.setIsOfferToBuyOrRent(true);
             response.setRequestId(requestDuplicate.getId());
         } else if (request.getType() != null && request.getType().equals(Request.Type.selling)) {
-            response.setRequestToBuyOrRent(true);
+            response.setIsOfferToBuyOrRent(true);
         } else {
             response.setRequestId(request.getId());
-            response.setRequestToBuyOrRent(false);
+            response.setIsOfferToBuyOrRent(false);
         }
         response.setResponseTime(new Date());
         if (request.getType().equals(Request.Type.loaning) || request.getType().equals(Request.Type.selling)) {
@@ -118,7 +120,7 @@ public class ResponseService {
         BigDecimal price = BigDecimal.valueOf(dto.offerPrice);
         price = price.setScale(NearbyUtils.USD.getDefaultFractionDigits(), NearbyUtils.DEFAULT_ROUNDING);
         String body = "";
-        if (request.getType().equals(Request.Type.loaning) || request.getType().equals(Request.Type.selling)) {
+        if (request.getType().equals(Request.Type.renting) || request.getType().equals(Request.Type.buying)) {
             body = responder.getFirstName() + " offered their " + request.getItemName() + " for $" + price;
         } else {
             body = responder.getFirstName() + " requested to " +  (request.getType().equals(Request.Type.loaning) ? "borrow " : "buy ") + "your " + request.getItemName() + " for $" + price;
@@ -228,12 +230,12 @@ public class ResponseService {
         }
         boolean updated = populateResponse(response, dto);
         if (request.getUser().getId().equals(userId)) {
-            if (updated && response.getOfferToBuyOrRent()) {
+            if (updated && response.getIsOfferToBuyOrRent()) {
                 response.setBuyerStatus(Response.BuyerStatus.OPEN);
             } else {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
-            if (response.getOfferToBuyOrRent()) {
+            if (response.getIsOfferToBuyOrRent()) {
                 LOGGER.info("updating seller status");
                 updateSellerStatus(response, dto, request);
             } else {
@@ -241,9 +243,9 @@ public class ResponseService {
                 updateBuyerStatus(response, dto, request, updated);
             }
         } else {
-            if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED) && !response.getOfferToBuyOrRent()) {
+            if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED) && !response.getIsOfferToBuyOrRent()) {
                 response.setBuyerStatus(Response.BuyerStatus.OPEN);
-            } else if (updated && response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED) && response.getOfferToBuyOrRent()) {
+            } else if (updated && response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED) && response.getIsOfferToBuyOrRent()) {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
             updateSellerStatus(response, dto, request);
@@ -497,64 +499,6 @@ public class ResponseService {
             List<Request> requests = userRequests.toArray();
             userRequests.close();
             historyDtos.addAll(getRequestOffers(user, getRequests, getRequests, addOpen, addClosed, requests));
-            /*requests.forEach(r -> {
-                BasicDBObject query = new BasicDBObject("requestId", r.getId());
-                //don't return the inappropriate offers
-                BasicDBObject notTrueQuery = new BasicDBObject();
-                notTrueQuery.append("$ne", true);
-                query.put("inappropriate", notTrueQuery);
-                if (user.getBlockedUsers() != null && user.getBlockedUsers().size() > 0) {
-                    BasicDBObject blockedUserIdsQuery = new BasicDBObject();
-                    blockedUserIdsQuery.put("$nin", user.getBlockedUsers());
-                    query.put("sellerId", blockedUserIdsQuery);
-                }
-                DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
-                List<Response> responses = requestResponses.toArray();
-                requestResponses.close();
-                HistoryDto dto = new HistoryDto();
-                dto.request = new RequestDto(r);
-                if (!addOpen && (r.getStatus().equals(Request.Status.OPEN) ||
-                        r.getStatus().equals(Request.Status.PROCESSING_PAYMENT) ||
-                        r.getStatus().equals(Request.Status.TRANSACTION_PENDING))) {
-                    return;
-                } else if (!addClosed && (r.getStatus().equals(Request.Status.CLOSED) ||
-                        r.getStatus().equals(Request.Status.FULFILLED))) {
-                    return;
-                }
-                List<ResponseDto> dtos = ResponseDto.transform(responses);
-                dtos.forEach(d -> {
-                    User seller = userCollection.findOneById(d.sellerId);
-                    UserDto userDto = new UserDto();
-                    if (seller == null) {
-                        for (Response response : responses) {
-                            if (response.getResponderId().equals(d.sellerId)) {
-                                response.setResponseStatus(Response.Status.CLOSED);
-                                responseCollection.save(response);
-                                d.sellerStatus = r.getStatus().toString();
-                            }
-                        }
-                        return;
-                    }
-                    userDto = new UserDto(seller);
-                    if (d.messagesEnabled != null && d.messagesEnabled) {
-                        userDto.phone = seller.getPhone();
-                    }
-                    d.seller = userDto;
-                });
-                query.put("canceled", false);
-                Transaction transaction = transactionCollection.findOne(query);
-                dto.responses = dtos;
-                if (transaction != null) {
-                    dto.transaction = new TransactionDto(transaction, false);
-                    if (addTransactions) {
-                        historyDtos.add(dto);
-                    }
-                } else {
-                    if (addRequests) {
-                        historyDtos.add(dto);
-                    }
-                }
-            });*/
         }
 
         if (getOffers || getTransactions) {
@@ -573,7 +517,7 @@ public class ResponseService {
                                                    final boolean getOpen, final boolean getClosed) {
         BasicDBObject query = new BasicDBObject();
         query.put("responderId", user.getId());
-        query.put("isRequestToBuyOrRent", true);
+        query.put("isOfferToBuyOrRent", true);
         DBCursor responses  = responseCollection.find(query);
         List<Response> responseRequests = responses.toArray();
         responses.close();
@@ -651,9 +595,9 @@ public class ResponseService {
         requests.close();
         historyDtos.addAll(getRequestOffers(user, getOffers, getTransactions, getOpen, getClosed, offerRequests));
 
-        BasicDBObject query = new BasicDBObject("sellerId", user.getId());
+        BasicDBObject query = new BasicDBObject("responderId", user.getId());
         //is the response really a request to rent or buy something? if so, don't include it in "offers"
-        query.put("isRequestToBuyOrRent", false);
+        query.put("isOfferToBuyOrRent", false);
 
         DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
         List<Response> responses = requestResponses.toArray();
@@ -723,7 +667,7 @@ public class ResponseService {
             if (user.getBlockedUsers() != null && user.getBlockedUsers().size() > 0) {
                 BasicDBObject blockedUserIdsQuery = new BasicDBObject();
                 blockedUserIdsQuery.put("$nin", user.getBlockedUsers());
-                query.put("sellerId", blockedUserIdsQuery);
+                query.put("responderId", blockedUserIdsQuery);
             }
             DBCursor requestResponses = responseCollection.find(query).sort(new BasicDBObject("responseTime", -1));
             List<Response> responses = requestResponses.toArray();
@@ -740,11 +684,11 @@ public class ResponseService {
             }
             List<ResponseDto> dtos = ResponseDto.transform(responses);
             dtos.forEach(d -> {
-                User seller = userCollection.findOneById(d.sellerId);
+                User seller = userCollection.findOneById(d.responderId);
                 UserDto userDto = new UserDto();
                 if (seller == null) {
                     for (Response response : responses) {
-                        if (response.getResponderId().equals(d.sellerId)) {
+                        if (response.getResponderId().equals(d.responderId)) {
                             response.setResponseStatus(Response.Status.CLOSED);
                             responseCollection.save(response);
                             d.sellerStatus = r.getStatus().toString();
@@ -783,13 +727,13 @@ public class ResponseService {
      */
     public boolean canCreateResponse(User user) {
         BasicDBObject query = new BasicDBObject();
-        query.put("sellerId", user.getUserId());
+        query.put("responderId", user.getUserId());
         query.put("responseStatus", Response.Status.PENDING);
-        DBCursor userRequests  = requestCollection.find(query);
-        List<Request> userRs = userRequests.toArray();
+        DBCursor userResponses  = responseCollection.find(query);
+        List<Response> userRs = userResponses.toArray();
         int openTransactions = getOpenTransactions(user);
         String msg = "User [" + user.getFirstName() + ":" + user.getId() + "] has [" +
-                userRequests.size() + "] pending offers and [" + openTransactions + "] open transactions";
+                userResponses.size() + "] pending offers and [" + openTransactions + "] open transactions";
         int totalResponseAndTransactions = userRs.size() + openTransactions;
         if (userRs.size() < NearbyUtils.MAX_OPEN_RESPONSES && (totalResponseAndTransactions < 10)) {
             LOGGER.info(msg);
@@ -805,7 +749,7 @@ public class ResponseService {
         BasicDBList or = new BasicDBList();
         BasicDBObject buyerQuery = new BasicDBObject("buyerId", user.getId());
         or.add(buyerQuery);
-        BasicDBObject sellerQuery = new BasicDBObject("sellerId", user.getId());
+        BasicDBObject sellerQuery = new BasicDBObject("responderId", user.getId());
         or.add(sellerQuery);
         query.put("$or", or);
         BasicDBObject notSetQuery = new BasicDBObject("$exists", false);
@@ -907,7 +851,7 @@ public class ResponseService {
         requestCursor.close();
         for (Request request:requests) {
             query = new BasicDBObject();
-            query.put("sellerId", user2.getId());
+            query.put("responderId", user2.getId());
             query.put("responseStatus", Response.Status.PENDING.toString());
             query.put("requestId", request.getId());
             DBCursor responseCursor  = responseCollection.find(query);

@@ -28,7 +28,7 @@ public class Response implements Serializable {
 
     private String description;
 
-    private Boolean isRequestToBuyOrRent;
+    private Boolean isOfferToBuyOrRent;
 
     /**
      * true if the seller wants to allow the buyer to message them with questions
@@ -264,11 +264,11 @@ public class Response implements Serializable {
         this.inappropriate = inappropriate;
     }
 
-    public Boolean getOfferToBuyOrRent() {
-        return isRequestToBuyOrRent;
+    public Boolean getIsOfferToBuyOrRent() {
+        return isOfferToBuyOrRent;
     }
 
-    public void setRequestToBuyOrRent(Boolean requestToBuyOrRent) {
-        isRequestToBuyOrRent = requestToBuyOrRent;
+    public void setIsOfferToBuyOrRent(Boolean offerToBuyOrRent) {
+        isOfferToBuyOrRent = offerToBuyOrRent;
     }
 }
