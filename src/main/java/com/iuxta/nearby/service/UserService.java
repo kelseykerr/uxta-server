@@ -61,7 +61,7 @@ public class UserService {
     public User updateUser(User user, UserDto dto) {
         user.setFirstName(dto.firstName);
         user.setLastName(dto.lastName);
-        user.setName(dto.fullName);
+        user.setName(dto.firstName + " " + dto.lastName);
         user.setEmail(dto.email);
         user.setPhone(dto.phone);
         user.setAddress(dto.address);
