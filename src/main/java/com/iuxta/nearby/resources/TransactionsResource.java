@@ -235,14 +235,16 @@ public class TransactionsResource {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
-        boolean isBuyer = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getResponderId().equals(principal.getId());
+        boolean isBuyer = (!request.isInventoryListing() && request.getUser().getId().equals(principal.getId())) ||
+                (request.isInventoryListing() && response.getResponderId().equals(principal.getId()));
+        boolean isSeller = (!request.isInventoryListing() && response.getResponderId().equals(principal.getId())) ||
+                (request.isInventoryListing() && request.getUser().getId().equals(principal.getId()));
         if (!isBuyer && !isSeller) {
             LOGGER.error("User [" + principal.getId() + "] attempted to create an exchange override for " +
                     " transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to this transaction!");
         }
-        transactionService.createExchangeOverride(transaction, dto, isSeller, request.getRental(), request, response, principal);
+        transactionService.createExchangeOverride(transaction, dto, isSeller, request.getType().equals(Request.Type.renting) || request.getType().equals(Request.Type.loaning), request, response, principal);
         return new TransactionDto(transaction, isSeller);
     }
 
@@ -272,14 +274,16 @@ public class TransactionsResource {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
-        boolean isBuyer = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getResponderId().equals(principal.getId());
+        boolean isBuyer = (!request.isInventoryListing() && request.getUser().getId().equals(principal.getId())) ||
+                (request.isInventoryListing() && response.getResponderId().equals(principal.getId()));
+        boolean isSeller = (!request.isInventoryListing() && response.getResponderId().equals(principal.getId())) ||
+                (request.isInventoryListing() && request.getUser().getId().equals(principal.getId()));
         if (!isBuyer && !isSeller) {
             LOGGER.error("User [" + principal.getId() + "] attempted to respond to an exchange override for " +
                     " transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to this transaction!");
         }
-        transactionService.respondToExchangeOverride(transaction, dto, response, isSeller, request.getRental(), principal, request);
+        transactionService.respondToExchangeOverride(transaction, dto, response, isSeller, request.isRental(), principal, request);
         return new TransactionDto(transaction, isSeller);
     }
 
@@ -308,7 +312,9 @@ public class TransactionsResource {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
-        if (!response.getResponderId().equals(principal.getId())) {
+        boolean isSeller = (!request.isInventoryListing() && response.getResponderId().equals(principal.getId())) ||
+                (request.isInventoryListing() && request.getUser().getId().equals(principal.getId()));
+        if (!isSeller) {
             LOGGER.error("User [" + principal.getId() + "] attempted to verify price for" +
                     " transaction [" + transactionId + "]");
             throw new NotAuthorizedException("You do not have access to verify the price for this transaction!");

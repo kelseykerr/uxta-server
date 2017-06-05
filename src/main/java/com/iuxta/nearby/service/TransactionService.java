@@ -168,6 +168,7 @@ public class TransactionService {
                     "] for a non-rental item.");
             throw new BadRequestException("Cannot create a return override for a non-rental item");
         }
+        boolean isNormalRequest = request.getType().equals(Request.Type.renting) || request.getType().equals(Request.Type.buying);
         confirmExchangeDidNotOccur(transaction, isSeller);
         Transaction.ExchangeOverride override = new Transaction.ExchangeOverride();
         if (isSeller ? (dto.exchangeOverride == null || dto.exchangeOverride.time == null) :
@@ -186,7 +187,12 @@ public class TransactionService {
             String msg = user.getFirstName() + " submitted an exchange override. Please confirm the item was exchanged.";
             notification.put("message", msg);
             notification.put("type", FirebaseUtils.NotificationTypes.exchange_confirmed.name());
-            FirebaseUtils.sendFcmMessage(request.getUser(), null, notification, ccsServer);
+            if (isNormalRequest) {
+                FirebaseUtils.sendFcmMessage(request.getUser(), null, notification, ccsServer);
+            } else {
+                User buyer = userCollection.findOneById(response.getResponderId());
+                FirebaseUtils.sendFcmMessage(buyer, null, notification, ccsServer);
+            }
         } else {
             override.buyerAccepted = true;
             transaction.setReturnOverride(override);
@@ -196,8 +202,12 @@ public class TransactionService {
             String msg = user.getFirstName() + " submitted a return override. Please confirm the item was returned.";
             notification.put("message", msg);
             notification.put("type", FirebaseUtils.NotificationTypes.exchange_confirmed.name());
-            User seller = userCollection.findOneById(response.getResponderId());
-            FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
+            if (isNormalRequest) {
+                User seller = userCollection.findOneById(response.getResponderId());
+                FirebaseUtils.sendFcmMessage(seller, null, notification, ccsServer);
+            } else {
+                FirebaseUtils.sendFcmMessage(request.getUser(), null, notification, ccsServer);
+            }
         }
         transactionCollection.save(transaction);
     }
@@ -227,8 +237,13 @@ public class TransactionService {
             if (dto.exchangeOverride.buyerAccepted) {
                 transaction.setExchangeTime(transaction.getExchangeOverride().time);
                 transaction.setExchanged(true);
-                if (isRental) {
-                    User seller = userCollection.findOneById(response.getResponderId());
+                if (!isRental) {
+                    User seller = null;
+                    if (request.isInventoryListing()) {
+                        seller = request.getUser();
+                    } else {
+                        seller = userCollection.findOneById(response.getResponderId());
+                    }
                     calculatePrice(transaction, response, request, seller);
                 }
             } else {

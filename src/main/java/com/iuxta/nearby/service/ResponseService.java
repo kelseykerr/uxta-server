@@ -86,12 +86,13 @@ public class ResponseService {
             response.setRequestId(requestDuplicate.getId());
         } else if (request.getType() != null && request.getType().equals(Request.Type.selling)) {
             response.setIsOfferToBuyOrRent(true);
+            response.setRequestId(request.getId());
         } else {
             response.setRequestId(request.getId());
             response.setIsOfferToBuyOrRent(false);
         }
         response.setResponseTime(new Date());
-        if (request.getType().equals(Request.Type.loaning) || request.getType().equals(Request.Type.selling)) {
+        if (request.isInventoryListing()) {
             response.setBuyerStatus(Response.BuyerStatus.ACCEPTED);
             response.setSellerStatus(Response.SellerStatus.OFFERED);
         } else {
@@ -120,7 +121,7 @@ public class ResponseService {
         BigDecimal price = BigDecimal.valueOf(dto.offerPrice);
         price = price.setScale(NearbyUtils.USD.getDefaultFractionDigits(), NearbyUtils.DEFAULT_ROUNDING);
         String body = "";
-        if (request.getType().equals(Request.Type.renting) || request.getType().equals(Request.Type.buying)) {
+        if (!request.isInventoryListing()) {
             body = responder.getFirstName() + " offered their " + request.getItemName() + " for $" + price;
         } else {
             body = responder.getFirstName() + " requested to " +  (request.getType().equals(Request.Type.loaning) ? "borrow " : "buy ") + "your " + request.getItemName() + " for $" + price;
@@ -230,25 +231,33 @@ public class ResponseService {
         }
         boolean updated = populateResponse(response, dto);
         if (request.getUser().getId().equals(userId)) {
-            if (updated && response.getIsOfferToBuyOrRent()) {
+            if (updated && request.isInventoryListing()) {
                 response.setBuyerStatus(Response.BuyerStatus.OPEN);
-            } else {
+            } else if (updated){
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
-            if (response.getIsOfferToBuyOrRent()) {
+            if (request.isInventoryListing()) {
                 LOGGER.info("updating responder status");
+                dto.sellerStatus = "ACCEPTED";
                 updateSellerStatus(response, dto, request);
             } else {
                 LOGGER.info("updating buyer status");
+                dto.buyerStatus = "ACCEPTED";
                 updateBuyerStatus(response, dto, request, updated);
             }
         } else {
-            if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED) && !response.getIsOfferToBuyOrRent()) {
+            if (updated && response.getBuyerStatus().equals(Response.BuyerStatus.ACCEPTED) && !request.isInventoryListing()) {
                 response.setBuyerStatus(Response.BuyerStatus.OPEN);
-            } else if (updated && response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED) && response.getIsOfferToBuyOrRent()) {
+            } else if (updated && response.getSellerStatus().equals(Response.SellerStatus.ACCEPTED) && request.isInventoryListing()) {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
-            updateSellerStatus(response, dto, request);
+            if (request.isInventoryListing()) {
+                dto.buyerStatus = "ACCEPTED";
+                updateBuyerStatus(response, dto, request, updated);
+            } else {
+                dto.sellerStatus = "ACCEPTED";
+                updateSellerStatus(response, dto, request);
+            }
         }
         responseCollection.save(response);
         return response;
@@ -356,7 +365,7 @@ public class ResponseService {
     }
 
     private void acceptResponse(Response response, Request request) {
-        openTransaction(request.getId(), response.getId(), response.getResponderId(), request.getUser().getId());
+        openTransaction(request, response);
         response.setResponseStatus(Response.Status.ACCEPTED);
         request.setStatus(Request.Status.TRANSACTION_PENDING);
         BasicDBObject query = new BasicDBObject();
@@ -394,7 +403,6 @@ public class ResponseService {
         });
         //let responder know the response has been accepted
         JSONObject notification = new JSONObject();
-
         User recipient = userCollection.findOneById(response.getResponderId());
         String priceType = response.getPriceType().equals(Response.PriceType.FLAT) ? "" :
                 response.getPriceType().equals(Response.PriceType.PER_DAY) ? " per day " : " per hour ";
@@ -428,8 +436,19 @@ public class ResponseService {
 
     }
 
-    private void openTransaction(String requestId, String responseId, String sellerId, String buyerId) {
+    private void openTransaction(Request request, Response response) {
+        String requestId = request.getId();
         BasicDBObject qry = new BasicDBObject("requestId", requestId);
+        String responseId = response.getId();
+        String sellerId = "";
+        String buyerId = "";
+        if (request.getType().equals(Request.Type.renting) || request.getType().equals(Request.Type.buying)) {
+            sellerId = response.getResponderId();
+            buyerId = request.getUser().getId();
+        } else {
+            sellerId = request.getUser().getId();
+            buyerId = response.getResponderId();
+        }
         qry.put("canceled", false);
         Transaction t = transactionCollection.findOne(qry);
         if (t != null) {

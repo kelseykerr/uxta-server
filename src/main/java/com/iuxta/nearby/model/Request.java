@@ -1,5 +1,6 @@
 package com.iuxta.nearby.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mongojack.ObjectId;
@@ -31,7 +32,7 @@ public class Request implements Serializable {
 
     private Category category;
 
-    @NotNull
+    @Deprecated
     private Boolean rental;
 
     private String description;
@@ -110,10 +111,12 @@ public class Request implements Serializable {
         this.category = category;
     }
 
+    @Deprecated
     public Boolean getRental() {
         return rental;
     }
 
+    @Deprecated
     public void setRental(Boolean rental) {
         this.rental = rental;
     }
@@ -179,5 +182,15 @@ public class Request implements Serializable {
 
     public void setDuplicate(Boolean duplicate) {
         this.duplicate = duplicate;
+    }
+
+    @JsonIgnore
+    public boolean isRental() {
+        return this.getType().equals(Type.renting) || this.getType().equals(Type.loaning);
+    }
+
+    @JsonIgnore
+    public boolean isInventoryListing() {
+        return this.getType().equals(Type.loaning) || this.getType().equals(Type.selling);
     }
 }
