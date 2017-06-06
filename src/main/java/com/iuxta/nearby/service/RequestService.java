@@ -66,6 +66,7 @@ public class RequestService {
         populateRequest(request, dto);
         request.setStatus(Request.Status.OPEN);
         request.setInappropriate(false);
+        request.setPhotos(dto.photos);
         return request;
     }
 
@@ -123,6 +124,7 @@ public class RequestService {
         }
         request.setRental(dto.rental);
         request.setDescription(dto.description);
+        request.setPhotos(dto.photos);
         GeoJsonPoint loc = new GeoJsonPoint(dto.longitude, dto.latitude);
         request.setLocation(loc);
     }

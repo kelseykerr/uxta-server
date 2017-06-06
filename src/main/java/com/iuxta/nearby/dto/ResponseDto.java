@@ -86,6 +86,8 @@ public class ResponseDto {
 
     public Boolean isOfferToBuyOrRent;
 
+    public List<String> photos;
+
     public ResponseDto() {
 
     }
@@ -111,6 +113,7 @@ public class ResponseDto {
         this.description = r.getDescription();
         this.inappropriate = r.getInappropriate();
         this.isOfferToBuyOrRent = r.getIsOfferToBuyOrRent();
+        this.photos = r.getPhotos();
     }
 
     public static List<ResponseDto> transform(List<Response> responses) {

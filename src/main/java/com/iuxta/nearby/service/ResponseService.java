@@ -174,6 +174,7 @@ public class ResponseService {
         response.setReturnTime(dto.returnTime);
         response.setDescription(dto.description);
         response.setMessagesEnabled(dto.messagesEnabled);
+        response.setPhotos(dto.photos);
         try {
             Response.PriceType priceType = Response.PriceType.valueOf(dto.priceType.toUpperCase());
             response.setPriceType(priceType);

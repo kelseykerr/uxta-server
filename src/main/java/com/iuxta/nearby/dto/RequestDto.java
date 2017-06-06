@@ -48,6 +48,8 @@ public class RequestDto {
 
     public Boolean duplicate;
 
+    public List<String> photos;
+
     public RequestDto() {
 
     }
@@ -75,6 +77,7 @@ public class RequestDto {
         this.inappropriate = request.getInappropriate() != null ? request.getInappropriate() : false;
         this.type = request.getType() != null ? request.getType().toString() : "renting";
         this.duplicate = request.getDuplicate();
+        this.photos = request.getPhotos();
     }
 
     public static List<RequestDto> transform(List<Request> requests) {

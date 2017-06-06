@@ -8,6 +8,7 @@ import org.mongojack.ObjectId;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by kerrk on 7/26/16.
@@ -46,6 +47,8 @@ public class Request implements Serializable {
     private Boolean inappropriate = false;
 
     private Boolean duplicate = false;
+
+    private List<String> photos;
 
     public Request() {
 
@@ -192,5 +195,13 @@ public class Request implements Serializable {
     @JsonIgnore
     public boolean isInventoryListing() {
         return this.getType().equals(Type.loaning) || this.getType().equals(Type.selling);
+    }
+
+    public List<String> getPhotos() {
+        return photos;
+    }
+
+    public void setPhotos(List<String> photos) {
+        this.photos = photos;
     }
 }

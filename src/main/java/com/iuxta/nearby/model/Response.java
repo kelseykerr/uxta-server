@@ -82,6 +82,8 @@ public class Response implements Serializable {
 
     private Boolean inappropriate = false;
 
+    private List<String> photos;
+
     public String getDescription() {
         return description;
     }
@@ -283,5 +285,13 @@ public class Response implements Serializable {
 
     public void setIsOfferToBuyOrRent(Boolean offerToBuyOrRent) {
         isOfferToBuyOrRent = offerToBuyOrRent;
+    }
+
+    public List<String> getPhotos() {
+        return photos;
+    }
+
+    public void setPhotos(List<String> photos) {
+        this.photos = photos;
     }
 }
