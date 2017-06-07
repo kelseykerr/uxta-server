@@ -101,7 +101,7 @@ public class TransactionService {
         if (normalizeCode(transaction.getExchangeCode()).equals(normalizeCode(code))) {
             if (transaction.getExchangeCodeExpireDate().after(new Date())) {
                 User seller = userCollection.findOneById(response.getResponderId());
-                if (!request.getRental()) {
+                if (!request.isRental()) {
                     calculatePrice(transaction, response, request, seller);
                 }
                 transaction.setExchanged(true);
@@ -153,7 +153,7 @@ public class TransactionService {
             return generateExchangeCode(transaction);
             // if the user is the buyer, generate the return code
         } else if (request.getUser().getId().equals(userId)) {
-            return generateReturnCode(transaction, request.getRental());
+            return generateReturnCode(transaction, request.isRental());
         } else {
             LOGGER.error("user [" + userId + "] attempted to get access code for transaction [" +
                     transaction.getId() + "].");
