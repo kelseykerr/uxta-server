@@ -150,10 +150,18 @@ public class TransactionService {
     public String generateCode(Transaction transaction, Request request, Response response, String userId) {
         // if the user is the seller, generate the initial exchange code
         if (response.getResponderId().equals(userId)) {
-            return generateExchangeCode(transaction);
+            if (request.isInventoryListing()) {
+                return generateReturnCode(transaction, request.isRental());
+            } else {
+                return generateExchangeCode(transaction);
+            }
             // if the user is the buyer, generate the return code
         } else if (request.getUser().getId().equals(userId)) {
-            return generateReturnCode(transaction, request.isRental());
+            if (request.isInventoryListing()) {
+                return generateExchangeCode(transaction);
+            } else {
+                return generateReturnCode(transaction, request.isRental());
+            }
         } else {
             LOGGER.error("user [" + userId + "] attempted to get access code for transaction [" +
                     transaction.getId() + "].");
