@@ -340,11 +340,20 @@ public class TransactionsResource {
             request.setStatus(Request.Status.FULFILLED);
         }
         requestCollection.save(request);
-        stripeService.doPayment(request.getUser(), principal, transaction);
+        User responder = userCollection.findOneById(response.getResponderId());
+        if (request.isInventoryListing()) {
+            stripeService.doPayment(responder, principal, transaction);
+        } else {
+            stripeService.doPayment(request.getUser(), principal, transaction);
+        }
         transactionCollection.save(transaction);
         request.setStatus(Request.Status.FULFILLED);
         requestCollection.save(request);
-        transactionService.sendTransactionFulfilledNotification(transaction, principal, request.getUser());
+        if (request.isInventoryListing()) {
+            transactionService.sendTransactionFulfilledNotification(transaction, principal, responder);
+        } else {
+            transactionService.sendTransactionFulfilledNotification(transaction, principal, request.getUser());
+        }
         return new TransactionDto(transaction, true);
     }
 

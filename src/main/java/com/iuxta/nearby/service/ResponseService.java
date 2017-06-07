@@ -234,16 +234,20 @@ public class ResponseService {
         if (request.getUser().getId().equals(userId)) {
             if (updated && request.isInventoryListing()) {
                 response.setBuyerStatus(Response.BuyerStatus.OPEN);
-            } else if (updated){
+            } else if (updated) {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
             if (request.isInventoryListing()) {
                 LOGGER.info("updating responder status");
-                dto.sellerStatus = "ACCEPTED";
+                if (!dto.sellerStatus.equalsIgnoreCase(Response.SellerStatus.WITHDRAWN.toString())) {
+                    dto.sellerStatus = "ACCEPTED";
+                }
                 updateSellerStatus(response, dto, request);
             } else {
                 LOGGER.info("updating buyer status");
-                dto.buyerStatus = "ACCEPTED";
+                if (!dto.buyerStatus.equalsIgnoreCase(Response.BuyerStatus.DECLINED.toString())) {
+                    dto.buyerStatus = "ACCEPTED";
+                }
                 updateBuyerStatus(response, dto, request, updated);
             }
         } else {
@@ -253,10 +257,13 @@ public class ResponseService {
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
             }
             if (request.isInventoryListing()) {
-                dto.buyerStatus = "ACCEPTED";
-                updateBuyerStatus(response, dto, request, updated);
+                if (!dto.buyerStatus.equalsIgnoreCase(Response.BuyerStatus.DECLINED.toString())) {
+                    dto.buyerStatus = "ACCEPTED";
+                }                updateBuyerStatus(response, dto, request, updated);
             } else {
-                dto.sellerStatus = "ACCEPTED";
+                if (!dto.sellerStatus.equalsIgnoreCase(Response.SellerStatus.WITHDRAWN.toString())) {
+                    dto.sellerStatus = "ACCEPTED";
+                }
                 updateSellerStatus(response, dto, request);
             }
         }
@@ -286,7 +293,11 @@ public class ResponseService {
             }
         }
         if (!sentUpdate && updated) {
-            sendUpdateToSeller(request, response, notification);
+            if (request.isInventoryListing()) {
+                sendUpdateToRequester(request, response, notification);
+            } else {
+                sendUpdateToResponder(request, response, notification);
+            }
         }
     }
 
@@ -299,30 +310,47 @@ public class ResponseService {
                     acceptResponse(response, request);
                 } else {
                     // send notification to buyer that the offer has been updated
-                    sendUpdateToBuyer(request, response, null);
+                    if (request.isInventoryListing()) {
+                        sendUpdateToResponder(request, response, null);
+                    } else {
+                        sendUpdateToRequester(request, response, null);
+                    }
                 }
             } else if (sellerStatus.equals(Response.SellerStatus.OFFERED.toString().toLowerCase())) {
                 //Not sure what scenario this would be
                 response.setSellerStatus(Response.SellerStatus.OFFERED);
                 // send notification to buyer that the offer has been updated
-                sendUpdateToBuyer(request, response, null);
+                if (request.isInventoryListing()) {
+                    sendUpdateToResponder(request, response, null);
+                } else {
+                    sendUpdateToRequester(request, response, null);
+                }
             } else if (sellerStatus.equals(Response.SellerStatus.WITHDRAWN.toString().toLowerCase())) {
                 response.setSellerStatus(Response.SellerStatus.WITHDRAWN);
                 response.setResponseStatus(Response.Status.CLOSED);
-                String msg = request.getUser().getFirstName() + " withdrew their offer for a " + request.getItemName();
-                sendUpdateToBuyer(request, response, msg);
+                if (request.isInventoryListing()) {
+                    String msg = request.getUser().getFirstName() + " declined your offer for a " + request.getItemName();
+                    sendUpdateToResponder(request, response, msg);
+                } else {
+                    String msg = request.getUser().getFirstName() + " withdrew their offer for a " + request.getItemName();
+                    sendUpdateToRequester(request, response, msg);
+                }
             } else {
                 String msg = "Unable to update status to [" + sellerStatus + "]. Options are WITHDRAWN, OFFERED, and ACCEPTED";
                 LOGGER.error(msg);
                 throw new IllegalArgumentException(msg);
             }
         } else {
-            sendUpdateToBuyer(request, response, null);
+            if (request.isInventoryListing()) {
+                sendUpdateToResponder(request, response, null);
+            } else {
+                sendUpdateToRequester(request, response, null);
+            }
         }
 
     }
 
-    public void sendUpdateToBuyer(Request request, Response response, String msg) {
+    public void sendUpdateToRequester(Request request, Response response, String msg) {
         try {
             JSONObject notification = new JSONObject();
             User seller = userCollection.findOneById(response.getResponderId());
@@ -344,7 +372,7 @@ public class ResponseService {
 
     }
 
-    public void sendUpdateToSeller(Request request, Response response, String msg) {
+    public void sendUpdateToResponder(Request request, Response response, String msg) {
         try {
             JSONObject notification = new JSONObject();
             notification.put("title", msg != null ? msg : request.getUser().getFirstName() + " made updates to the offer");
@@ -789,7 +817,7 @@ public class ResponseService {
         requestResponses.close();
         String title = "Offer Closed";
         String body = "Your offer to " + request.getUser().getFirstName() + " for a " + request.getItemName() +
-                " has been closed because the responder closed the request";
+                " has been closed because they closed the request";
         //TODO: think about doing this asynchronously
         responses.forEach(r -> {
             try {
