@@ -195,8 +195,10 @@ public class TransactionsResource {
         Transaction transaction = getTransaction(transactionId, principal.getUserId());
         Request request = getRequest(transaction.getRequestId(), transactionId);
         Response response = getResponse(transaction.getResponseId(), transactionId);
-        boolean isBuyer = request.getUser().getId().equals(principal.getId());
-        boolean isSeller = response.getResponderId().equals(principal.getId());
+        boolean isBuyer = (request.getUser().getId().equals(principal.getId()) && !request.isInventoryListing()) ||
+                (response.getResponderId().equals(principal.getId()) && request.isInventoryListing());
+        boolean isSeller = (request.getUser().getId().equals(principal.getId()) && request.isInventoryListing()) ||
+                (response.getResponderId().equals(principal.getId()) && !request.isInventoryListing());
         if (isSeller) {
             transactionService.enterReturnCode(transaction, response, request, code);
         } else if (isBuyer) {
