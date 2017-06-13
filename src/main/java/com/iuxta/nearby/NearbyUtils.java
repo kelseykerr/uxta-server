@@ -18,9 +18,9 @@ public class NearbyUtils {
     public static final Double MINIMUM_OFFER_PRICE = 0.5;
     public static final Currency USD = Currency.getInstance("USD");
     public static final RoundingMode DEFAULT_ROUNDING = RoundingMode.HALF_EVEN;
-    public static final int MAX_OPEN_REQUESTS = 5;
+    public static final int MAX_OPEN_REQUESTS = 10;
     public static final int MAX_OPEN_RESPONSES = 5;
-    public static final int DEFAULT_LIMIT = 15;
+    public static final int DEFAULT_LIMIT = 20;
     public static final int MAX_LIMIT = 20;
 
     //6 character string

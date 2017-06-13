@@ -784,7 +784,7 @@ public class ResponseService {
         String msg = "User [" + user.getFirstName() + ":" + user.getId() + "] has [" +
                 userResponses.size() + "] pending offers and [" + openTransactions + "] open transactions";
         int totalResponseAndTransactions = userRs.size() + openTransactions;
-        if (userRs.size() < NearbyUtils.MAX_OPEN_RESPONSES && (totalResponseAndTransactions < 10)) {
+        if (userRs.size() < NearbyUtils.MAX_OPEN_RESPONSES && (totalResponseAndTransactions < 20)) {
             LOGGER.info(msg);
             return true;
         } else {

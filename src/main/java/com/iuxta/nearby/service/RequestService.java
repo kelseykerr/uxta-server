@@ -86,7 +86,7 @@ public class RequestService {
         int totalOpen = openTs + userRs.size();
         String msg = "User [" + user.getFirstName() + ":" + user.getId() + "] has [" +
                 userRequests.size() + "] open requests and [" + openTs + "] open transactions.";
-        if (userRs.size() < NearbyUtils.MAX_OPEN_REQUESTS && (totalOpen < 10)) {
+        if (userRs.size() < NearbyUtils.MAX_OPEN_REQUESTS && (totalOpen < 20)) {
             LOGGER.info(msg);
             return true;
         } else {
@@ -153,6 +153,7 @@ public class RequestService {
             setNotBlockedQuery(query, user);
             setNotExpiredQuery(query);
             addNotMineQuery(query, user.getUserId());
+            setRequestingQuery(query);
             addLast15MinsQuery(query);
             setRequestingQuery(query);
             DBCursor userRequests = requestCollection.find(query);
@@ -176,6 +177,7 @@ public class RequestService {
             setNotBlockedQuery(query, user);
             setNotExpiredQuery(query);
             addNotMineQuery(query, user.getUserId());
+            setRequestingQuery(query);
             addLast15MinsQuery(query);
             DBCursor userRequests = requestCollection.find(query);
             List<Request> requestsNearHome = userRequests.toArray();
@@ -383,14 +385,6 @@ public class RequestService {
     }
 
     private BasicDBObject setRequestingQuery(BasicDBObject query) {
-        /*BasicDBList or = new BasicDBList();
-        BasicDBObject buying = new BasicDBObject();
-        buying.append("$eq", "buying");
-        or.put("type", buying);
-        BasicDBObject renting = new BasicDBObject();
-        renting.append("$eq", "renting");
-        or.put("type", renting);
-        query.put("$or", or);*/
         BasicDBObject inQuery = new BasicDBObject();
         List<String> types = Stream.of("buying", "renting").collect(Collectors.toList());
         inQuery.put("$in", types);
@@ -399,14 +393,6 @@ public class RequestService {
     }
 
     private BasicDBObject setOffersQuery(BasicDBObject query) {
-        /*BasicDBList or = new BasicDBList();
-        BasicDBObject selling = new BasicDBObject();
-        selling.append("$eq", "selling");
-        or.put("type", selling);
-        BasicDBObject loaning = new BasicDBObject();
-        loaning.append("$eq", "loaning");
-        or.put("type", loaning);
-        query.put("$or", or);*/
         BasicDBObject inQuery = new BasicDBObject();
         List<String> types = Stream.of("loaning", "selling").collect(Collectors.toList());
         inQuery.put("$in", types);
