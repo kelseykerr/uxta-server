@@ -17,7 +17,7 @@ public class FirebaseUtils {
 
     public enum NotificationTypes {
         request_notification, offer_closed, offer_accepted, response_update, exchange_confirmed,
-        cancelled_transaction, payment_confirmed, new_user_notification
+        cancelled_transaction, payment_confirmed, new_user_notification, new_post_notification
     }
 
     /**

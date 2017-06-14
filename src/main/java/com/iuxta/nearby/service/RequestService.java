@@ -10,6 +10,7 @@ import com.iuxta.nearby.firebase.FirebaseUtils;
 import com.iuxta.nearby.model.*;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.json.JSONObject;
@@ -413,5 +414,25 @@ public class RequestService {
         BasicDBObject notMineQuery = new BasicDBObject();
         notMineQuery.append("$ne", userId);
         query.put("user.userId", notMineQuery);
+    }
+
+    public void sendAdminsNewRequestNotification(Request r) {
+        try {
+            DBObject findAdmins = new BasicDBObject("admin", true);
+            DBCursor cursor = userCollection.find(findAdmins);
+            List<User> admins = cursor.toArray();
+            if (admins != null && admins.size() > 0) {
+                JSONObject notification = new JSONObject();
+                notification.put("title", "New Post!");
+                String body = "User [" + r.getUser().getName() + "] added a [" + r.getType().toString() + "] post for a [" + r.getItemName() + "]!";
+                notification.put("message", body);
+                notification.put("type", FirebaseUtils.NotificationTypes.new_post_notification.name());
+                for (User admin:admins) {
+                    FirebaseUtils.sendFcmMessage(admin, null, notification, ccsServer);
+                }        }
+        } catch (Exception e) {
+            //do nothing
+        }
+
     }
 }
