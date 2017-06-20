@@ -334,18 +334,18 @@ public class TransactionsResource {
         transaction.setFinalPrice(dto.priceOverride == null ? transaction.getCalculatedPrice() : dto.priceOverride);
         transaction.setSellerAccepted(true);
         transactionCollection.save(transaction);
+        User responder = userCollection.findOneById(response.getResponderId());
         if (transaction.getFinalPrice() > 0) {
             request.setStatus(Request.Status.PROCESSING_PAYMENT);
+            if (request.isInventoryListing()) {
+                stripeService.doPayment(responder, principal, transaction);
+            } else {
+                stripeService.doPayment(request.getUser(), principal, transaction);
+            }
         } else {
             request.setStatus(Request.Status.FULFILLED);
         }
         requestCollection.save(request);
-        User responder = userCollection.findOneById(response.getResponderId());
-        if (request.isInventoryListing()) {
-            stripeService.doPayment(responder, principal, transaction);
-        } else {
-            stripeService.doPayment(request.getUser(), principal, transaction);
-        }
         transactionCollection.save(transaction);
         request.setStatus(Request.Status.FULFILLED);
         requestCollection.save(request);
