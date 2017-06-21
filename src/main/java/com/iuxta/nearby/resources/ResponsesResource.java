@@ -145,9 +145,12 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotAllowedException(msg);
         }
-        if (principal.getStripeManagedAccountId() == null || !stripeService.canAcceptTransfers(principal)) {
+        if (!request.isInventoryListing() && (principal.getStripeManagedAccountId() == null || !stripeService.canAcceptTransfers(principal))) {
             LOGGER.error("User [" + principal.getId() + "] tried to create an offer without a valid bank account");
             throw new NotAllowedException("Cannot create offer because you do not have a valid bank account setup");
+        } else if (request.isInventoryListing() && !stripeService.hasCustomerAccount(principal)) {
+            LOGGER.error("User [" + principal.getId() + "] tried to create an inventory response without a valid payment info");
+            throw new NotAllowedException("Cannot create offer because you do not have not added valid payment info");
         }
         BasicDBObject query = new BasicDBObject();
         query.append("requestId", id);
