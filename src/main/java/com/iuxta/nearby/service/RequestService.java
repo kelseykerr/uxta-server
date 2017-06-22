@@ -38,6 +38,7 @@ public class RequestService {
     private CcsServer ccsServer;
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestService.class);
     static final long ONE_MINUTE_IN_MILLIS=60000;
+    public static final Double LOCATION_RADIUS = 25D;
     private ResponseService responseService;
 
     public RequestService() {
@@ -224,8 +225,8 @@ public class RequestService {
     }
 
     public void checkLocationIsAvailable(Double latitude, Double longitude) {
-        //must be within 15 miles
-        BasicDBObject query = getLocationQuery(latitude, longitude, 15D);
+        //must be within 25 miles
+        BasicDBObject query = getLocationQuery(latitude, longitude, LOCATION_RADIUS);
         DBCursor availableLocations = availableLocationsCollection.find(query);
         List<NearbyAvailableLocations> locations = availableLocations.toArray();
         availableLocations.close();
