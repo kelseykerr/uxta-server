@@ -50,6 +50,7 @@ public class StripeService {
     private JacksonDBCollection<User, String> userCollection;
     private static final Currency USD = Currency.getInstance("USD");
     private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.HALF_EVEN;
+    private static final Double DECIMAL_FEE = 0.14;
 
 
     public StripeService(String stripeSecretKey, String stripePublishableKey,
@@ -150,8 +151,8 @@ public class StripeService {
             BigDecimal price = new BigDecimal(transaction.getFinalPrice());
             price = price.setScale(2, RoundingMode.HALF_UP);
             Double finalPrice =  price.doubleValue();
-            // we take 5% + $0.30 - Stripe gets 3.5% +  $0.30
-            Double fee = (finalPrice * .07) + 0.30;
+            // we take 14% + $0.30 - Stripe gets 3.5% +  $0.30
+            Double fee = (finalPrice * DECIMAL_FEE) + 0.30;
             BigDecimal bdFee = new BigDecimal(fee);
             bdFee = bdFee.setScale(2, RoundingMode.HALF_UP);
             fee = bdFee.doubleValue();
