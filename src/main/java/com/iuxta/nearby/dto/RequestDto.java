@@ -80,8 +80,28 @@ public class RequestDto {
         this.photos = request.getPhotos();
     }
 
+    public static RequestDto PublicRequestDto(Request request) {
+        RequestDto requestDto = new RequestDto();
+        requestDto.itemName = request.getItemName();
+        if (request.getCategory() != null) {
+            requestDto.category = new CategoryDto(request.getCategory());
+        }
+        requestDto.description = request.getDescription();
+        if (request.getType() != null) {
+            requestDto.type = request.getType().toString();
+        }
+        requestDto.type = request.getType() != null ? request.getType().toString() : "renting";
+        requestDto.photos = request.getPhotos();
+        return requestDto;
+    }
+
     public static List<RequestDto> transform(List<Request> requests) {
         return requests.stream()
                 .map(r -> new RequestDto(r)).collect(Collectors.toList());
+    }
+
+    public static List<RequestDto> transformPublicResults(List<Request> requests) {
+        return requests.stream()
+                .map(r -> PublicRequestDto(r)).collect(Collectors.toList());
     }
 }

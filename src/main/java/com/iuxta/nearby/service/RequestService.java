@@ -2,7 +2,9 @@ package com.iuxta.nearby.service;
 
 import com.iuxta.nearby.NearbyUtils;
 import com.iuxta.nearby.dto.RequestDto;
+import com.iuxta.nearby.dto.UserDto;
 import com.iuxta.nearby.exception.BadRequestException;
+import com.iuxta.nearby.exception.InternalServerException;
 import com.iuxta.nearby.exception.LocationNotAvailableException;
 import com.iuxta.nearby.exception.NotFoundException;
 import com.iuxta.nearby.firebase.CcsServer;
@@ -18,7 +20,17 @@ import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -436,4 +448,67 @@ public class RequestService {
         }
 
     }
+
+    //TODO: add search term
+    public List<RequestDto> getPublicNearbyPosts(String zip, String searchTerm) {
+        GeoJsonPoint geoLoc = getLatLng(zip);
+        if (geoLoc == null) {
+            return null;
+        }
+        checkLocationIsAvailable(geoLoc.getCoordinates()[1], geoLoc.getCoordinates()[0]);
+        BasicDBObject query = getLocationQuery(geoLoc.getCoordinates()[1], geoLoc.getCoordinates()[0], 10D);
+        setAppropriateQuery(query);
+        query.put("duplicate", false);
+        setNotExpiredQuery(query);
+        setOffersQuery(query);
+        query.put("status", "OPEN");
+        DBCursor results  = requestCollection.find(query)
+                .sort(new BasicDBObject("postDate", -1));
+        List<Request> requests = results.toArray();
+        results.close();
+        return RequestDto.transformPublicResults(requests);
+    }
+
+    private GeoJsonPoint getLatLng(String zip) {
+        if (StringUtils.isBlank(zip)) {
+            return null;
+        }
+        try {
+            String api = "http://maps.googleapis.com/maps/api/geocode/xml?address=" + URLEncoder.encode(zip, "UTF-8") +
+                    "&sensor=true";
+            URL url = new URL(api);
+            HttpURLConnection httpConnection = (HttpURLConnection)url.openConnection();
+            httpConnection.connect();
+            int responseCode = httpConnection.getResponseCode();
+            if(responseCode == 200) {
+                DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                Document document = builder.parse(httpConnection.getInputStream());
+                XPathFactory xPathfactory = XPathFactory.newInstance();
+                XPath xpath = xPathfactory.newXPath();
+                XPathExpression expr = xpath.compile("/GeocodeResponse/status");
+                String status = (String)expr.evaluate(document, XPathConstants.STRING);
+                if(status.equals("OK")) {
+                    expr = xpath.compile("//geometry/location/lat");
+                    String latitude = (String)expr.evaluate(document, XPathConstants.STRING);
+                    Double lat = Double.parseDouble(latitude);
+                    expr = xpath.compile("//geometry/location/lng");
+                    String longitude = (String)expr.evaluate(document, XPathConstants.STRING);
+                    Double lng = Double.parseDouble(longitude);
+                    if (lat != null && lng != null) {
+                        return new GeoJsonPoint(lng, lat);
+                    } else {
+                        LOGGER.info("No geolocation found for zip [" + zip + "].");
+                    }
+                } else {
+                    throw new Exception("Error from the API - response status: " + status);
+                }
+            }
+            return null;
+        } catch (Exception e){
+            String msg = "Unable to calculate latitude and longitude from zip [" + zip + "].";
+            LOGGER.error(msg);
+            return null;
+        }
+    }
+
 }

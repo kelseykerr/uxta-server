@@ -120,6 +120,24 @@ public class RequestsResource {
         return RequestDto.transform(requests);
     }
 
+    @GET
+    @Path("/public")
+    @Produces(value = MediaType.APPLICATION_JSON)
+    @Timed
+    @ApiOperation(
+            value = "Search for public requests - available on our website",
+            notes = "Return requests that match query params (zip, search)"
+    )
+    public List<RequestDto> getPublicRequests(@QueryParam("searchTerm") String searchTerm,
+                                        @QueryParam("zip") String zip) {
+        if (zip == null) {
+            String msg = "zip code is required.";
+            LOGGER.error(msg);
+            throw new BadRequestException(msg);
+        }
+        return requestService.getPublicNearbyPosts(zip, searchTerm);
+    }
+
     public Double milesToMeters(Double radiusInMiles) {
         return radiusInMiles * 1609.344;
     }
