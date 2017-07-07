@@ -20,8 +20,13 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.federecio.dropwizard.swagger.SwaggerBundle;
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.mongojack.JacksonDBCollection;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
+import java.util.EnumSet;
 
 public class NearbyApplication extends Application<NearbyConfiguration> {
 
@@ -57,6 +62,17 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         environment.lifecycle().manage(mongoManaged);
         DB db = mongo.getDB(config.mongodb);
 
+        final FilterRegistration.Dynamic cors =
+                environment.servlets().addFilter("CORS", CrossOriginFilter.class);
+
+        // Configure CORS parameters
+        cors.setInitParameter("allowedOrigins", "*");
+        cors.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
+        cors.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
+
+        // Add URL mapping
+        cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+
         JacksonDBCollection<User, String> userCollection =
                 JacksonDBCollection.wrap(db.getCollection("user"), User.class, String.class);
 
@@ -87,6 +103,10 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         JacksonDBCollection<ResponseFlag, String> responseFlagCollection =
                 JacksonDBCollection.wrap(db.getCollection("responseFlag"), ResponseFlag.class, String.class);
 
+        JacksonDBCollection<SearchTerm, String> searchTermsCollection =
+                JacksonDBCollection.wrap(db.getCollection("searchTerms"), SearchTerm.class, String.class);
+
+
         // cloud connection server
         int fcmPort = Integer.parseInt(config.fcmPort);
         if (fcmPort != 5235 && fcmPort != 5236) {
@@ -104,7 +124,7 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         UserService userService = new UserService(stripeService, responseService, userCollection, userFlagCollection, ccsServer);
         RequestFlagService requestFlagService = new RequestFlagService(requestCollection, requestFlagCollection, userCollection, ccsServer);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
-        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, locationsCollection, unavailableSearchesCollection);
+        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, locationsCollection, unavailableSearchesCollection, searchTermsCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService, stripeService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection, stripeService));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,

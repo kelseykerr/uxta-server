@@ -166,6 +166,7 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
             }
             user.setAuthMethod(NearbyUtils.FB_AUTH_METHOD);
             userCollection.save(user);
+            LOGGER.info("authenticated user [" + (user.getEmail() != null ? user.getEmail() : user.getId()) + "]");
             return user;
         } catch (URISyntaxException e) {
             String message = "Could not construct uri, got error: " + e.getMessage();

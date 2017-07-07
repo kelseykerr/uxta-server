@@ -2,9 +2,7 @@ package com.iuxta.nearby.service;
 
 import com.iuxta.nearby.NearbyUtils;
 import com.iuxta.nearby.dto.RequestDto;
-import com.iuxta.nearby.dto.UserDto;
 import com.iuxta.nearby.exception.BadRequestException;
-import com.iuxta.nearby.exception.InternalServerException;
 import com.iuxta.nearby.exception.LocationNotAvailableException;
 import com.iuxta.nearby.exception.NotFoundException;
 import com.iuxta.nearby.firebase.CcsServer;
@@ -18,6 +16,7 @@ import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
+import org.mongojack.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -46,6 +45,7 @@ public class RequestService {
     private JacksonDBCollection<Request, String> requestCollection;
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<NearbyAvailableLocations, String> availableLocationsCollection;
+    private JacksonDBCollection<SearchTerm, String> searchTermsCollection;
     JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection;
     private CcsServer ccsServer;
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestService.class);
@@ -63,7 +63,8 @@ public class RequestService {
                           JacksonDBCollection<User, String> userCollection,
                           ResponseService responseService,
                           JacksonDBCollection<NearbyAvailableLocations, String> locationsCollection,
-                          JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection) {
+                          JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection,
+                          JacksonDBCollection<SearchTerm, String> searchTermsCollection) {
         this.categoriesCollection = categoriesCollection;
         this.requestCollection = requestsCollection;
         this.userCollection = userCollection;
@@ -71,6 +72,7 @@ public class RequestService {
         this.responseService = responseService;
         this.availableLocationsCollection = locationsCollection;
         this.unavailableSearchesCollection = unavailableSearchesCollection;
+        this.searchTermsCollection = searchTermsCollection;
     }
 
     public Request transformRequestDto(RequestDto dto, User user) {
@@ -251,8 +253,20 @@ public class RequestService {
         }
     }
 
+    private void logSearch(String searchTerm, Double latitude, Double longitude, User principal) {
+        SearchTerm term = new SearchTerm();
+        term.setTerm(searchTerm);
+        term.setLocation(new GeoJsonPoint(longitude, latitude));
+        term.setUserId(principal.getId());
+        term.setSearchDate(new Date(0));
+        searchTermsCollection.insert(term);
+    }
+
     public List<Request> findRequests(Integer offset, Integer limit, Double latitude, Double longitude, Double radius, Boolean expired,
                                       Boolean includeMine, String searchTerm, String sort, User principal, String type) {
+        if (searchTerm != null && !searchTerm.isEmpty()) {
+            logSearch(searchTerm, longitude, latitude, principal);
+        }
         checkLocationIsAvailable(latitude, longitude);
         BasicDBObject query = getLocationQuery(latitude, longitude, radius);
         offset = (offset != null ? offset : 0);
