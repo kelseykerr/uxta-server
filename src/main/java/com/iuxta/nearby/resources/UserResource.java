@@ -48,17 +48,16 @@ public class UserResource {
     private JacksonDBCollection<Request, String> requestCollection;
     private UserService userService;
     private ResponseService responseService;
-    private StripeService stripeService;
+    //private StripeService stripeService;
 
 
     public UserResource(JacksonDBCollection<User, String> userCollection,
                         JacksonDBCollection<Request, String> requestCollection, UserService userService,
-                        ResponseService responseService, StripeService stripeService) {
+                        ResponseService responseService) {
         this.userCollection = userCollection;
         this.requestCollection = requestCollection;
         this.userService = userService;
         this.responseService = responseService;
-        this.stripeService = stripeService;
     }
 
     @Context
@@ -88,8 +87,6 @@ public class UserResource {
             "current user's info") String id) {
         if (id.equals("me") || principal.getId().equals(id)) {
             UserDto userDto = UserDto.getMyUserDto(principal);
-            userDto.canRespond = principal.getStripeManagedAccountId() != null && stripeService.canAcceptTransfers(principal);
-            userDto.canRequest = principal.getStripeCustomerId() != null && stripeService.hasCustomerAccount(principal);
             return userDto;
         }
         User user = userCollection.findOneById(id);
@@ -171,8 +168,6 @@ public class UserResource {
         });
         userRequests.close();
         UserDto dto =  UserDto.getMyUserDto(updatedUser);
-        dto.canRespond = principal.getStripeManagedAccountId() != null && stripeService.canAcceptTransfers(principal);
-        dto.canRequest = principal.getStripeCustomerId() != null && stripeService.hasCustomerAccount(principal);
         return dto;
     }
 
@@ -277,7 +272,7 @@ public class UserResource {
         userCollection.save(principal);
     }
 
-    @GET
+    /*@GET
     @Produces(value = MediaType.APPLICATION_JSON)
     @Path("/{id}/payments")
     @Timed
@@ -305,7 +300,7 @@ public class UserResource {
             throw new UnauthorizedException(msg);
         }
         return userService.getUserPaymentInfo(principal);
-    }
+    }*/
 
     @POST
     @Produces(value = MediaType.APPLICATION_JSON)

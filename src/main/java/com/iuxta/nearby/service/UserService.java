@@ -1,13 +1,14 @@
 package com.iuxta.nearby.service;
 
-import com.iuxta.nearby.dto.PaymentDto;
 import com.iuxta.nearby.dto.UserDto;
 import com.iuxta.nearby.dto.UserFlagDto;
 import com.iuxta.nearby.exception.InternalServerException;
 import com.iuxta.nearby.exception.NotFoundException;
 import com.iuxta.nearby.firebase.CcsServer;
 import com.iuxta.nearby.firebase.FirebaseUtils;
-import com.iuxta.nearby.model.*;
+import com.iuxta.nearby.model.GeoJsonPoint;
+import com.iuxta.nearby.model.User;
+import com.iuxta.nearby.model.UserFlag;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.apache.commons.lang3.StringUtils;
@@ -39,18 +40,16 @@ public class UserService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
-    private StripeService stripeService;
+    //private StripeService stripeService;
     private ResponseService responseService;
     private JacksonDBCollection<User, String> userCollection;
     private JacksonDBCollection<UserFlag, String> userFlagCollection;
     private CcsServer ccsServer;
 
-    public UserService(StripeService stripeService,
-                       ResponseService responseService,
+    public UserService(ResponseService responseService,
                        JacksonDBCollection<User, String> userCollection,
                        JacksonDBCollection<UserFlag, String> userFlagCollection,
                        CcsServer ccsServer) {
-        this.stripeService = stripeService;
         this.userCollection = userCollection;
         this.userFlagCollection = userFlagCollection;
         this.ccsServer = ccsServer;
@@ -74,23 +73,13 @@ public class UserService {
         }
         user.setNewRequestNotificationsEnabled(dto.newRequestNotificationsEnabled);
         user.setNotificationRadius(dto.notificationRadius);
-        user.setCurrentLocationNotifications(dto.currentLocationNotifications);
-        user.setHomeLocationNotifications(dto.homeLocationNotifications);
         user.setNotificationKeywords(dto.notificationKeywords);
-        user.setDateOfBirth(dto.dateOfBirth);
         if (dto.tosAccepted == true && (user.getTosAccepted() == null || user.getTosAccepted() == false)) {
             user.setTosAccepted(dto.tosAccepted);
             user.setTimeTosAccepted(new Date());
             user.setTosAcceptIp(dto.tosAcceptIp);
         }
         user.setPictureUrl(dto.pictureUrl);
-        if (StringUtils.isNotBlank(user.getStripeManagedAccountId())) {
-            try {
-                stripeService.updateStripeManagedAccount(user, dto);
-            } catch (Exception e){
-                LOGGER.error("Error when attempting to update Stripe managed account from PUT /users/me: " + e.getMessage());
-            }
-        }
         return user;
     }
 
@@ -154,9 +143,9 @@ public class UserService {
         }
     }
 
-    public PaymentDto getUserPaymentInfo(User user) {
+    /*public PaymentDto getUserPaymentInfo(User user) {
         return stripeService.getPaymentDetails(user);
-    }
+    }*/
 
     public UserFlag blockUser(User user, UserFlagDto dto, String flaggedUser) {
         User blockedUser = userCollection.findOneById(flaggedUser);

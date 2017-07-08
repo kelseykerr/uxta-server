@@ -2,10 +2,7 @@ package com.iuxta.nearby.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.iuxta.nearby.dto.RequestDto;
-import com.iuxta.nearby.exception.BadRequestException;
-import com.iuxta.nearby.exception.NotAllowedException;
-import com.iuxta.nearby.exception.NotFoundException;
-import com.iuxta.nearby.exception.UnauthorizedException;
+import com.iuxta.nearby.exception.*;
 import com.iuxta.nearby.model.Request;
 import com.iuxta.nearby.model.User;
 import com.iuxta.nearby.service.RequestService;
@@ -49,7 +46,6 @@ public class RequestsResource {
     private JacksonDBCollection<Response, String> responseCollection;
     private RequestService requestService;
     private ResponseService responseService;
-    private StripeService stripeService;
 
     public RequestsResource(JacksonDBCollection<Request, String> requestCollection,
                             RequestService requestService,
@@ -59,7 +55,6 @@ public class RequestsResource {
         this.requestService = requestService;
         this.responseCollection = responseCollection;
         this.responseService = responseService;
-        this.stripeService = stripeService;
     }
 
     @GET
@@ -80,7 +75,7 @@ public class RequestsResource {
         if (principal.getNewRequestNotificationsEnabled() == null || !principal.getNewRequestNotificationsEnabled()) {
             return;
         }
-        requestService.sendRecentRequestsNotification(principal, longitude, latitude);
+        requestService.sendRecentRequestsNotification(principal);
     }
 
 
@@ -115,32 +110,11 @@ public class RequestsResource {
             LOGGER.error(msg);
             throw new BadRequestException(msg);
         }
-        List<Request> requests = requestService.findRequests(offset, limit, latitude, longitude, radius, expired, includeMine,
+        List<Request> requests = requestService.findRequests(offset, limit, expired, includeMine,
                 searchTerm, sort, principal, type);
         return RequestDto.transform(requests);
     }
 
-    @GET
-    @Path("/public")
-    @Produces(value = MediaType.APPLICATION_JSON)
-    @Timed
-    @ApiOperation(
-            value = "Search for public requests - available on our website",
-            notes = "Return requests that match query params (zip, search)"
-    )
-    public List<RequestDto> getPublicRequests(@QueryParam("searchTerm") String searchTerm,
-                                        @QueryParam("zip") String zip) {
-        if (zip == null) {
-            String msg = "zip code is required.";
-            LOGGER.error(msg);
-            throw new BadRequestException(msg);
-        }
-        return requestService.getPublicNearbyPosts(zip, searchTerm);
-    }
-
-    public Double milesToMeters(Double radiusInMiles) {
-        return radiusInMiles * 1609.344;
-    }
 
 
     @POST
@@ -156,12 +130,10 @@ public class RequestsResource {
                     dataType = "string",
                     paramType = "header")})
     public RequestDto createRequest(@Auth @ApiParam(hidden = true) User principal, @Valid RequestDto dto) {
-        if (dto.latitude != null && dto.longitude != null) {
-            requestService.checkLocationIsAvailable(dto.latitude, dto.longitude);
-        }
-        if (!stripeService.hasCustomerAccount(principal)) {
-            LOGGER.error("User [" + principal.getId() + "] tried to make a request without adding a valid payment method");
-            throw new NotAllowedException("Cannot create request because you have not added a valid payment method to your account");
+        if (principal.getCommunityId() == null || principal.getCommunityId().isEmpty()) {
+            String msg = "You must belong to a community to view posts from other users.";
+            LOGGER.error("[" + principal.getId() + " - " + principal.getName() + "] " + msg);
+            throw new NoCommunityException(msg);
         }
         if (!requestService.canCreateRequest(principal)) {
             throw new NotAllowedException("You have exceeded the maximum number of open requests.");

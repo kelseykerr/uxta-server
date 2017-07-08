@@ -31,7 +31,7 @@ public class StripeResource {
         this.stripeService = stripeService;
     }
 
-    @POST
+    /*@POST
     @Path("/webhooks")
     @Consumes(value = MediaType.APPLICATION_FORM_URLENCODED)
     @Timed
@@ -79,6 +79,6 @@ public class StripeResource {
         userDto.canRespond = stripeService.canAcceptTransfers(principal);
         userDto.canRequest = stripeService.hasCustomerAccount(principal);
         return userDto;
-    }
+    }*/
 
 }

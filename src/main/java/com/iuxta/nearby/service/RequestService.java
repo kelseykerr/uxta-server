@@ -3,7 +3,7 @@ package com.iuxta.nearby.service;
 import com.iuxta.nearby.NearbyUtils;
 import com.iuxta.nearby.dto.RequestDto;
 import com.iuxta.nearby.exception.BadRequestException;
-import com.iuxta.nearby.exception.LocationNotAvailableException;
+import com.iuxta.nearby.exception.NoCommunityException;
 import com.iuxta.nearby.exception.NotFoundException;
 import com.iuxta.nearby.firebase.CcsServer;
 import com.iuxta.nearby.firebase.FirebaseUtils;
@@ -16,20 +16,9 @@ import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
-import org.mongojack.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathFactory;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -44,13 +33,11 @@ public class RequestService {
     private JacksonDBCollection<Category, String> categoriesCollection;
     private JacksonDBCollection<Request, String> requestCollection;
     private JacksonDBCollection<User, String> userCollection;
-    private JacksonDBCollection<NearbyAvailableLocations, String> availableLocationsCollection;
     private JacksonDBCollection<SearchTerm, String> searchTermsCollection;
-    JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection;
     private CcsServer ccsServer;
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestService.class);
+    private JacksonDBCollection<Community, String> communitiesCollection;
     static final long ONE_MINUTE_IN_MILLIS=60000;
-    public static final Double LOCATION_RADIUS = 25D;
     private ResponseService responseService;
 
     public RequestService() {
@@ -62,17 +49,15 @@ public class RequestService {
                           CcsServer ccsServer,
                           JacksonDBCollection<User, String> userCollection,
                           ResponseService responseService,
-                          JacksonDBCollection<NearbyAvailableLocations, String> locationsCollection,
-                          JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection,
-                          JacksonDBCollection<SearchTerm, String> searchTermsCollection) {
+                          JacksonDBCollection<SearchTerm, String> searchTermsCollection,
+                          JacksonDBCollection<Community, String> communitiesCollection) {
         this.categoriesCollection = categoriesCollection;
         this.requestCollection = requestsCollection;
         this.userCollection = userCollection;
         this.ccsServer = ccsServer;
         this.responseService = responseService;
-        this.availableLocationsCollection = locationsCollection;
-        this.unavailableSearchesCollection = unavailableSearchesCollection;
         this.searchTermsCollection = searchTermsCollection;
+        this.communitiesCollection = communitiesCollection;
     }
 
     public Request transformRequestDto(RequestDto dto, User user) {
@@ -80,6 +65,7 @@ public class RequestService {
         request.setUser(user);
         request.setPostDate(dto.postDate != null ? dto.postDate : new Date());
         populateRequest(request, dto);
+        request.setCommunityId(user.getCommunityId());
         request.setStatus(Request.Status.OPEN);
         request.setInappropriate(false);
         request.setPhotos(dto.photos);
@@ -138,57 +124,22 @@ public class RequestService {
                 throw new NotFoundException("Could not create request because type [" + dto.type + "] is not recognized");
             }
         }
-        request.setRental(dto.rental);
         request.setDescription(dto.description);
         request.setPhotos(dto.photos);
-        GeoJsonPoint loc = new GeoJsonPoint(dto.longitude, dto.latitude);
-        request.setLocation(loc);
     }
 
-    public Double milesToMeters(Double radiusInMiles) {
-        return radiusInMiles * 1609.344;
-    }
-
-    public void sendRecentRequestsNotification(User user, Double longitude, Double latitude) {
+    public void sendRecentRequestsNotification(User user) {
+        if (user.getCommunityId() == null || user.getCommunityId().isEmpty()) {
+            return;
+        }
         LOGGER.info("Fetching recent requests for user [" + user.getId() + "]");
         JSONObject notification = new JSONObject();
         notification.put("title", "Recent Requests");
         notification.put("type", FirebaseUtils.NotificationTypes.request_notification.name());
         String body = "";
-        boolean singleNearbyRequest = false;
-        boolean multipleNearbyRequests = false;
         boolean newRequests = false;
-        if (user.getCurrentLocationNotifications()) {
-            if (longitude == null || latitude == null) {
-                String msg = "query parameters [radius], [longitude] and [latitude] are required.";
-                LOGGER.error(msg);
-                throw new BadRequestException(msg);
-            }
-            BasicDBObject query = getLocationQuery(latitude, longitude, user.getNotificationRadius());
-            setAppropriateQuery(query);
-            setNotBlockedQuery(query, user);
-            setNotExpiredQuery(query);
-            addNotMineQuery(query, user.getUserId());
-            setRequestingQuery(query);
-            addLast15MinsQuery(query);
-            setRequestingQuery(query);
-            DBCursor userRequests = requestCollection.find(query);
-            List<Request> requestsNearby = userRequests.toArray();
-            if (requestsNearby.size() > 1) {
-                body += "There are " + requestsNearby.size() + " new requests in your area";
-                multipleNearbyRequests = true;
-                newRequests = true;
-            } else if (requestsNearby.size() == 1) {
-                Request req = requestsNearby.get(0);
-                body += req.getUser().getFirstName() + " requested a " + req.getItemName() + ". Can you help out?";
-                singleNearbyRequest = true;
-                newRequests = true;
-            }
-            userRequests.close();
-        }
-        if (user.getHomeLocationNotifications()) {
-            BasicDBObject query = getLocationQuery(user.getHomeLocation().getCoordinates()[1],
-                    user.getHomeLocation().getCoordinates()[0], user.getNotificationRadius());
+        if (user.getNewRequestNotificationsEnabled()) {
+            BasicDBObject query = getCommunityQuery(user.getCommunityId());
             setAppropriateQuery(query);
             setNotBlockedQuery(query, user);
             setNotExpiredQuery(query);
@@ -199,14 +150,11 @@ public class RequestService {
             List<Request> requestsNearHome = userRequests.toArray();
             Integer size = requestsNearHome.size();
             if (size > 1) {
-                body += singleNearbyRequest ?
-                        ("There are also " + size + " new requests near your home.") :
-                        multipleNearbyRequests ? ( " and " + size + " new requests near your home!") :
-                                ("There are " + size + " new requests near your home");
+                body  = "There are " + size + " new requests in your community.";
                 newRequests = true;
             } else if (requestsNearHome.size() == 1) {
                 Request req = requestsNearHome.get(0);
-                body += (multipleNearbyRequests ? ". " : " ") +  req.getUser().getFirstName() + " requested a " +
+                body = req.getUser().getFirstName() + " requested a " +
                         req.getItemName() + ". Can you help out?";
                 newRequests = true;
             }
@@ -220,55 +168,32 @@ public class RequestService {
 
     }
 
-    private BasicDBObject getLocationQuery(Double latitude, Double longitude, Double radius) {
-        BasicDBObject geometry = new BasicDBObject();
-        geometry.append("type", "Point");
-        double[] coords = {longitude, latitude};
-        geometry.append("coordinates", coords);
-
-        BasicDBObject near = new BasicDBObject();
-        near.append("$geometry", geometry);
-        near.append("$maxDistance", milesToMeters(radius));
-
-        BasicDBObject location = new BasicDBObject();
-        location.append("$near", near);
-
-        BasicDBObject query = new BasicDBObject();
-        query.append("location", location);
-        return query;
+    private BasicDBObject getCommunityQuery(String communityId) {
+        BasicDBObject communityQuery = new BasicDBObject();
+        communityQuery.put("communityId", communityId);
+        return communityQuery;
     }
 
-    public void checkLocationIsAvailable(Double latitude, Double longitude) {
-        //must be within 25 miles
-        BasicDBObject query = getLocationQuery(latitude, longitude, LOCATION_RADIUS);
-        DBCursor availableLocations = availableLocationsCollection.find(query);
-        List<NearbyAvailableLocations> locations = availableLocations.toArray();
-        availableLocations.close();
-        if (locations.size() == 0) {
-            UnavailableSearches search = new UnavailableSearches();
-            GeoJsonPoint loc = new GeoJsonPoint(longitude, latitude);
-            search.setLocation(loc);
-            unavailableSearchesCollection.insert(search);
-            throw new LocationNotAvailableException("Nearby is not available in this location yet");
-        }
-    }
-
-    private void logSearch(String searchTerm, Double latitude, Double longitude, User principal) {
+    private void logSearch(String searchTerm, User principal) {
         SearchTerm term = new SearchTerm();
         term.setTerm(searchTerm);
-        term.setLocation(new GeoJsonPoint(longitude, latitude));
+        term.setCommunityId(principal.getCommunityId());
         term.setUserId(principal.getId());
         term.setSearchDate(new Date(0));
         searchTermsCollection.insert(term);
     }
 
-    public List<Request> findRequests(Integer offset, Integer limit, Double latitude, Double longitude, Double radius, Boolean expired,
+    public List<Request> findRequests(Integer offset, Integer limit, Boolean expired,
                                       Boolean includeMine, String searchTerm, String sort, User principal, String type) {
         if (searchTerm != null && !searchTerm.isEmpty()) {
-            logSearch(searchTerm, longitude, latitude, principal);
+            logSearch(searchTerm, principal);
         }
-        checkLocationIsAvailable(latitude, longitude);
-        BasicDBObject query = getLocationQuery(latitude, longitude, radius);
+        if (principal.getCommunityId() == null || principal.getCommunityId().isEmpty()) {
+            String msg = "You must belong to a community to view posts from other users.";
+            LOGGER.error("[" + principal.getId() + " - " + principal.getName() + "] " + msg);
+            throw new NoCommunityException(msg);
+        }
+        BasicDBObject query = getCommunityQuery(principal.getCommunityId());
         offset = (offset != null ? offset : 0);
         limit = (limit == null || limit > NearbyUtils.MAX_LIMIT) ? NearbyUtils.DEFAULT_LIMIT : limit;
         setAppropriateQuery(query);
@@ -335,18 +260,6 @@ public class RequestService {
                         .sort(new BasicDBObject("postDate", -1))
                         .skip(offset)
                         .limit(limit);
-            } else if (sort != null && sort.equals("distance")) {
-                // get those that match search in any order
-                userRequests = requestCollection.find(query);
-                requests = userRequests.toArray();
-                userRequests.close();
-                ids = requests.stream().map(r -> new ObjectId(r.getId())).collect(Collectors.toList());
-                //redo location query on the matching results, this will automatically be ordered by closest distance
-                query = getLocationQuery(latitude, longitude, radius);
-                inQuery = new BasicDBObject();
-                inQuery.put("$in", ids);
-                query.put("_id", inQuery);
-                userRequests = requestCollection.find(query).skip(offset).limit(limit);
             } else {
                 BasicDBObject scoreProjection = new BasicDBObject();
                 scoreProjection.append("$meta", "textScore");
@@ -461,68 +374,6 @@ public class RequestService {
             //do nothing
         }
 
-    }
-
-    //TODO: add search term
-    public List<RequestDto> getPublicNearbyPosts(String zip, String searchTerm) {
-        GeoJsonPoint geoLoc = getLatLng(zip);
-        if (geoLoc == null) {
-            return null;
-        }
-        checkLocationIsAvailable(geoLoc.getCoordinates()[1], geoLoc.getCoordinates()[0]);
-        BasicDBObject query = getLocationQuery(geoLoc.getCoordinates()[1], geoLoc.getCoordinates()[0], 10D);
-        setAppropriateQuery(query);
-        query.put("duplicate", false);
-        setNotExpiredQuery(query);
-        setOffersQuery(query);
-        query.put("status", "OPEN");
-        DBCursor results  = requestCollection.find(query)
-                .sort(new BasicDBObject("postDate", -1));
-        List<Request> requests = results.toArray();
-        results.close();
-        return RequestDto.transformPublicResults(requests);
-    }
-
-    private GeoJsonPoint getLatLng(String zip) {
-        if (StringUtils.isBlank(zip)) {
-            return null;
-        }
-        try {
-            String api = "http://maps.googleapis.com/maps/api/geocode/xml?address=" + URLEncoder.encode(zip, "UTF-8") +
-                    "&sensor=true";
-            URL url = new URL(api);
-            HttpURLConnection httpConnection = (HttpURLConnection)url.openConnection();
-            httpConnection.connect();
-            int responseCode = httpConnection.getResponseCode();
-            if(responseCode == 200) {
-                DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-                Document document = builder.parse(httpConnection.getInputStream());
-                XPathFactory xPathfactory = XPathFactory.newInstance();
-                XPath xpath = xPathfactory.newXPath();
-                XPathExpression expr = xpath.compile("/GeocodeResponse/status");
-                String status = (String)expr.evaluate(document, XPathConstants.STRING);
-                if(status.equals("OK")) {
-                    expr = xpath.compile("//geometry/location/lat");
-                    String latitude = (String)expr.evaluate(document, XPathConstants.STRING);
-                    Double lat = Double.parseDouble(latitude);
-                    expr = xpath.compile("//geometry/location/lng");
-                    String longitude = (String)expr.evaluate(document, XPathConstants.STRING);
-                    Double lng = Double.parseDouble(longitude);
-                    if (lat != null && lng != null) {
-                        return new GeoJsonPoint(lng, lat);
-                    } else {
-                        LOGGER.info("No geolocation found for zip [" + zip + "].");
-                    }
-                } else {
-                    throw new Exception("Error from the API - response status: " + status);
-                }
-            }
-            return null;
-        } catch (Exception e){
-            String msg = "Unable to calculate latitude and longitude from zip [" + zip + "].";
-            LOGGER.error(msg);
-            return null;
-        }
     }
 
 }

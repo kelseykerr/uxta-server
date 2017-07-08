@@ -8,7 +8,6 @@ import com.iuxta.nearby.firebase.CcsServer;
 import com.iuxta.nearby.model.Transaction;
 import com.iuxta.nearby.model.User;
 import com.iuxta.nearby.exception.InternalServerException;
-import com.stripe.Stripe;
 import com.stripe.exception.APIConnectionException;
 import com.stripe.exception.AuthenticationException;
 import com.stripe.exception.CardException;

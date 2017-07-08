@@ -49,21 +49,19 @@ public class TransactionsResource {
     private JacksonDBCollection<Transaction, String> transactionCollection;
     private TransactionService transactionService;
     private CcsServer ccsServer;
-    private StripeService stripeService;
 
 
     public TransactionsResource(JacksonDBCollection<Request, String> requestCollection,
                                 JacksonDBCollection<Response, String> responseCollection,
                                 JacksonDBCollection<User, String> userCollection,
                                 JacksonDBCollection<Transaction, String> transactionCollection,
-                                CcsServer ccsServer, StripeService stripeService) {
+                                CcsServer ccsServer) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.userCollection = userCollection;
         this.transactionCollection = transactionCollection;
         this.transactionService = new TransactionService(transactionCollection, userCollection, ccsServer, requestCollection);
         this.ccsServer = ccsServer;
-        this.stripeService = stripeService;
     }
 
     @GET
@@ -287,74 +285,6 @@ public class TransactionsResource {
         }
         transactionService.respondToExchangeOverride(transaction, dto, response, isSeller, request.isRental(), principal, request);
         return new TransactionDto(transaction, isSeller);
-    }
-
-    @PUT
-    @Timed
-    @Path("/price")
-    @Consumes(value = MediaType.APPLICATION_JSON)
-    @Produces(value = MediaType.APPLICATION_JSON)
-    @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
-            value = "the authentication token received from facebook",
-            dataType = "string",
-            paramType = "header"),
-            @ApiImplicitParam(name = "x-auth-method",
-                    value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
-                    dataType = "string",
-                    paramType = "header")})
-    @ApiOperation(
-            value = "Confirm or update the final price that will be charged to the buyer",
-            notes = "If the responder accepts the calculated price, simply leave the priceOverride field in the dto empty, " +
-                    "otherwise the responder can DECREASE the price in the priceOverride field. The user CANNOT increase " +
-                    "the price. The only field considered in the dto here is the priceOverride field, all others can be empty"
-    )
-    public TransactionDto verifyPrice(@Auth @ApiParam(hidden = true) User principal,
-                                      @PathParam("transactionId") String transactionId,
-                                      @Valid TransactionDto dto) {
-        Transaction transaction = getTransaction(transactionId, principal.getUserId());
-        Request request = getRequest(transaction.getRequestId(), transactionId);
-        Response response = getResponse(transaction.getResponseId(), transactionId);
-        boolean isSeller = (!request.isInventoryListing() && response.getResponderId().equals(principal.getId())) ||
-                (request.isInventoryListing() && request.getUser().getId().equals(principal.getId()));
-        if (!isSeller) {
-            LOGGER.error("User [" + principal.getId() + "] attempted to verify price for" +
-                    " transaction [" + transactionId + "]");
-            throw new NotAuthorizedException("You do not have access to verify the price for this transaction!");
-        }
-        if (transaction.getSellerAccepted() != null && transaction.getSellerAccepted()) {
-            LOGGER.error("Seller [" + principal.getId() + "] attempted to verify price again for transaction ["
-                    + transactionId + "]");
-            throw new IllegalArgumentException("You already confirmed the price for this transaction!");
-        }
-        if (dto.priceOverride != null && dto.priceOverride.compareTo(transaction.getCalculatedPrice()) > 0) {
-            LOGGER.error("Seller tried to increase total price for transaction [" + transactionId + "]");
-            throw new IllegalArgumentException("You cannot increase the price!");
-
-        }
-        transaction.setFinalPrice(dto.priceOverride == null ? transaction.getCalculatedPrice() : dto.priceOverride);
-        transaction.setSellerAccepted(true);
-        transactionCollection.save(transaction);
-        User responder = userCollection.findOneById(response.getResponderId());
-        if (transaction.getFinalPrice() > 0) {
-            request.setStatus(Request.Status.PROCESSING_PAYMENT);
-            if (request.isInventoryListing()) {
-                stripeService.doPayment(responder, principal, transaction);
-            } else {
-                stripeService.doPayment(request.getUser(), principal, transaction);
-            }
-        } else {
-            request.setStatus(Request.Status.FULFILLED);
-        }
-        requestCollection.save(request);
-        transactionCollection.save(transaction);
-        request.setStatus(Request.Status.FULFILLED);
-        requestCollection.save(request);
-        if (request.isInventoryListing()) {
-            transactionService.sendTransactionFulfilledNotification(transaction, principal, responder);
-        } else {
-            transactionService.sendTransactionFulfilledNotification(transaction, principal, request.getUser());
-        }
-        return new TransactionDto(transaction, true);
     }
 
 

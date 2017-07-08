@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.iuxta.nearby.dto.ResponseDto;
 import com.iuxta.nearby.dto.ResponseFlagDto;
 import com.iuxta.nearby.dto.UserDto;
+import com.iuxta.nearby.exception.NoCommunityException;
 import com.iuxta.nearby.exception.NotAllowedException;
 import com.iuxta.nearby.exception.NotFoundException;
 import com.iuxta.nearby.exception.UnauthorizedException;
@@ -11,7 +12,6 @@ import com.iuxta.nearby.model.Request;
 import com.iuxta.nearby.model.Response;
 import com.iuxta.nearby.model.ResponseFlag;
 import com.iuxta.nearby.model.User;
-import com.iuxta.nearby.service.StripeService;
 import com.iuxta.nearby.service.ResponseService;
 import com.mongodb.BasicDBObject;
 import io.dropwizard.auth.Auth;
@@ -25,14 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
@@ -49,17 +42,14 @@ public class ResponsesResource {
     private JacksonDBCollection<Response, String> responseCollection;
     private JacksonDBCollection<User, String> userCollection;
     private ResponseService responseService;
-    private StripeService stripeService;
 
     public ResponsesResource(JacksonDBCollection<Request, String> requestCollection,
                              JacksonDBCollection<Response, String> responseCollection,
-                             ResponseService responseService, JacksonDBCollection<User, String> userCollection,
-                             StripeService stripeService) {
+                             ResponseService responseService, JacksonDBCollection<User, String> userCollection) {
         this.requestCollection = requestCollection;
         this.responseCollection = responseCollection;
         this.responseService = responseService;
         this.userCollection = userCollection;
-        this.stripeService = stripeService;
     }
 
     @GET
@@ -113,7 +103,6 @@ public class ResponsesResource {
             userDto.firstName = u.getFirstName();
             userDto.fullName = u.getName();
             r.responder = userDto;
-            r.seller = userDto;
         });
         return responsesDto;
     }
@@ -145,12 +134,10 @@ public class ResponsesResource {
             LOGGER.error(msg);
             throw new NotAllowedException(msg);
         }
-        if (!request.isInventoryListing() && (principal.getStripeManagedAccountId() == null || !stripeService.canAcceptTransfers(principal))) {
-            LOGGER.error("User [" + principal.getId() + "] tried to create an offer without a valid bank account");
-            throw new NotAllowedException("Cannot create offer because you do not have a valid bank account setup");
-        } else if (request.isInventoryListing() && !stripeService.hasCustomerAccount(principal)) {
-            LOGGER.error("User [" + principal.getId() + "] tried to create an inventory response without a valid payment info");
-            throw new NotAllowedException("Cannot create offer because you do not have not added valid payment info");
+        if (principal.getCommunityId() == null || principal.getCommunityId().isEmpty() || !principal.getCommunityId().equals(request.getCommunityId())) {
+            String msg = "You must belong to the community to add a response to this request.";
+            LOGGER.error("[" + principal.getId() + " - " + principal.getName() + "] " + msg);
+            throw new NoCommunityException(msg);
         }
         BasicDBObject query = new BasicDBObject();
         query.append("requestId", id);

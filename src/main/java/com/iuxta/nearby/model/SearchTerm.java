@@ -14,7 +14,7 @@ public class SearchTerm {
 
     private String term;
 
-    private GeoJsonPoint location;
+    private String communityId;
 
     private String userId;
 
@@ -52,11 +52,11 @@ public class SearchTerm {
         this.searchDate = searchDate;
     }
 
-    public GeoJsonPoint getLocation() {
-        return location;
+    public String getCommunityId() {
+        return communityId;
     }
 
-    public void setLocation(GeoJsonPoint location) {
-        this.location = location;
+    public void setCommunityId(String communityId) {
+        this.communityId = communityId;
     }
 }

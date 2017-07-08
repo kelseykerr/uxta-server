@@ -48,6 +48,8 @@ public class Request implements Serializable {
 
     private Boolean duplicate = false;
 
+    private String communityId;
+
     private List<String> photos;
 
     public Request() {
@@ -203,5 +205,13 @@ public class Request implements Serializable {
 
     public void setPhotos(List<String> photos) {
         this.photos = photos;
+    }
+
+    public String getCommunityId() {
+        return communityId;
+    }
+
+    public void setCommunityId(String communityId) {
+        this.communityId = communityId;
     }
 }

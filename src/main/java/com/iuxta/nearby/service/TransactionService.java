@@ -49,18 +49,6 @@ public class TransactionService {
         return code.replaceAll("-", "").toLowerCase();
     }
 
-    public void sendTransactionFulfilledNotification(Transaction transaction, User seller, User requester) {
-        JSONObject notification = new JSONObject();
-        BigDecimal price = BigDecimal.valueOf(transaction.getFinalPrice());
-        price = price.setScale(NearbyUtils.USD.getDefaultFractionDigits(), NearbyUtils.DEFAULT_ROUNDING);
-        notification.put("title", "Payment Confirmed");
-        notification.put("message", "Payment of $" + price + " submitted to " +
-                seller.getFirstName() + " and transaction closed");
-        notification.put("type", FirebaseUtils.NotificationTypes.payment_confirmed.name());
-        User buyer = userCollection.findOneById(requester.getId());
-        FirebaseUtils.sendFcmMessage(buyer, null, notification, ccsServer);
-    }
-
     public void enterReturnCode(Transaction transaction, Response response, Request request, String code) {
         if (transaction.getReturnTime() != null) {
             LOGGER.error("Seller tried to enter return code for transaction [" + transaction.getId() + "] " +
@@ -74,7 +62,7 @@ public class TransactionService {
                 transaction.setReturnTime(currentDate);
                 transaction.setReturned(true);
                 User seller = userCollection.findOneById(response.getResponderId());
-                calculatePrice(transaction, response, request, seller);
+                calculatePrice(transaction, response, request);
                 JSONObject notification = new JSONObject();
                 notification.put("title", "Exchange Confirmed");
                 notification.put("message", "exchange confirmed!");
@@ -102,7 +90,7 @@ public class TransactionService {
             if (transaction.getExchangeCodeExpireDate().after(new Date())) {
                 User seller = userCollection.findOneById(response.getResponderId());
                 if (!request.isRental()) {
-                    calculatePrice(transaction, response, request, seller);
+                    calculatePrice(transaction, response, request);
                 }
                 transaction.setExchanged(true);
                 transaction.setExchangeTime(new Date());
@@ -125,17 +113,17 @@ public class TransactionService {
         }
     }
 
-    private void calculatePrice(Transaction transaction, Response response, Request request, User seller) {
+    private void calculatePrice(Transaction transaction, Response response, Request request) {
         if (response.getPriceType().equals(Response.PriceType.FLAT)) {
             transaction.setCalculatedPrice(response.getOfferPrice());
             if (response.getOfferPrice().equals(0) || response.getOfferPrice().equals(0.0)) {
                 transaction.setFinalPrice(response.getOfferPrice());
                 transaction.setSellerAccepted(true);
+                request.setStatus(Request.Status.FULFILLED);
                 transactionCollection.save(transaction);
                 transactionCollection.save(transaction);
                 request.setStatus(Request.Status.FULFILLED);
                 requestCollection.save(request);
-                sendTransactionFulfilledNotification(transaction, seller, request.getUser());
             }
         } else {
             long secs = (new Date().getTime() - transaction.getExchangeTime().getTime()) / 1000;
@@ -234,7 +222,7 @@ public class TransactionService {
             if (dto.returnOverride.sellerAccepted) {
                 transaction.setReturnTime(transaction.getReturnOverride().time);
                 transaction.setReturned(true);
-                calculatePrice(transaction, response, request, currentUser);
+                calculatePrice(transaction, response, request);
             } else {
                 transaction.getReturnOverride().declined = true;
                 dto.returnOverride.declined = true;
@@ -246,13 +234,7 @@ public class TransactionService {
                 transaction.setExchangeTime(transaction.getExchangeOverride().time);
                 transaction.setExchanged(true);
                 if (!isRental) {
-                    User seller = null;
-                    if (request.isInventoryListing()) {
-                        seller = request.getUser();
-                    } else {
-                        seller = userCollection.findOneById(response.getResponderId());
-                    }
-                    calculatePrice(transaction, response, request, seller);
+                    calculatePrice(transaction, response, request);
                 }
             } else {
                 transaction.getExchangeOverride().declined = true;

@@ -61,12 +61,6 @@ public class User implements Serializable, Principal {
 
     private List<String> notificationKeywords;
 
-    private Boolean currentLocationNotifications;
-
-    private Boolean homeLocationNotifications;
-
-    private String dateOfBirth;
-
     // the user must accept the tos before getting a stripe account and being able to make requests/responses
     private Boolean tosAccepted;
 
@@ -79,14 +73,6 @@ public class User implements Serializable, Principal {
 
     private String tosAcceptIp;
 
-    private String stripeManagedAccountId;
-
-    private String stripeCustomerId;
-
-    private String stripeSecretKey;
-
-    private String stripePublishableKey;
-
     private String userAgent;
 
     private Date createdDate;
@@ -94,6 +80,10 @@ public class User implements Serializable, Principal {
     private List<String> blockedUsers;
 
     private Boolean admin;
+
+    private String communityId;
+
+    private String requestedCommunityId;
 
     public User() {}
 
@@ -244,38 +234,6 @@ public class User implements Serializable, Principal {
         this.notificationKeywords = notificationKeywords;
     }
 
-    public Boolean getCurrentLocationNotifications() {
-        return currentLocationNotifications;
-    }
-
-    public void setCurrentLocationNotifications(Boolean currentLocationNotifications) {
-        this.currentLocationNotifications = currentLocationNotifications;
-    }
-
-    public Boolean getHomeLocationNotifications() {
-        return homeLocationNotifications;
-    }
-
-    public void setHomeLocationNotifications(Boolean homeLocationNotifications) {
-        this.homeLocationNotifications = homeLocationNotifications;
-    }
-
-    public String getStripeCustomerId() {
-        return stripeCustomerId;
-    }
-
-    public void setStripeCustomerId(String stripeCustomerId) {
-        this.stripeCustomerId = stripeCustomerId;
-    }
-
-    public String getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(String dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
     public Boolean getTosAccepted() {
         return tosAccepted;
     }
@@ -316,30 +274,6 @@ public class User implements Serializable, Principal {
         this.tosAcceptIp = topAcceptIp;
     }
 
-    public String getStripeManagedAccountId() {
-        return stripeManagedAccountId;
-    }
-
-    public void setStripeManagedAccountId(String stripeManagedAccountId) {
-        this.stripeManagedAccountId = stripeManagedAccountId;
-    }
-
-    public String getStripeSecretKey() {
-        return stripeSecretKey;
-    }
-
-    public void setStripeSecretKey(String stripeSecretKey) {
-        this.stripeSecretKey = stripeSecretKey;
-    }
-
-    public String getStripePublishableKey() {
-        return stripePublishableKey;
-    }
-
-    public void setStripePublishableKey(String stripePublishableKey) {
-        this.stripePublishableKey = stripePublishableKey;
-    }
-
     public String getUserAgent() {
         return userAgent;
     }
@@ -370,5 +304,21 @@ public class User implements Serializable, Principal {
 
     public void setBlockedUsers(List<String> blockedUsers) {
         this.blockedUsers = blockedUsers;
+    }
+
+    public String getCommunityId() {
+        return communityId;
+    }
+
+    public void setCommunityId(String communityId) {
+        this.communityId = communityId;
+    }
+
+    public String getRequestedCommunityId() {
+        return requestedCommunityId;
+    }
+
+    public void setRequestedCommunityId(String requestedCommunityId) {
+        this.requestedCommunityId = requestedCommunityId;
     }
 }

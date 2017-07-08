@@ -88,11 +88,11 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         JacksonDBCollection<Transaction, String> transactionCollection =
                 JacksonDBCollection.wrap(db.getCollection("transaction"), Transaction.class, String.class);
 
-        JacksonDBCollection<NearbyAvailableLocations, String> locationsCollection =
-                JacksonDBCollection.wrap(db.getCollection("nearbyAvailableLocations"), NearbyAvailableLocations.class, String.class);
+        /*JacksonDBCollection<NearbyAvailableLocations, String> locationsCollection =
+                JacksonDBCollection.wrap(db.getCollection("nearbyAvailableLocations"), NearbyAvailableLocations.class, String.class);*/
 
-        JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection =
-                JacksonDBCollection.wrap(db.getCollection("unavailableSearches"), UnavailableSearches.class, String.class);
+        /*JacksonDBCollection<UnavailableSearches, String> unavailableSearchesCollection =
+                JacksonDBCollection.wrap(db.getCollection("unavailableSearches"), UnavailableSearches.class, String.class);*/
 
         JacksonDBCollection<RequestFlag, String> requestFlagCollection =
                 JacksonDBCollection.wrap(db.getCollection("requestFlag"), RequestFlag.class, String.class);
@@ -105,6 +105,9 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
 
         JacksonDBCollection<SearchTerm, String> searchTermsCollection =
                 JacksonDBCollection.wrap(db.getCollection("searchTerms"), SearchTerm.class, String.class);
+
+        JacksonDBCollection<Community, String> communitiesCollection =
+                JacksonDBCollection.wrap(db.getCollection("communities"), Community.class, String.class);
 
 
         // cloud connection server
@@ -121,12 +124,12 @@ public class NearbyApplication extends Application<NearbyConfiguration> {
         ResponseService responseService = new ResponseService(requestCollection, responseCollection, userCollection,
                 transactionCollection, responseFlagCollection, ccsServer);
         StripeService stripeService = new StripeService(config.stripeSecretKey, config.stripePublishableKey, userCollection, ccsServer);
-        UserService userService = new UserService(stripeService, responseService, userCollection, userFlagCollection, ccsServer);
+        UserService userService = new UserService(responseService, userCollection, userFlagCollection, ccsServer);
         RequestFlagService requestFlagService = new RequestFlagService(requestCollection, requestFlagCollection, userCollection, ccsServer);
-        environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService, stripeService));
-        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, locationsCollection, unavailableSearchesCollection, searchTermsCollection);
+        environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
+        RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, searchTermsCollection, communitiesCollection);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService, stripeService));
-        environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection, stripeService));
+        environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,
                 transactionCollection, ccsServer, stripeService));
         environment.jersey().register(new StripeResource(stripeService));

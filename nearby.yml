@@ -19,6 +19,3 @@ swagger:
   resourcePackage: com.iuxta.nearby.resources
   swaggerViewConfiguration:
       showAuth: false
-
-stripeSecretKey: ${STRIPE_SECRET_KEY}
-stripePublishableKey: ${STRIPE_PUBLISHABLE_KEY}
