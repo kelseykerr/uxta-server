@@ -1,4 +1,4 @@
-import com.iuxta.nearby.NearbyUtils;
+import com.iuxta.uxta.UxtaUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -10,7 +10,7 @@ public class NearbyUtilsTest {
 
     @Test
     public void testTransactionCode() {
-        String code = NearbyUtils.getUniqueCode();
+        String code = UxtaUtils.getUniqueCode();
         assertTrue(code.length() == 6);
     }
 }

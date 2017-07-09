@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>iuxta</groupId>
-    <artifactId>nearby</artifactId>
+    <artifactId>uxta</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <dependencies>
@@ -148,7 +148,7 @@
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>com.iuxta.nearby.NearbyApplication</mainClass>
+                            <mainClass>com.iuxta.uxta.UxtaApplication</mainClass>
                         </transformer>
                     </transformers>
                 </configuration>
