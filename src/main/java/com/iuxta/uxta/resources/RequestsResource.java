@@ -69,9 +69,7 @@ public class RequestsResource {
                     value = "the authentication method, either \"facebook\" (default if empty) or \"google\"",
                     dataType = "string",
                     paramType = "header")})
-    public void getRequestNotifications(@Auth @ApiParam(hidden = true) User principal,
-                                        @QueryParam("longitude") Double longitude,
-                                        @QueryParam("latitude") Double latitude) {
+    public void getRequestNotifications(@Auth @ApiParam(hidden = true) User principal) {
         if (principal.getNewRequestNotificationsEnabled() == null || !principal.getNewRequestNotificationsEnabled()) {
             return;
         }
@@ -84,7 +82,7 @@ public class RequestsResource {
     @Timed
     @ApiOperation(
             value = "Search for requests",
-            notes = "Return requests that match query params (longitude, latitude, & radius)"
+            notes = "Return requests that match query params"
     )
     @ApiImplicitParams({@ApiImplicitParam(name = "x-auth-token",
             value = "the authentication token received from facebook",
@@ -95,9 +93,6 @@ public class RequestsResource {
                     dataType = "string",
                     paramType = "header")})
     public List<RequestDto> getRequests(@Auth @ApiParam(hidden = true) User principal,
-                                        @QueryParam("longitude") Double longitude,
-                                        @QueryParam("latitude") Double latitude,
-                                        @QueryParam("radius") Double radius,
                                         @QueryParam("expired") Boolean expired,
                                         @QueryParam("includeMine") Boolean includeMine,
                                         @QueryParam("searchTerm") String searchTerm,
@@ -105,10 +100,10 @@ public class RequestsResource {
                                         @QueryParam("offset") Integer offset,
                                         @QueryParam("limit") Integer limit,
                                         @QueryParam("type") String type) {
-        if (longitude == null || latitude == null || radius == null) {
-            String msg = "query parameters [radius], [longitude] and [latitude] are required.";
-            LOGGER.error(msg);
-            throw new BadRequestException(msg);
+        if (principal.getCommunityId() == null || principal.getCommunityId().isEmpty()) {
+            String msg = "You must belong to a community to view posts from other users.";
+            LOGGER.error("[" + principal.getId() + " - " + principal.getName() + "] " + msg);
+            throw new NoCommunityException(msg);
         }
         List<Request> requests = requestService.findRequests(offset, limit, expired, includeMine,
                 searchTerm, sort, principal, type);
