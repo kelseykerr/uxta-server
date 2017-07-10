@@ -128,12 +128,14 @@ public class UxtaApplication extends Application<UxtaConfiguration> {
         RequestFlagService requestFlagService = new RequestFlagService(requestCollection, requestFlagCollection, userCollection, ccsServer);
         environment.jersey().register(new UserResource(userCollection, requestCollection, userService, responseService));
         RequestService requestService = new RequestService(categoryCollection, requestCollection, ccsServer, userCollection, responseService, searchTermsCollection, communitiesCollection);
+        CommunityService communityService = new CommunityService(communitiesCollection, userCollection, ccsServer);
         environment.jersey().register(new RequestsResource(requestCollection, requestService, responseCollection, responseService));
         environment.jersey().register(new ResponsesResource(requestCollection, responseCollection, responseService, userCollection));
         environment.jersey().register(new TransactionsResource(requestCollection, responseCollection, userCollection,
                 transactionCollection, ccsServer));
         //environment.jersey().register(new StripeResource(stripeService));
         environment.jersey().register(new RequestFlagResource(requestFlagService));
+        environment.jersey().register(new CommunitiesResource(communityService));
         NearbyAuthenticator authenticator = new NearbyAuthenticator(userCollection, config.fbAccessToken, config.googleClientIds, ccsServer);
         environment.jersey().register(new AuthDynamicFeature(new CredentialAuthFilter.Builder<User>()
                 .setAuthenticator(authenticator)
