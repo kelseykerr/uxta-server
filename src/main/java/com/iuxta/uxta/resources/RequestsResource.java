@@ -136,7 +136,7 @@ public class RequestsResource {
         Request request = requestService.transformRequestDto(dto, principal);
         WriteResult<Request, String> newRequest = requestCollection.insert(request);
         request = newRequest.getSavedObject();
-        requestService.sendAdminsNewRequestNotification(request);
+        requestService.sendAsyncPostNotifications(request);
         return new RequestDto(request);
     }
 

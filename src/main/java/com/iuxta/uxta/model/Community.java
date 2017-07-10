@@ -1,12 +1,16 @@
 package com.iuxta.uxta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mongojack.ObjectId;
+
+import java.io.Serializable;
 
 /**
  * Created by kelseykerr on 7/8/17.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Community {
+public class Community implements Serializable {
 
     private String id;
 
@@ -16,10 +20,14 @@ public class Community {
 
     private String address;
 
+    @ObjectId
+    @JsonProperty("_id")
     public String getId() {
         return id;
     }
 
+    @ObjectId
+    @JsonProperty("_id")
     public void setId(String id) {
         this.id = id;
     }

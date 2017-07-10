@@ -19,9 +19,12 @@ import org.mongojack.JacksonDBCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,7 +40,7 @@ public class RequestService {
     private CcsServer ccsServer;
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestService.class);
     private JacksonDBCollection<Community, String> communitiesCollection;
-    static final long ONE_MINUTE_IN_MILLIS=60000;
+    static final long ONE_MINUTE_IN_MILLIS = 60000;
     private ResponseService responseService;
 
     public RequestService() {
@@ -75,6 +78,7 @@ public class RequestService {
     /**
      * Returns true if the user can make a new request. User CANNOT make a new request if they have 5 or more
      * open requests
+     *
      * @param user
      * @return
      */
@@ -82,7 +86,7 @@ public class RequestService {
         BasicDBObject query = new BasicDBObject();
         query.put("user.userId", user.getUserId());
         query.put("status", Request.Status.OPEN.name());
-        DBCursor userRequests  = requestCollection.find(query);
+        DBCursor userRequests = requestCollection.find(query);
         List<Request> userRs = userRequests.toArray();
         int openTs = responseService.getOpenTransactions(user);
         int totalOpen = openTs + userRs.size();
@@ -150,7 +154,7 @@ public class RequestService {
             List<Request> requestsNearHome = userRequests.toArray();
             Integer size = requestsNearHome.size();
             if (size > 1) {
-                body  = "There are " + size + " new requests in your community.";
+                body = "There are " + size + " new requests in your community.";
                 newRequests = true;
             } else if (requestsNearHome.size() == 1) {
                 Request req = requestsNearHome.get(0);
@@ -226,12 +230,12 @@ public class RequestService {
         if (sort != null && sort.equals("newest")) {
             if (StringUtils.isBlank(searchTerm)) {
                 //go ahead and add offset and limit here
-                userRequests  = requestCollection.find(query)
+                userRequests = requestCollection.find(query)
                         .sort(new BasicDBObject("postDate", -1))
                         .skip(offset)
                         .limit(limit);
             } else {
-                userRequests  = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
+                userRequests = requestCollection.find(query).sort(new BasicDBObject("postDate", -1));
             }
         } else {
             // distance is the default sort, best match should also use this for the initial query
@@ -343,7 +347,7 @@ public class RequestService {
 
     private void addLast15MinsQuery(BasicDBObject query) {
         Calendar date = Calendar.getInstance();
-        long t= date.getTimeInMillis();
+        long t = date.getTimeInMillis();
         Date last15 = new Date(t - (15 * ONE_MINUTE_IN_MILLIS));
         BasicDBObject last15Query = new BasicDBObject();
         last15Query.append("$gt", last15);
@@ -356,24 +360,71 @@ public class RequestService {
         query.put("user.userId", notMineQuery);
     }
 
-    public void sendAdminsNewRequestNotification(Request r) {
+    public void sendNewRequestNotification(Request r) {
         try {
+            BasicDBList or = new BasicDBList();
             DBObject findAdmins = new BasicDBObject("admin", true);
-            DBCursor cursor = userCollection.find(findAdmins);
-            List<User> admins = cursor.toArray();
-            if (admins != null && admins.size() > 0) {
+            or.add(findAdmins);
+            DBObject findCommunityUsers = new BasicDBObject("communityId", r.getCommunityId());
+            DBObject notifsOn = new BasicDBObject("newRequestNotificationsEnabled", true);
+            BasicDBList andQuery = new BasicDBList();
+            andQuery.add(findCommunityUsers);
+            andQuery.add(notifsOn);
+            or.add(andQuery);
+            DBObject query = new BasicDBObject();
+            query.put("$or", or);
+            DBCursor cursor = userCollection.find(query);
+            List<User> users = cursor.toArray();
+            if (users != null && users.size() > 0) {
                 JSONObject notification = new JSONObject();
                 notification.put("title", "New Post!");
                 String body = "User [" + r.getUser().getName() + "] added a [" + r.getType().toString() + "] post for a [" + r.getItemName() + "]!";
                 notification.put("message", body);
                 notification.put("type", FirebaseUtils.NotificationTypes.new_post_notification.name());
-                for (User admin:admins) {
-                    FirebaseUtils.sendFcmMessage(admin, null, notification, ccsServer);
-                }        }
+                for (User user : users) {
+                    FirebaseUtils.sendFcmMessage(user, null, notification, ccsServer);
+                }
+            }
         } catch (Exception e) {
             //do nothing
         }
 
     }
 
+
+    public void sendAsyncPostNotifications(Request r) {
+        try {
+            BasicDBList or = new BasicDBList();
+            DBObject findAdmins = new BasicDBObject("admin", true);
+            or.add(findAdmins);
+            DBObject findCommunityUsers = new BasicDBObject("communityId", r.getCommunityId());
+            DBObject notifsOn = new BasicDBObject("newRequestNotificationsEnabled", true);
+            BasicDBList andQuery = new BasicDBList();
+            andQuery.add(findCommunityUsers);
+            andQuery.add(notifsOn);
+            or.add(andQuery);
+            DBObject query = new BasicDBObject();
+            query.put("$or", or);
+            DBCursor cursor = userCollection.find(query);
+            final List<User> users = cursor.toArray();
+            if (users != null && users.size() > 0) {
+                LOGGER.info("Number of users to send to post notif for [" + r.getCommunityId() + "] : " + users.size());
+                CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                    for (User user : users) {
+                        JSONObject notification = new JSONObject();
+                        notification.put("title", "New Post!");
+                        String body = r.getUser().getFirstName() + " would like to " + r.getType().toString() + " a " + r.getItemName() + ". Can you help out?";
+                        notification.put("message", body);
+                        notification.put("type", FirebaseUtils.NotificationTypes.new_post_notification.name());
+                        FirebaseUtils.sendFcmMessage(user, null, notification, ccsServer);
+                        LOGGER.info("Send new post notification to [" + user.getFirstName() + "]");
+                    }
+                    return true;
+                });
+            }
+        } catch (Exception e) {
+            //d
+        }
+
+    }
 }
