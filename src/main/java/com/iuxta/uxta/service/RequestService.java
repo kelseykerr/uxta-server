@@ -397,12 +397,16 @@ public class RequestService {
             BasicDBList or = new BasicDBList();
             DBObject findAdmins = new BasicDBObject("admin", true);
             or.add(findAdmins);
+
             DBObject findCommunityUsers = new BasicDBObject("communityId", r.getCommunityId());
             DBObject notifsOn = new BasicDBObject("newRequestNotificationsEnabled", true);
-            BasicDBList andQuery = new BasicDBList();
-            andQuery.add(findCommunityUsers);
-            andQuery.add(notifsOn);
+            BasicDBList and = new BasicDBList();
+            and.add(findCommunityUsers);
+            and.add(notifsOn);
+            DBObject andQuery = new BasicDBObject();
+            andQuery.put("$and", and);
             or.add(andQuery);
+
             DBObject query = new BasicDBObject();
             query.put("$or", or);
             DBCursor cursor = userCollection.find(query);
@@ -411,13 +415,16 @@ public class RequestService {
                 LOGGER.info("Number of users to send to post notif for [" + r.getCommunityId() + "] : " + users.size());
                 CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
                     for (User user : users) {
-                        JSONObject notification = new JSONObject();
-                        notification.put("title", "New Post!");
-                        String body = r.getUser().getFirstName() + " would like to " + r.getType().toString() + " a " + r.getItemName() + ". Can you help out?";
-                        notification.put("message", body);
-                        notification.put("type", FirebaseUtils.NotificationTypes.new_post_notification.name());
-                        FirebaseUtils.sendFcmMessage(user, null, notification, ccsServer);
-                        LOGGER.info("Send new post notification to [" + user.getFirstName() + "]");
+                        //don't send notif to the person that just made the request
+                        if (!user.getId().equals(r.getUser().getId())) {
+                            JSONObject notification = new JSONObject();
+                            notification.put("title", "New Post!");
+                            String body = r.getUser().getFirstName() + " would like to " + r.getType().toString() + " a " + r.getItemName() + ". Can you help out?";
+                            notification.put("message", body);
+                            notification.put("type", FirebaseUtils.NotificationTypes.new_post_notification.name());
+                            FirebaseUtils.sendFcmMessage(user, null, notification, ccsServer);
+                            LOGGER.info("Send new post notification to [" + user.getFirstName() + "]");
+                        }
                     }
                     return true;
                 });
