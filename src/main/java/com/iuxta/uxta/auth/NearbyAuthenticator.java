@@ -148,6 +148,11 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
 
             HttpGet httpGet = new HttpGet(builder.toString());
             CloseableHttpResponse httpResp = client.execute(httpGet);
+            if (httpResp.getStatusLine().getStatusCode() != 200) {
+                LOGGER.info(httpResp.getStatusLine().getStatusCode() + " ** facebook status code");
+                LOGGER.info(httpResp.getStatusLine().getReasonPhrase() + " ** facebook response");
+                throw new AuthenticationException("could not authenticate with facebook");
+            }
 
             String userId = extractUserId(httpResp);
             User user = searchForExistingUser(userId);
