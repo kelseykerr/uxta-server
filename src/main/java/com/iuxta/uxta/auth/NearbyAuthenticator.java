@@ -287,21 +287,6 @@ public class NearbyAuthenticator implements Authenticator<Credentials, User> {
         return newUser;
     }
 
-    private JSONObject getFbProfile(String userId) throws IOException, URISyntaxException {
-        URIBuilder builder = new URIBuilder("https://graph.facebook.com/" + userId)
-                .addParameter("access_token", fbAuthToken);
-        HttpGet httpGet = new HttpGet(builder.toString());
-        HttpResponse httpResp = client.execute(httpGet);
-        BufferedReader rd = new BufferedReader(new InputStreamReader(httpResp.getEntity().getContent()));
-        StringBuilder result = new StringBuilder();
-        String line;
-        while ((line = rd.readLine()) != null) {
-            result.append(line);
-        }
-        JSONObject userInfo = new JSONObject(result.toString());
-        return userInfo;
-    }
-
     private User createNewFacebookUser(String userId, String ip) throws IOException, URISyntaxException {
         URIBuilder builder = new URIBuilder("https://graph.facebook.com/" + userId)
                 .addParameter("access_token", fbAuthToken);
