@@ -71,7 +71,7 @@ public class CommunityService {
             LOGGER.error(msg);
             throw new com.iuxta.uxta.exception.NotFoundException(msg);
         }
-        user.setRequestedCommunityId(communityId);
+        user.setCommunityId(communityId);
         userCollection.save(user);
         sendAdminsCommunityRequestNotification(user, community);
         return user;
@@ -100,7 +100,7 @@ public class CommunityService {
             if (admins != null && admins.size() > 0) {
                 JSONObject notification = new JSONObject();
                 notification.put("title", "Request to join community!");
-                String body = "User [" + user.getName() + "] requested to join community [" + community.getId() + " -  " + community.getName() + "]!";
+                String body = "User [" + user.getName() + "] joined community [" + community.getId() + " -  " + community.getName() + "]!";
                 notification.put("message", body);
                 notification.put("type", FirebaseUtils.NotificationTypes.new_post_notification.name());
                 for (User admin:admins) {
