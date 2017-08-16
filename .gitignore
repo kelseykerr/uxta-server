@@ -8,3 +8,5 @@ nearby.iml
 */target/**
 target/**
 target/
+uxta.yml
+uxta-prod.yml
