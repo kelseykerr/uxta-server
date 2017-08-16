@@ -10,3 +10,4 @@ target/**
 target/
 uxta.yml
 uxta-prod.yml
+docker-compose.yml
